@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Next.js
+app/.next/
+app/out/
+
+# Production builds
+app/build/
+api/dist/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*/. env*
+
+# Logs
+*.log
+logs/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Terraform
+infrastructure/*.tfstate
+infrastructure/*.tfstate.backup
+infrastructure/.terraform/
+
+# ML models (large files)
+ml-services/models/*.pkl
+ml-services/models/*.h5
+
+# Docker
+docker-compose.override.yml
