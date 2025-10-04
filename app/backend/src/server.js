@@ -71,9 +71,7 @@ app.get('/', (req, res) => {
         <div class="endpoint">GET /api/data/dashboard-stats</div>
         <div class="endpoint">GET /api/data/security-events</div>
         <div class="endpoint">GET /api/data/login-attempts</div>
-        <div class="endpoint">GET /api/data/ip-analysis</div>
-        <div class="endpoint">GET /api/data/system-logs</div>
-        <div class="endpoint">GET /api/data/threat-intel</div>
+        <div class="endpoint">GET /api/data/all</div>
       </div>
       <div class="info-card">
         <h3>Health Status</h3>
