@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-// import { getData } from '@/services/api';
+import { getData } from '@/services/api';
 
 
 

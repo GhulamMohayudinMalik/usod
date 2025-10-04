@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-// import { ThreatCard } from '@/components/ThreatCard';
-// import { postData } from '@/services/api';
-// import { getSecurityEvents, SecurityEvent } from '@/services/securityDataService';
+import { ThreatCard } from '@/components/ThreatCard';
+import { getData } from '@/services/api';
 
 
 
@@ -38,8 +37,8 @@ export default function ThreatAnalysis() {
     const fetchEvents = async () => {
       try {
         console.log('Fetching events with page:', page, 'itemsPerPage:', itemsPerPage);
-        // Get all security events by using a high count value
-        const events = await getSecurityEvents(1000);
+        // Get security events from the API
+        const events = await getData('/api/data/security-events?count=100');
         console.log('Total events fetched:', events.length);
         
         // Sort by timestamp, newest first
@@ -81,13 +80,8 @@ export default function ThreatAnalysis() {
     setIsAnalyzing(true);
     
     try {
-      // Call the AI service to analyze the text
-      const response = await postData('/api/ai/analyze', { text: inputText });
-      
-      setAnalysisResult(response);
-    } catch (error) {
-      console.error('Error analyzing text:', error);
-      // Fallback to mock response if API fails
+      // For now, use a mock response since we don't have an AI endpoint
+      // In a real implementation, you would call: await getData('/api/ai/analyze', { text: inputText });
       const mockResponse = {
         threat_level: inputText.toLowerCase().includes('hack') || inputText.toLowerCase().includes('attack') ? 'high' : 
                       inputText.toLowerCase().includes('suspicious') ? 'medium' : 'low',
@@ -99,10 +93,12 @@ export default function ThreatAnalysis() {
           'Review content regularly',
           inputText.toLowerCase().includes('hack') ? 'Escalate to security team' : null,
           inputText.toLowerCase().includes('attack') ? 'Block source IP address' : null,
-  ].filter(Boolean),
+        ].filter(Boolean),
       };
       
       setAnalysisResult(mockResponse);
+    } catch (error) {
+      console.error('Error analyzing text:', error);
     } finally {
       setIsAnalyzing(false);
     }

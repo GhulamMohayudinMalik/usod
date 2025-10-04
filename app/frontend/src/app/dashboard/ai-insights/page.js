@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-// import { Chart } from '@/components/Chart';
-// import { postData } from '@/services/api';
-// import { getThreatIntel, ThreatIntelligence } from '@/services/securityDataService';
+import { getData } from '@/services/api';
 
 
 function AIInsightsPage() {
@@ -19,7 +17,7 @@ function AIInsightsPage() {
       setError(null);
       
       try {
-        const data = await getThreatIntel(20);
+        const data = await getData('/api/data/threat-intel?count=20');
         setThreatData(data);
         
         // Generate insights automatically when data is loaded
@@ -39,14 +37,9 @@ function AIInsightsPage() {
     setInsightLoading(true);
     
     try {
-      // Call the AI service to generate insights
-      const response = await postData('/api/ai/insights', { threats });
-      setInsightResult(response);
-    } catch (err) {
-      console.error('Error generating insights:', err);
-      
-      // Fallback to mock insights
-  const mockInsights = {
+      // For now, use mock insights since we don't have an AI endpoint
+      // In a real implementation, you would call: await getData('/api/ai/insights', { threats });
+      const mockInsights = {
         summary: "Security posture shows moderate risk with several emerging threats detected. Recent malware activity suggests increased targeting of financial services sector. Suspicious login patterns indicate potential credential compromise attempts.",
         recommendations: [
           "Update intrusion detection signatures for emerging threats",
@@ -200,14 +193,30 @@ function AIInsightsPage() {
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Top Threats</h3>
         <div className="h-96">
           {insightResult?.top_threats && (
-            <Chart 
-              type="bar"
-              data={insightResult.top_threats.map(threat => ({
-                name: threat.name,
-                value: threat.count
-              }))}
-              colors={insightResult.top_threats.map(threat => getSeverityColor(threat.severity))}
-            />
+            <div className="space-y-4">
+              {insightResult.top_threats.map((threat, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="flex items-center">
+                    <div 
+                      className="w-4 h-4 rounded-full mr-3" 
+                      style={{ backgroundColor: getSeverityColor(threat.severity) }}
+                    ></div>
+                    <span className="font-medium text-gray-900 dark:text-white">{threat.name}</span>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{threat.count} occurrences</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      threat.severity === 'critical' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
+                      threat.severity === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
+                      threat.severity === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                      'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                    }`}>
+                      {threat.severity.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
