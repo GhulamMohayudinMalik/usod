@@ -11,7 +11,7 @@ export default function DashboardIndex() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [live, setLive] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [lastUpdated, setLastUpdated] = useState(null);
   const pollingRef = useRef(null);
 
   const load = async () => {
@@ -57,7 +57,9 @@ export default function DashboardIndex() {
           <p className="text-sm text-gray-400">Welcome to your security operations dashboard</p>
         </div>
         <div className="flex items-center gap-3 text-sm">
-          <span className="text-gray-400">Last updated: {lastUpdated.toLocaleTimeString()}</span>
+          {lastUpdated && (
+            <span className="text-gray-400">Last updated: {lastUpdated.toLocaleTimeString()}</span>
+          )}
           <button
             className={`px-3 py-1 rounded ${live ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-100'}`}
             onClick={() => setLive(v => !v)}

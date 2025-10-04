@@ -22,10 +22,13 @@ const ThreatIcon = () => (
   </svg>
 );
 
-const UserIcon = () => (
+const LogIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="8" y1="13" x2="16" y2="13" />
+    <line x1="8" y1="17" x2="16" y2="17" />
+    <line x1="8" y1="9" x2="10" y2="9" />
   </svg>
 );
 
@@ -37,6 +40,16 @@ const AnalyticsIcon = () => (
   </svg>
 );
 
+const AiInsightsIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+    <path d="M12 2a10 10 0 1 0 10 10" />
+    <path d="M12 2a10 10 0 0 1 10 10" />
+    <path d="M12 12l8-8" />
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 2v10" />
+  </svg>
+);
+
 const SettingsIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
     <circle cx="12" cy="12" r="3" />
@@ -44,11 +57,12 @@ const SettingsIcon = () => (
   </svg>
 );
 
-const navigation= [
+const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
   { name: 'Threat Analysis', href: '/dashboard/threats', icon: ThreatIcon },
-  { name: 'User Management', href: '/dashboard/users', icon: UserIcon },
+  { name: 'Logs Analysis', href: '/dashboard/logs', icon: LogIcon },
   { name: 'Analytics', href: '/dashboard/analytics', icon: AnalyticsIcon },
+  { name: 'AI Insights', href: '/dashboard/ai-insights', icon: AiInsightsIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
 ];
 
@@ -64,7 +78,9 @@ function Sidebar({ className = '' }) {
 
       <div className="flex-1 space-y-1">
         {navigation.map((item) => {
-          const isActive = pathname === item.href || (pathname && pathname.startsWith(`${item.href}/`));
+          const isActive = item.href === '/dashboard' 
+            ? pathname === '/dashboard' 
+            : pathname === item.href || (pathname && pathname.startsWith(`${item.href}/`));
           return (
             <Link
               key={item.name}
@@ -86,8 +102,8 @@ function Sidebar({ className = '' }) {
             <span>AU</span>
           </div>
           <div>
-            <p className="font-medium text-gray-900 dark:text-gray-100">Admin User</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">admin@example.com</p>
+            <p className="font-medium text-gray-900 dark:text-gray-100">Ghulam Mohayudin</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">ghulammohayudin@gmail.com</p>
           </div>
         </div>
       </div>

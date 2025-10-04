@@ -23,7 +23,7 @@ function SettingsPage() {
         // Try to get the user profile from the API
         
         // const data = await getData('/api/user/profile');
-        setProfile(data);
+        // setProfile(data);
         
         // Set form values from the profile
         setTheme(data.settings.theme);
@@ -37,8 +37,8 @@ function SettingsPage() {
         // Fallback to default settings
         const mockProfile = {
           id: 'user1',
-          username: 'admin',
-          email: 'admin@example.com',
+          username: 'Ghulam Mohayudin',
+          email: 'ghulammohayudin@gmail.com',
           role: 'Administrator',
           lastLogin: new Date().toISOString(),
           settings: {
