@@ -2,6 +2,12 @@
 
 A modern security operations dashboard for monitoring security events, login attempts, and system activities in real-time.
 
+## Current Version
+
+V2.0 
+
+Complete the intital 7 logs ingestion
+
 ## Features
 
 - 🔐 **User Authentication** - JWT-based login system with role-based access
