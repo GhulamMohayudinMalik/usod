@@ -5,7 +5,10 @@ import mongoose from 'mongoose';
 import { connectMongoDB } from './config/database.js';
 import dataRoutes from './routes/dataRoutes.js';
 import logRoutes from './routes/logRoutes.js';
-import { startLiveGenerator } from './scripts/generate.js';
+// import { startLiveGenerator } from './scripts/generate.js';
+import ingestRoutes from './routes/ingestRoutes.js';
+import streamRoutes from './routes/streamRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 
 // Load env
 dotenv.config();
@@ -17,7 +20,7 @@ const port = process.env.PORT || 5000;
 const corsOptions = {
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'X-API-Key'],
   credentials: true,
 };
 
@@ -26,8 +29,11 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/data', dataRoutes);
 app.use('/api/logs', logRoutes);
+app.use('/api/ingest', ingestRoutes);
+app.use('/api/stream', streamRoutes);
 
 app.get('/', (req, res) => {
   const html = `
@@ -180,8 +186,7 @@ const startServer = async () => {
     app.listen(port, () => {
       console.log(`Server is running on port ${port}`);
       console.log(`CORS enabled for: ${corsOptions.origin}`);
-      startLiveGenerator(3000, 10000);
-      console.log('Live log generator started (3-10s intervals)');
+      // Live generator disabled to use real logs
     });
   } catch (error) {
     console.error('Failed to start server:', error);
