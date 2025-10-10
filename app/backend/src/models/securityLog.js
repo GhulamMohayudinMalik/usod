@@ -23,7 +23,14 @@ const SecurityLogSchema = new Schema({
             'role_changed',
             'settings_changed',
             'backup_created',
-            'backup_restored'
+            'backup_restored',
+            'suspicious_activity',
+            'brute_force_detected',
+            'sql_injection_attempt',
+            'xss_attempt',
+            'csrf_attempt',
+            'ip_blocked',
+            'ip_unblocked'
         ]
     },
     status: { type: String, required: true, enum: ['success', 'failure', 'detected'] },

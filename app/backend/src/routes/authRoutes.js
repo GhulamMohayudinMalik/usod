@@ -14,6 +14,16 @@ import {
   unlockAccount,
   isAccountLocked
 } from '../services/sessionService.js';
+import { 
+  performSecurityCheck, 
+  trackFailedLogin, 
+  isIPBlocked, 
+  getRealIP as getSecurityIP,
+  blockIP, 
+  unblockIP, 
+  getBlockedIPs, 
+  getSecurityStats 
+} from '../services/securityDetectionService.js';
 
 const router = express.Router();
 
@@ -175,7 +185,7 @@ async function logLogoutEvent(userId, req, details = {}) {
 }
 
 // Login endpoint
-router.post('/login', async (req, res) => {
+router.post('/login', performSecurityCheck, async (req, res) => {
   try {
     const { username, password } = req.body;
     
@@ -183,8 +193,20 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Username and password required' });
     }
 
+    // Check if IP is blocked
+    const ip = getSecurityIP(req);
+    if (isIPBlocked(ip)) {
+      return res.status(403).json({ 
+        message: 'Access denied: IP address is blocked',
+        code: 'IP_BLOCKED'
+      });
+    }
+
     const user = await User.findOne({ username });
     if (!user) {
+      // Track failed login for security detection
+      trackFailedLogin(ip, username, req);
+      
       // Log failed login attempt for non-existent user
       await logLoginAttempt(null, 'failure', req, {
         reason: 'user_not_found',
@@ -207,6 +229,9 @@ router.post('/login', async (req, res) => {
 
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
+      // Track failed login for security detection
+      trackFailedLogin(ip, username, req);
+      
       // Handle failed login attempt
       const lockResult = await handleFailedLogin(user._id, req);
       
@@ -305,7 +330,7 @@ router.post('/logout', async (req, res) => {
 });
 
 // Register endpoint (for initial setup)
-router.post('/register', async (req, res) => {
+router.post('/register', performSecurityCheck, async (req, res) => {
   try {
     const { username, email, password, role = 'user' } = req.body;
     
@@ -455,6 +480,80 @@ router.get('/session-status', async (req, res) => {
   } catch (error) {
     console.error('Session status check error:', error);
     res.status(401).json({ message: 'Session status check failed' });
+  }
+});
+
+// Security management endpoints
+
+// Get security statistics
+router.get('/security/stats', async (req, res) => {
+  try {
+    const stats = getSecurityStats();
+    res.json({
+      message: 'Security statistics retrieved',
+      stats
+    });
+  } catch (error) {
+    console.error('Security stats error:', error);
+    res.status(500).json({ message: 'Failed to get security statistics' });
+  }
+});
+
+// Get blocked IPs
+router.get('/security/blocked-ips', async (req, res) => {
+  try {
+    const blockedIPs = getBlockedIPs();
+    res.json({
+      message: 'Blocked IPs retrieved',
+      blockedIPs
+    });
+  } catch (error) {
+    console.error('Blocked IPs error:', error);
+    res.status(500).json({ message: 'Failed to get blocked IPs' });
+  }
+});
+
+// Block an IP address (admin only)
+router.post('/security/block-ip', async (req, res) => {
+  try {
+    const { ip, reason = 'manual_block' } = req.body;
+    
+    if (!ip) {
+      return res.status(400).json({ message: 'IP address required' });
+    }
+
+    blockIP(ip, reason);
+    
+    res.json({
+      message: 'IP address blocked successfully',
+      ip,
+      reason
+    });
+  } catch (error) {
+    console.error('Block IP error:', error);
+    res.status(500).json({ message: 'Failed to block IP address' });
+  }
+});
+
+// Unblock an IP address (admin only)
+router.post('/security/unblock-ip', async (req, res) => {
+  try {
+    const { ip, reason = 'manual_unblock' } = req.body;
+    
+    if (!ip) {
+      return res.status(400).json({ message: 'IP address required' });
+    }
+
+    unblockIP(ip, reason);
+    
+    res.json({
+      message: 'IP address unblocked successfully',
+      ip,
+      reason
+    });
+  } catch (error) {
+    console.error('Unblock IP error:', error);
+    res.status(500).json({ message: 'Failed to unblock IP address' });
   }
 });
 

@@ -12,6 +12,7 @@ import authRoutes from './routes/authRoutes.js';
 import userManagementRoutes from './routes/userManagementRoutes.js';
 import backupRoutes from './routes/backupRoutes.js';
 import { startSessionCleanup } from './services/sessionService.js';
+import { startSecurityCleanup } from './services/securityDetectionService.js';
 
 // Load env
 dotenv.config();
@@ -191,8 +192,11 @@ const startServer = async () => {
     app.listen(port, () => {
       console.log(`Server is running on port ${port}`);
       console.log(`CORS enabled for: ${corsOptions.origin}`);
-      // Start session cleanup service
-      startSessionCleanup();
+// Start session cleanup service
+startSessionCleanup();
+
+// Start security cleanup service
+startSecurityCleanup();
       // Live generator disabled to use real logs
     });
   } catch (error) {

@@ -1,0 +1,478 @@
+import { logActions } from './loggingService.js';
+import { eventBus } from './eventBus.js';
+
+// IP blocking system
+const blockedIPs = new Set();
+const ipAttempts = new Map(); // Track failed attempts per IP
+const suspiciousIPs = new Set(); // Track suspicious IPs
+
+// Security detection patterns
+const SECURITY_PATTERNS = {
+  // SQL Injection patterns
+  SQL_INJECTION: [
+    /union\s+select/i,
+    /select\s+.*\s+from/i,
+    /drop\s+table/i,
+    /insert\s+into/i,
+    /update\s+.*\s+set/i,
+    /delete\s+from/i,
+    /or\s+1\s*=\s*1/i,
+    /'\s*or\s*'.*'\s*=\s*'/i,
+    /--\s*$/i,
+    /\/\*.*\*\//i,
+    /xp_cmdshell/i,
+    /sp_executesql/i
+  ],
+
+  // XSS patterns
+  XSS: [
+    /<script[^>]*>.*?<\/script>/gi,
+    /javascript:/gi,
+    /on\w+\s*=/gi,
+    /<iframe[^>]*>.*?<\/iframe>/gi,
+    /<object[^>]*>.*?<\/object>/gi,
+    /<embed[^>]*>.*?<\/embed>/gi,
+    /<link[^>]*>.*?<\/link>/gi,
+    /<meta[^>]*>.*?<\/meta>/gi,
+    /<style[^>]*>.*?<\/style>/gi,
+    /expression\s*\(/gi,
+    /url\s*\(/gi,
+    /@import/gi
+  ],
+
+  // CSRF patterns
+  CSRF: [
+    /<form[^>]*action[^>]*>/gi,
+    /<img[^>]*src[^>]*>/gi,
+    /<iframe[^>]*src[^>]*>/gi
+  ],
+
+  // Suspicious activity patterns
+  SUSPICIOUS: [
+    /admin/i,
+    /administrator/i,
+    /root/i,
+    /test/i,
+    /debug/i,
+    /config/i,
+    /backup/i,
+    /\.\.\//gi, // Directory traversal
+    /\.\.\\/gi, // Windows directory traversal
+    /passwd/i,
+    /shadow/i,
+    /etc\/passwd/i
+  ]
+};
+
+// Configuration
+const SECURITY_CONFIG = {
+  BRUTE_FORCE_THRESHOLD: 5, // Failed attempts before brute force detection
+  BRUTE_FORCE_WINDOW: 15 * 60 * 1000, // 15 minutes in milliseconds
+  SUSPICIOUS_THRESHOLD: 3, // Failed attempts before suspicious activity
+  SUSPICIOUS_WINDOW: 5 * 60 * 1000, // 5 minutes in milliseconds
+  IP_BLOCK_DURATION: 60 * 60 * 1000, // 1 hour in milliseconds
+  MAX_ATTEMPTS_PER_IP: 20 // Max attempts per IP before blocking
+};
+
+// Helper function to get real IP address
+export function getRealIP(req) {
+  let ip = req.headers['x-forwarded-for'] || 
+           req.headers['x-real-ip'] || 
+           req.connection.remoteAddress || 
+           req.socket.remoteAddress ||
+           (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+           req.ip ||
+           '0.0.0.0';
+  
+  // Handle IPv6 localhost
+  if (ip === '::1' || ip === '::ffff:127.0.0.1') {
+    ip = '127.0.0.1';
+  }
+  
+  // Handle comma-separated IPs
+  if (ip.includes(',')) {
+    ip = ip.split(',')[0].trim();
+  }
+  
+  return ip;
+}
+
+// Check if IP is blocked
+export function isIPBlocked(ip) {
+  return blockedIPs.has(ip);
+}
+
+// Block an IP address
+export function blockIP(ip, reason = 'security_violation') {
+  blockedIPs.add(ip);
+  
+  // Log IP blocking event
+  logActions.securityEvent(null, 'detected', { 
+    get: () => null, 
+    headers: { 'x-forwarded-for': ip } 
+  }, {
+    eventType: 'ip_blocked',
+    severity: 'high',
+    source: ip,
+    description: `IP address blocked: ${reason}`,
+    blockedAt: new Date().toISOString()
+  });
+
+  // Emit IP blocked event
+  eventBus.emit('ip.blocked', {
+    ip,
+    reason,
+    timestamp: new Date()
+  });
+
+  console.log(`🚫 IP ${ip} has been blocked: ${reason}`);
+}
+
+// Unblock an IP address
+export function unblockIP(ip, reason = 'manual_unblock') {
+  blockedIPs.delete(ip);
+  
+  // Log IP unblocking event
+  logActions.securityEvent(null, 'detected', { 
+    get: () => null, 
+    headers: { 'x-forwarded-for': ip } 
+  }, {
+    eventType: 'ip_unblocked',
+    severity: 'low',
+    source: ip,
+    description: `IP address unblocked: ${reason}`,
+    unblockedAt: new Date().toISOString()
+  });
+
+  // Emit IP unblocked event
+  eventBus.emit('ip.unblocked', {
+    ip,
+    reason,
+    timestamp: new Date()
+  });
+
+  console.log(`✅ IP ${ip} has been unblocked: ${reason}`);
+}
+
+// Get list of blocked IPs
+export function getBlockedIPs() {
+  return Array.from(blockedIPs);
+}
+
+// Check for SQL injection attempts
+export function detectSQLInjection(input, req) {
+  if (!input || typeof input !== 'string') return false;
+
+  const hasSQLInjection = SECURITY_PATTERNS.SQL_INJECTION.some(pattern => 
+    pattern.test(input)
+  );
+
+  if (hasSQLInjection) {
+    const ip = getRealIP(req);
+    
+    logActions.securityEvent(null, 'detected', req, {
+      eventType: 'sql_injection_attempt',
+      severity: 'high',
+      source: ip,
+      target: 'database',
+      description: 'SQL injection attempt detected',
+      maliciousInput: input.substring(0, 100), // Log first 100 chars
+      detectedAt: new Date().toISOString()
+    });
+
+    // Add to suspicious IPs
+    suspiciousIPs.add(ip);
+    
+    // Emit security event
+    eventBus.emit('security.sql_injection', {
+      ip,
+      input: input.substring(0, 100),
+      timestamp: new Date()
+    });
+
+    console.log(`🚨 SQL Injection attempt detected from ${ip}`);
+    return true;
+  }
+
+  return false;
+}
+
+// Check for XSS attempts
+export function detectXSS(input, req) {
+  if (!input || typeof input !== 'string') return false;
+
+  const hasXSS = SECURITY_PATTERNS.XSS.some(pattern => 
+    pattern.test(input)
+  );
+
+  if (hasXSS) {
+    const ip = getRealIP(req);
+    
+    logActions.securityEvent(null, 'detected', req, {
+      eventType: 'xss_attempt',
+      severity: 'high',
+      source: ip,
+      target: 'frontend',
+      description: 'XSS attack attempt detected',
+      maliciousInput: input.substring(0, 100),
+      detectedAt: new Date().toISOString()
+    });
+
+    // Add to suspicious IPs
+    suspiciousIPs.add(ip);
+    
+    // Emit security event
+    eventBus.emit('security.xss', {
+      ip,
+      input: input.substring(0, 100),
+      timestamp: new Date()
+    });
+
+    console.log(`🚨 XSS attempt detected from ${ip}`);
+    return true;
+  }
+
+  return false;
+}
+
+// Check for CSRF attempts
+export function detectCSRF(req) {
+  const csrfToken = req.headers['x-csrf-token'] || req.body._csrf;
+  const referer = req.headers.referer;
+  const origin = req.headers.origin;
+
+  // Basic CSRF validation
+  const isValidCSRF = csrfToken && 
+    (referer && referer.includes('localhost:3000')) ||
+    (origin && origin.includes('localhost:3000'));
+
+  if (!isValidCSRF && req.method !== 'GET') {
+    const ip = getRealIP(req);
+    
+    logActions.securityEvent(null, 'detected', req, {
+      eventType: 'csrf_attempt',
+      severity: 'medium',
+      source: ip,
+      target: 'api',
+      description: 'CSRF token validation failed',
+      referer,
+      origin,
+      detectedAt: new Date().toISOString()
+    });
+
+    // Add to suspicious IPs
+    suspiciousIPs.add(ip);
+    
+    // Emit security event
+    eventBus.emit('security.csrf', {
+      ip,
+      referer,
+      origin,
+      timestamp: new Date()
+    });
+
+    console.log(`🚨 CSRF attempt detected from ${ip}`);
+    return true;
+  }
+
+  return false;
+}
+
+// Track failed login attempts for brute force detection
+export function trackFailedLogin(ip, username, req) {
+  const now = Date.now();
+  const key = `${ip}:${username}`;
+  
+  if (!ipAttempts.has(key)) {
+    ipAttempts.set(key, []);
+  }
+  
+  const attempts = ipAttempts.get(key);
+  attempts.push(now);
+  
+  // Clean old attempts outside the window
+  const recentAttempts = attempts.filter(time => 
+    now - time < SECURITY_CONFIG.BRUTE_FORCE_WINDOW
+  );
+  ipAttempts.set(key, recentAttempts);
+  
+  // Check for brute force
+  if (recentAttempts.length >= SECURITY_CONFIG.BRUTE_FORCE_THRESHOLD) {
+    logActions.securityEvent(null, 'detected', req, {
+      eventType: 'brute_force_detected',
+      severity: 'high',
+      source: ip,
+      target: username,
+      description: 'Brute force attack detected',
+      attemptCount: recentAttempts.length,
+      timeWindow: `${SECURITY_CONFIG.BRUTE_FORCE_WINDOW / 60000} minutes`,
+      detectedAt: new Date().toISOString()
+    });
+
+    // Block IP for brute force
+    blockIP(ip, 'brute_force_attack');
+    
+    // Emit security event
+    eventBus.emit('security.brute_force', {
+      ip,
+      username,
+      attemptCount: recentAttempts.length,
+      timestamp: new Date()
+    });
+
+    console.log(`🚨 Brute force attack detected from ${ip} targeting ${username}`);
+    return true;
+  }
+  
+  // Check for suspicious activity
+  if (recentAttempts.length >= SECURITY_CONFIG.SUSPICIOUS_THRESHOLD) {
+    logActions.securityEvent(null, 'detected', req, {
+      eventType: 'suspicious_activity',
+      severity: 'medium',
+      source: ip,
+      target: username,
+      description: 'Suspicious login activity detected',
+      attemptCount: recentAttempts.length,
+      timeWindow: `${SECURITY_CONFIG.SUSPICIOUS_WINDOW / 60000} minutes`,
+      detectedAt: new Date().toISOString()
+    });
+
+    // Add to suspicious IPs
+    suspiciousIPs.add(ip);
+    
+    // Emit security event
+    eventBus.emit('security.suspicious', {
+      ip,
+      username,
+      attemptCount: recentAttempts.length,
+      timestamp: new Date()
+    });
+
+    console.log(`⚠️ Suspicious activity detected from ${ip} targeting ${username}`);
+    return true;
+  }
+
+  return false;
+}
+
+// Check for suspicious patterns in input
+export function detectSuspiciousActivity(input, req) {
+  if (!input || typeof input !== 'string') return false;
+
+  const hasSuspiciousPattern = SECURITY_PATTERNS.SUSPICIOUS.some(pattern => 
+    pattern.test(input)
+  );
+
+  if (hasSuspiciousPattern) {
+    const ip = getRealIP(req);
+    
+    logActions.securityEvent(null, 'detected', req, {
+      eventType: 'suspicious_activity',
+      severity: 'medium',
+      source: ip,
+      description: 'Suspicious activity pattern detected',
+      suspiciousInput: input.substring(0, 100),
+      detectedAt: new Date().toISOString()
+    });
+
+    // Add to suspicious IPs
+    suspiciousIPs.add(ip);
+    
+    // Emit security event
+    eventBus.emit('security.suspicious_activity', {
+      ip,
+      input: input.substring(0, 100),
+      timestamp: new Date()
+    });
+
+    console.log(`⚠️ Suspicious activity detected from ${ip}`);
+    return true;
+  }
+
+  return false;
+}
+
+// Comprehensive security check for all inputs
+export function performSecurityCheck(req, res, next) {
+  const ip = getRealIP(req);
+  
+  // Check if IP is blocked
+  if (isIPBlocked(ip)) {
+    return res.status(403).json({
+      message: 'Access denied: IP address is blocked',
+      code: 'IP_BLOCKED'
+    });
+  }
+
+  // Check request body for malicious patterns
+  if (req.body) {
+    const bodyString = JSON.stringify(req.body);
+    
+    // Check for SQL injection
+    if (detectSQLInjection(bodyString, req)) {
+      return res.status(400).json({
+        message: 'Invalid request: Malicious input detected',
+        code: 'SQL_INJECTION_DETECTED'
+      });
+    }
+    
+    // Check for XSS
+    if (detectXSS(bodyString, req)) {
+      return res.status(400).json({
+        message: 'Invalid request: Malicious input detected',
+        code: 'XSS_DETECTED'
+      });
+    }
+    
+    // Check for suspicious activity
+    if (detectSuspiciousActivity(bodyString, req)) {
+      return res.status(400).json({
+        message: 'Invalid request: Suspicious activity detected',
+        code: 'SUSPICIOUS_ACTIVITY_DETECTED'
+      });
+    }
+  }
+
+  // Check for CSRF
+  if (detectCSRF(req)) {
+    return res.status(403).json({
+      message: 'Access denied: CSRF token validation failed',
+      code: 'CSRF_DETECTED'
+    });
+  }
+
+  next();
+}
+
+// Get security statistics
+export function getSecurityStats() {
+  return {
+    blockedIPs: blockedIPs.size,
+    suspiciousIPs: suspiciousIPs.size,
+    totalAttempts: Array.from(ipAttempts.values()).reduce((sum, attempts) => sum + attempts.length, 0),
+    activeThreats: suspiciousIPs.size + blockedIPs.size
+  };
+}
+
+// Cleanup old attempt data
+export function cleanupOldAttempts() {
+  const now = Date.now();
+  const cutoff = now - SECURITY_CONFIG.BRUTE_FORCE_WINDOW;
+  
+  for (const [key, attempts] of ipAttempts.entries()) {
+    const recentAttempts = attempts.filter(time => time > cutoff);
+    if (recentAttempts.length === 0) {
+      ipAttempts.delete(key);
+    } else {
+      ipAttempts.set(key, recentAttempts);
+    }
+  }
+  
+  console.log(`🧹 Cleaned up old security attempt data`);
+}
+
+// Start periodic cleanup
+export function startSecurityCleanup() {
+  setInterval(cleanupOldAttempts, 5 * 60 * 1000); // Every 5 minutes
+  console.log('🛡️ Security cleanup service started');
+}
