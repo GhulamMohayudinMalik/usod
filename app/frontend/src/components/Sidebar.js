@@ -83,6 +83,12 @@ const BackupIcon = () => (
   </svg>
 );
 
+const SecurityIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+    <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+  </svg>
+);
+
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
   { name: 'Threat Analysis', href: '/dashboard/threats', icon: ThreatIcon },
@@ -90,6 +96,7 @@ const navigation = [
   { name: 'Analytics', href: '/dashboard/analytics', icon: AnalyticsIcon },
   { name: 'AI Insights', href: '/dashboard/ai-insights', icon: AiInsightsIcon },
   { name: 'User Management', href: '/dashboard/users', icon: UsersIcon },
+  { name: 'Security Management', href: '/dashboard/security', icon: SecurityIcon },
   { name: 'Backup Management', href: '/dashboard/backup', icon: BackupIcon },
   { name: 'Change Password', href: '/dashboard/change-password', icon: KeyIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
