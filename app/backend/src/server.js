@@ -9,6 +9,7 @@ import logRoutes from './routes/logRoutes.js';
 import ingestRoutes from './routes/ingestRoutes.js';
 import streamRoutes from './routes/streamRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import userManagementRoutes from './routes/userManagementRoutes.js';
 
 // Load env
 dotenv.config();
@@ -34,6 +35,7 @@ app.use('/api/data', dataRoutes);
 app.use('/api/logs', logRoutes);
 app.use('/api/ingest', ingestRoutes);
 app.use('/api/stream', streamRoutes);
+app.use('/api/users', userManagementRoutes);
 
 app.get('/', (req, res) => {
   const html = `

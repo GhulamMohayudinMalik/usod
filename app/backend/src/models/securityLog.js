@@ -27,4 +27,4 @@ SecurityLogSchema.index({ action: 1 });
 SecurityLogSchema.index({ status: 1 });
 SecurityLogSchema.index({ timestamp: -1 });
 
-export const SecurityLog = mongoose.model('SecurityLog', SecurityLogSchema);
+export const SecurityLog = mongoose.models.SecurityLog || mongoose.model('SecurityLog', SecurityLogSchema);
