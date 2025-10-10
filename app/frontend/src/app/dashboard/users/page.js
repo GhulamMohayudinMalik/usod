@@ -7,6 +7,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createForm, setCreateForm] = useState({
     username: '',
@@ -14,6 +15,11 @@ export default function UsersPage() {
     password: '',
     role: 'user'
   });
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [newRole, setNewRole] = useState('');
+  const [deleteReason, setDeleteReason] = useState('');
 
   // Fetch users
   const fetchUsers = async () => {
@@ -45,6 +51,7 @@ export default function UsersPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccessMessage('');
 
     try {
       const token = localStorage.getItem('token');
@@ -64,6 +71,7 @@ export default function UsersPage() {
         setCreateForm({ username: '', email: '', password: '', role: 'user' });
         setShowCreateForm(false);
         setError('');
+        setSuccessMessage('User created successfully!');
       } else {
         setError(data.message || 'Failed to create user');
       }
@@ -73,6 +81,102 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Delete user
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    
+    setLoading(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/users/users/${selectedUser._id || selectedUser.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason: deleteReason || 'manual_deletion' })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setUsers(users.filter(user => (user._id || user.id) !== (selectedUser._id || selectedUser.id)));
+        setShowDeleteModal(false);
+        setSelectedUser(null);
+        setDeleteReason('');
+        setSuccessMessage('User deleted successfully!');
+      } else {
+        setError(data.message || 'Failed to delete user');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+      console.error('Error deleting user:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Change user role
+  const handleChangeRole = async () => {
+    if (!selectedUser || !newRole) return;
+    
+    setLoading(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/users/users/${selectedUser._id || selectedUser.id}/role`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          newRole, 
+          reason: 'manual_change' 
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setUsers(users.map(user => 
+          (user._id || user.id) === (selectedUser._id || selectedUser.id)
+            ? { ...user, role: newRole }
+            : user
+        ));
+        setShowRoleModal(false);
+        setSelectedUser(null);
+        setNewRole('');
+        setSuccessMessage(`User role changed to ${newRole} successfully!`);
+      } else {
+        setError(data.message || 'Failed to change user role');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+      console.error('Error changing user role:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Open delete modal
+  const openDeleteModal = (user) => {
+    setSelectedUser(user);
+    setShowDeleteModal(true);
+  };
+
+  // Open role change modal
+  const openRoleModal = (user) => {
+    setSelectedUser(user);
+    setNewRole(user.role);
+    setShowRoleModal(true);
   };
 
   useEffect(() => {
@@ -182,7 +286,13 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Error Message */}
+      {/* Success/Error Messages */}
+      {successMessage && (
+        <div className="bg-green-900/30 border border-green-700/50 rounded-lg p-4 text-green-300">
+          {successMessage}
+        </div>
+      )}
+      
       {error && (
         <div className="bg-red-900/30 border border-red-700/50 rounded-lg p-4 text-red-300">
           {error}
@@ -218,6 +328,9 @@ export default function UsersPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                   Created
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700/50">
@@ -249,12 +362,118 @@ export default function UsersPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => openRoleModal(user)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                        title="Change Role"
+                      >
+                        Role
+                      </button>
+                      <button
+                        onClick={() => openDeleteModal(user)}
+                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                        title="Delete User"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Delete User Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-800/90 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-white mb-4">Delete User</h3>
+            <p className="text-gray-300 mb-4">
+              Are you sure you want to delete user <strong>{selectedUser?.username}</strong>? 
+              This action cannot be undone.
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Reason for deletion (optional)
+              </label>
+              <input
+                type="text"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                placeholder="Enter reason for deletion"
+              />
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setSelectedUser(null);
+                  setDeleteReason('');
+                }}
+                className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteUser}
+                disabled={loading}
+                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-all"
+              >
+                {loading ? 'Deleting...' : 'Delete User'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Role Modal */}
+      {showRoleModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-800/90 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50 max-w-md w-full mx-4">
+            <h3 className="text-xl font-semibold text-white mb-4">Change User Role</h3>
+            <p className="text-gray-300 mb-4">
+              Change role for user <strong>{selectedUser?.username}</strong>
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                New Role
+              </label>
+              <select
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowRoleModal(false);
+                  setSelectedUser(null);
+                  setNewRole('');
+                }}
+                className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChangeRole}
+                disabled={loading || newRole === selectedUser?.role}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all"
+              >
+                {loading ? 'Changing...' : 'Change Role'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

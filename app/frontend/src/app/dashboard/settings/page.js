@@ -100,12 +100,46 @@ export default function SettingsPage() {
     setSuccessMessage(null);
 
     try {
-      // In a real app, you'd send this to the backend
-      // For now, we'll just simulate success
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const token = localStorage.getItem('token');
+      
+      // Log each setting change
+      const settingsToUpdate = [
+        {
+          settingType: 'security',
+          settingName: 'session_timeout',
+          newValue: securitySettings.sessionTimeout.toString()
+        },
+        {
+          settingType: 'security', 
+          settingName: 'max_login_attempts',
+          newValue: securitySettings.loginAttempts.toString()
+        },
+        {
+          settingType: 'security',
+          settingName: 'password_expiry_days',
+          newValue: securitySettings.passwordExpiry.toString()
+        }
+      ];
+
+      // Send each setting change to backend for logging
+      for (const setting of settingsToUpdate) {
+        await fetch('http://localhost:5000/api/users/settings', {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            ...setting,
+            changeScope: 'user'
+          })
+        });
+      }
+
       setSuccessMessage('Security settings updated successfully!');
     } catch (err) {
       setError('Failed to update security settings');
+      console.error('Error updating security settings:', err);
     } finally {
       setLoading(false);
     }
@@ -117,11 +151,51 @@ export default function SettingsPage() {
     setSuccessMessage(null);
 
     try {
-      // In a real app, you'd send this to the backend
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const token = localStorage.getItem('token');
+      
+      // Log each notification setting change
+      const settingsToUpdate = [
+        {
+          settingType: 'notifications',
+          settingName: 'login_alerts',
+          newValue: notificationSettings.loginAlerts.toString()
+        },
+        {
+          settingType: 'notifications',
+          settingName: 'security_events',
+          newValue: notificationSettings.securityEvents.toString()
+        },
+        {
+          settingType: 'notifications',
+          settingName: 'system_errors',
+          newValue: notificationSettings.systemErrors.toString()
+        },
+        {
+          settingType: 'notifications',
+          settingName: 'email_notifications',
+          newValue: notificationSettings.emailNotifications.toString()
+        }
+      ];
+
+      // Send each setting change to backend for logging
+      for (const setting of settingsToUpdate) {
+        await fetch('http://localhost:5000/api/users/settings', {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            ...setting,
+            changeScope: 'user'
+          })
+        });
+      }
+
       setSuccessMessage('Notification settings updated successfully!');
     } catch (err) {
       setError('Failed to update notification settings');
+      console.error('Error updating notification settings:', err);
     } finally {
       setLoading(false);
     }

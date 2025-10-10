@@ -10,6 +10,8 @@ import ingestRoutes from './routes/ingestRoutes.js';
 import streamRoutes from './routes/streamRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import userManagementRoutes from './routes/userManagementRoutes.js';
+import backupRoutes from './routes/backupRoutes.js';
+import { startSessionCleanup } from './services/sessionService.js';
 
 // Load env
 dotenv.config();
@@ -36,6 +38,7 @@ app.use('/api/logs', logRoutes);
 app.use('/api/ingest', ingestRoutes);
 app.use('/api/stream', streamRoutes);
 app.use('/api/users', userManagementRoutes);
+app.use('/api/backup', backupRoutes);
 
 app.get('/', (req, res) => {
   const html = `
@@ -188,6 +191,8 @@ const startServer = async () => {
     app.listen(port, () => {
       console.log(`Server is running on port ${port}`);
       console.log(`CORS enabled for: ${corsOptions.origin}`);
+      // Start session cleanup service
+      startSessionCleanup();
       // Live generator disabled to use real logs
     });
   } catch (error) {

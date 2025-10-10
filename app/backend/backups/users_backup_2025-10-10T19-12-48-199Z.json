@@ -1,0 +1,84 @@
+{
+  "type": "users",
+  "createdAt": "2025-10-10T19:12:48.199Z",
+  "recordCount": 7,
+  "data": [
+    {
+      "_id": "68e95ab0bcad2e2e3a148bd0",
+      "username": "delete_test",
+      "email": "delete@test.com",
+      "role": "user",
+      "isActive": true,
+      "isLocked": false,
+      "lastLogin": null,
+      "createdAt": "2025-10-10T19:12:48.121Z",
+      "updatedAt": "2025-10-10T19:12:48.121Z"
+    },
+    {
+      "_id": "68e95ab0bcad2e2e3a148bcb",
+      "username": "user_test",
+      "email": "user@test.com",
+      "role": "user",
+      "isActive": true,
+      "isLocked": false,
+      "lastLogin": null,
+      "createdAt": "2025-10-10T19:12:48.096Z",
+      "updatedAt": "2025-10-10T19:12:48.096Z"
+    },
+    {
+      "_id": "68e95ab0bcad2e2e3a148bc3",
+      "username": "admin_test",
+      "email": "admin@test.com",
+      "role": "admin",
+      "isActive": true,
+      "isLocked": false,
+      "lastLogin": null,
+      "createdAt": "2025-10-10T19:12:48.063Z",
+      "updatedAt": "2025-10-10T19:12:48.063Z"
+    },
+    {
+      "_id": "68e9300f22ca3413eda5eb51",
+      "username": "Moin",
+      "email": "moin@example.com",
+      "role": "user",
+      "isActive": true,
+      "isLocked": false,
+      "lastLogin": "2025-10-10T16:11:05.338Z",
+      "createdAt": "2025-10-10T16:10:55.436Z",
+      "updatedAt": "2025-10-10T16:11:05.339Z"
+    },
+    {
+      "_id": "68e7bf447650209ee8e676e8",
+      "username": "Zuhaib",
+      "email": "zuhaib@example.com",
+      "role": "user",
+      "isActive": true,
+      "isLocked": false,
+      "lastLogin": "2025-10-10T14:37:16.485Z",
+      "createdAt": "2025-10-09T13:57:24.040Z",
+      "updatedAt": "2025-10-10T14:37:16.492Z"
+    },
+    {
+      "_id": "68e7bf437650209ee8e676e6",
+      "username": "Ali",
+      "email": "alisami@usod.com",
+      "role": "admin",
+      "isActive": true,
+      "isLocked": true,
+      "lastLogin": "2025-10-10T18:59:05.533Z",
+      "createdAt": "2025-10-09T13:57:23.619Z",
+      "updatedAt": "2025-10-10T19:06:09.821Z"
+    },
+    {
+      "_id": "68e7bf437650209ee8e676e4",
+      "username": "GhulamMohayudin",
+      "email": "ghulammohayudin@usod.com",
+      "role": "admin",
+      "isActive": true,
+      "isLocked": false,
+      "lastLogin": "2025-10-10T19:06:19.923Z",
+      "createdAt": "2025-10-09T13:57:23.189Z",
+      "updatedAt": "2025-10-10T19:06:19.927Z"
+    }
+  ]
+}

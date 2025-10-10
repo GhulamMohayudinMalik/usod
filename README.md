@@ -10,13 +10,17 @@ Complete the intital 7 logs ingestion
 
 ## Features
 
-- 🔐 **User Authentication** - JWT-based login system with role-based access
+- 🔐 **User Authentication** - JWT-based login system with role-based access and session management
 - 📊 **Real-time Dashboard** - Live security metrics and statistics
 - 🚨 **Threat Monitoring** - Security event detection and analysis
-- 📝 **Log Management** - Comprehensive logging system for various security events
+- 📝 **Comprehensive Logging** - 18 different types of security events with detailed tracking
 - 🔍 **Analytics** - Security insights and trend analysis
 - 🤖 **AI Insights** - Intelligent security recommendations
-- ⚙️ **Settings** - User profile and system configuration
+- 👥 **User Management** - Create, delete, and manage user roles with full audit trails
+- 💾 **Backup Management** - Create, restore, and manage system backups
+- ⚙️ **Settings Management** - User profile and system configuration with change tracking
+- 🔒 **Session Management** - Advanced session tracking with automatic expiration and refresh
+- 🚫 **Account Security** - Account locking, unlock functionality, and failed login tracking
 
 ## Tech Stack
 
@@ -152,19 +156,39 @@ curl -X POST http://localhost:5000/api/ingest/log -H "Content-Type: application/
 
 ## Comprehensive Logging System
 
-The USOD system implements a comprehensive logging system that captures **7 different types of security events** with detailed information for each event type.
+The USOD system implements a comprehensive logging system that captures **18 different types of security events** with detailed information for each event type.
 
 ### Log Types Overview
 
+#### Authentication & Session Management
 | Log Type | Description | Status Values | Use Cases |
 |----------|-------------|---------------|-----------|
 | **login** | User authentication events | `success`, `failure` | Track login attempts, failed logins, brute force detection |
 | **logout** | User session termination | `success` | Monitor user logout activities, session management |
+| **session_created** | New session establishment | `success` | Track when user sessions are established |
+| **session_expired** | Session timeout events | `success` | Monitor session timeout events |
+| **token_refresh** | JWT/token refresh activities | `success`, `failure` | Track token refresh activities |
+| **account_locked** | Account lockout events | `detected` | Log when accounts are locked due to failed attempts |
+| **account_unlocked** | Account unlock events | `success` | Track account unlock events |
+
+#### User & Profile Management
+| Log Type | Description | Status Values | Use Cases |
+|----------|-------------|---------------|-----------|
 | **password_change** | Password modification events | `success`, `failure` | Track password changes, security policy compliance |
 | **profile_update** | User profile modifications | `success`, `failure` | Monitor profile changes, data integrity |
+| **user_created** | New user creation | `success`, `failure` | Log new user creation events |
+| **user_deleted** | User deletion events | `success`, `failure` | Track user deletion activities |
+| **role_changed** | Role/permission changes | `success`, `failure` | Monitor role and permission changes |
+
+#### System & Security Events
+| Log Type | Description | Status Values | Use Cases |
+|----------|-------------|---------------|-----------|
 | **access_denied** | Authorization failures | `failure` | Track permission violations, unauthorized access attempts |
 | **system_error** | Application/system errors | `failure` | Monitor system health, error tracking |
 | **security_event** | Security incidents | `detected` | Track security threats, malware, intrusions |
+| **settings_changed** | Settings modifications | `success`, `failure` | Track system/user settings changes |
+| **backup_created** | Backup operations | `success`, `failure` | Log backup creation activities |
+| **backup_restored** | Restore operations | `success`, `failure` | Track backup restore activities |
 
 ### Log Data Structure
 
@@ -263,15 +287,80 @@ Each log entry contains the following information:
 - `description`: Detailed event description
 - `resolved`: Boolean indicating if event was resolved
 
+### Authentication & Session Management Endpoints
+
+#### Login User
+```bash
+# PowerShell
+Invoke-RestMethod -Uri "http://localhost:5000/api/auth/login" -Method POST -ContentType "application/json" -Body '{"username":"GhulamMohayudin","password":"gm123"}'
+
+# cURL
+curl -X POST http://localhost:5000/api/auth/login -H "Content-Type: application/json" -d '{"username":"GhulamMohayudin","password":"gm123"}'
+```
+
+#### Logout User
+```bash
+# PowerShell
+Invoke-RestMethod -Uri "http://localhost:5000/api/auth/logout" -Method POST -ContentType "application/json" -Headers @{"Authorization"="Bearer YOUR_JWT_TOKEN"}
+
+# cURL
+curl -X POST http://localhost:5000/api/auth/logout -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+#### Refresh Token
+```bash
+# PowerShell
+Invoke-RestMethod -Uri "http://localhost:5000/api/auth/refresh" -Method POST -ContentType "application/json" -Headers @{"Authorization"="Bearer YOUR_JWT_TOKEN"}
+
+# cURL
+curl -X POST http://localhost:5000/api/auth/refresh -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+#### Check Session Status
+```bash
+# PowerShell
+Invoke-RestMethod -Uri "http://localhost:5000/api/auth/session-status" -Method GET -Headers @{"Authorization"="Bearer YOUR_JWT_TOKEN"}
+
+# cURL
+curl -X GET http://localhost:5000/api/auth/session-status -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+#### Unlock Account (Admin Only)
+```bash
+# PowerShell
+Invoke-RestMethod -Uri "http://localhost:5000/api/auth/unlock-account" -Method POST -ContentType "application/json" -Headers @{"Authorization"="Bearer YOUR_JWT_TOKEN"} -Body '{"userId":"USER_ID","unlockedBy":"admin"}'
+
+# cURL
+curl -X POST http://localhost:5000/api/auth/unlock-account -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN" -d '{"userId":"USER_ID","unlockedBy":"admin"}'
+```
+
 ### User Management Endpoints
 
-#### Create User
+#### Create User (Admin Only)
 ```bash
 # PowerShell
 Invoke-RestMethod -Uri "http://localhost:5000/api/users/create" -Method POST -ContentType "application/json" -Headers @{"Authorization"="Bearer YOUR_JWT_TOKEN"} -Body '{"username":"newuser","email":"user@example.com","password":"password123","role":"user"}'
 
 # cURL
 curl -X POST http://localhost:5000/api/users/create -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN" -d '{"username":"newuser","email":"user@example.com","password":"password123","role":"user"}'
+```
+
+#### Delete User (Admin Only)
+```bash
+# PowerShell
+Invoke-RestMethod -Uri "http://localhost:5000/api/users/users/USER_ID" -Method DELETE -ContentType "application/json" -Headers @{"Authorization"="Bearer YOUR_JWT_TOKEN"} -Body '{"reason":"manual_deletion"}'
+
+# cURL
+curl -X DELETE http://localhost:5000/api/users/users/USER_ID -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN" -d '{"reason":"manual_deletion"}'
+```
+
+#### Change User Role (Admin Only)
+```bash
+# PowerShell
+Invoke-RestMethod -Uri "http://localhost:5000/api/users/users/USER_ID/role" -Method PUT -ContentType "application/json" -Headers @{"Authorization"="Bearer YOUR_JWT_TOKEN"} -Body '{"newRole":"admin","reason":"promotion"}'
+
+# cURL
+curl -X PUT http://localhost:5000/api/users/users/USER_ID/role -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN" -d '{"newRole":"admin","reason":"promotion"}'
 ```
 
 #### Change Password
@@ -292,6 +381,15 @@ Invoke-RestMethod -Uri "http://localhost:5000/api/users/profile" -Method PUT -Co
 curl -X PUT http://localhost:5000/api/users/profile -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN" -d '{"email":"newemail@example.com","username":"newusername"}'
 ```
 
+#### Update Settings
+```bash
+# PowerShell
+Invoke-RestMethod -Uri "http://localhost:5000/api/users/settings" -Method PUT -ContentType "application/json" -Headers @{"Authorization"="Bearer YOUR_JWT_TOKEN"} -Body '{"settingType":"security","settingName":"session_timeout","newValue":"12","changeScope":"user"}'
+
+# cURL
+curl -X PUT http://localhost:5000/api/users/settings -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN" -d '{"settingType":"security","settingName":"session_timeout","newValue":"12","changeScope":"user"}'
+```
+
 #### Get All Users (Admin Only)
 ```bash
 # PowerShell
@@ -301,19 +399,121 @@ Invoke-RestMethod -Uri "http://localhost:5000/api/users/users" -Method GET -Head
 curl -X GET http://localhost:5000/api/users/users -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
+### Backup Management Endpoints
+
+#### Create Security Logs Backup (Admin Only)
+```bash
+# PowerShell
+Invoke-RestMethod -Uri "http://localhost:5000/api/backup/security-logs" -Method POST -ContentType "application/json" -Headers @{"Authorization"="Bearer YOUR_JWT_TOKEN"} -Body '{"reason":"manual"}'
+
+# cURL
+curl -X POST http://localhost:5000/api/backup/security-logs -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN" -d '{"reason":"manual"}'
+```
+
+#### Create Users Backup (Admin Only)
+```bash
+# PowerShell
+Invoke-RestMethod -Uri "http://localhost:5000/api/backup/users" -Method POST -ContentType "application/json" -Headers @{"Authorization"="Bearer YOUR_JWT_TOKEN"} -Body '{"reason":"manual"}'
+
+# cURL
+curl -X POST http://localhost:5000/api/backup/users -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN" -d '{"reason":"manual"}'
+```
+
+#### Create Full System Backup (Admin Only)
+```bash
+# PowerShell
+Invoke-RestMethod -Uri "http://localhost:5000/api/backup/full" -Method POST -ContentType "application/json" -Headers @{"Authorization"="Bearer YOUR_JWT_TOKEN"} -Body '{"reason":"manual"}'
+
+# cURL
+curl -X POST http://localhost:5000/api/backup/full -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN" -d '{"reason":"manual"}'
+```
+
+#### List Available Backups (Admin Only)
+```bash
+# PowerShell
+Invoke-RestMethod -Uri "http://localhost:5000/api/backup/list" -Method GET -Headers @{"Authorization"="Bearer YOUR_JWT_TOKEN"}
+
+# cURL
+curl -X GET http://localhost:5000/api/backup/list -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+#### Restore Backup (Admin Only)
+```bash
+# PowerShell
+Invoke-RestMethod -Uri "http://localhost:5000/api/backup/restore/BACKUP_NAME" -Method POST -ContentType "application/json" -Headers @{"Authorization"="Bearer YOUR_JWT_TOKEN"} -Body '{"reason":"manual_restore","restoreScope":"full"}'
+
+# cURL
+curl -X POST http://localhost:5000/api/backup/restore/BACKUP_NAME -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN" -d '{"reason":"manual_restore","restoreScope":"full"}'
+```
+
+#### Get Backup Statistics (Admin Only)
+```bash
+# PowerShell
+Invoke-RestMethod -Uri "http://localhost:5000/api/backup/stats" -Method GET -Headers @{"Authorization"="Bearer YOUR_JWT_TOKEN"}
+
+# cURL
+curl -X GET http://localhost:5000/api/backup/stats -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+#### Cleanup Old Backups (Admin Only)
+```bash
+# PowerShell
+Invoke-RestMethod -Uri "http://localhost:5000/api/backup/cleanup" -Method POST -Headers @{"Authorization"="Bearer YOUR_JWT_TOKEN"}
+
+# cURL
+curl -X POST http://localhost:5000/api/backup/cleanup -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
 ### Frontend Pages
 
+#### Dashboard (`/dashboard`)
+- Real-time security metrics and statistics
+- Live threat monitoring and alerts
+- System health indicators
+- Quick access to all features
+
 #### User Management (`/dashboard/users`)
-- Create new users (admin only)
-- View all users with roles and status
-- Real-time user creation with validation
-- Role-based access control
+- **Create Users**: Add new users with role assignment (admin only)
+- **Delete Users**: Remove users with reason tracking (admin only)
+- **Change Roles**: Promote/demote users between admin and user roles (admin only)
+- **View All Users**: Complete user list with status and activity information
+- **Real-time Updates**: Live user management with validation and error handling
+
+#### Backup Management (`/dashboard/backup`)
+- **Create Backups**: Full system, security logs, or users-only backups (admin only)
+- **Restore Backups**: Restore from any available backup with scope selection (admin only)
+- **Backup Statistics**: View backup counts, sizes, and retention information
+- **Cleanup Management**: Remove old backups automatically (admin only)
+- **Backup History**: Complete list of all available backups with metadata
+
+#### Settings (`/dashboard/settings`)
+- **Profile Management**: Update username, email, and personal information
+- **Security Settings**: Configure session timeout, login attempts, password expiry
+- **Notification Preferences**: Manage alert settings for different event types
+- **System Information**: View application version, environment, and user statistics
+- **Settings Logging**: All changes are automatically logged for audit purposes
 
 #### Change Password (`/dashboard/change-password`)
 - Secure password change with current password verification
 - Password strength indicator (Weak/Fair/Good/Strong)
 - Password confirmation matching
 - Security tips and best practices
+
+#### Logs Analysis (`/dashboard/logs`)
+- Real-time log streaming with live updates
+- Filter by log type, status, and date range
+- Detailed log information with full context
+- Export capabilities for audit and analysis
+
+#### Analytics (`/dashboard/analytics`)
+- Security insights and trend analysis
+- Visual charts and graphs for data interpretation
+- Historical data analysis and reporting
+
+#### AI Insights (`/dashboard/ai-insights`)
+- Intelligent security recommendations
+- Automated threat detection and analysis
+- Predictive security insights
 
 ### Log Monitoring
 
@@ -354,15 +554,31 @@ curl -X GET "http://localhost:5000/api/data/security-events?count=10"
 
 ## Available Log Types
 
-The system supports the following log types:
+The system supports the following **18 log types**:
 
+### Authentication & Session Management
 1. **login** - User login attempts
 2. **logout** - User logout events
-3. **password_change** - Password change attempts
-4. **profile_update** - User profile modifications
-5. **access_denied** - Unauthorized access attempts
-6. **system_error** - System-level errors
-7. **security_event** - Security threats and incidents
+3. **session_created** - New session establishment
+4. **session_expired** - Session timeout events
+5. **token_refresh** - JWT/token refresh activities
+6. **account_locked** - Account lockout events
+7. **account_unlocked** - Account unlock events
+
+### User & Profile Management
+8. **password_change** - Password change attempts
+9. **profile_update** - User profile modifications
+10. **user_created** - New user creation events
+11. **user_deleted** - User deletion events
+12. **role_changed** - Role and permission changes
+
+### System & Security Events
+13. **access_denied** - Unauthorized access attempts
+14. **system_error** - System-level errors
+15. **security_event** - Security threats and incidents
+16. **settings_changed** - Settings modifications
+17. **backup_created** - Backup creation activities
+18. **backup_restored** - Backup restore activities
 
 ## Project Structure
 

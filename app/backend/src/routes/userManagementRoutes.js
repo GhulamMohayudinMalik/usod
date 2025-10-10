@@ -58,11 +58,12 @@ router.post('/create', authenticateToken, async (req, res) => {
     await user.save();
 
     // Log successful user creation
-    await logActions.profileUpdate(req.user.id, 'success', req, {
-      reason: 'user_created',
+    await logActions.userCreated(req.user.id, 'success', req, {
       targetUserId: user._id,
       targetUsername: username,
-      fieldsChanged: ['username', 'email', 'role']
+      targetEmail: email,
+      targetRole: role,
+      createdBy: req.user.username
     });
 
     res.status(201).json({
@@ -260,6 +261,209 @@ router.get('/users', authenticateToken, async (req, res) => {
     });
     
     res.status(500).json({ message: 'Failed to fetch users' });
+  }
+});
+
+// Delete user endpoint (admin only)
+router.delete('/users/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { reason = 'manual_deletion' } = req.body;
+
+    if (req.user.role !== 'admin') {
+      await logActions.accessDenied(req.user.id, 'failure', req, {
+        resource: `/api/users/${userId}`,
+        requiredRole: 'admin',
+        userRole: req.user.role,
+        reason: 'insufficient_permissions'
+      });
+      
+      return res.status(403).json({ message: 'Only admins can delete users' });
+    }
+
+    // Prevent self-deletion
+    if (userId === req.user.id) {
+      await logActions.userDeleted(req.user.id, 'failure', req, {
+        targetUserId: userId,
+        targetUsername: req.user.username,
+        deletedBy: req.user.username,
+        deletionReason: 'self_deletion_attempt'
+      });
+      
+      return res.status(400).json({ message: 'Cannot delete your own account' });
+    }
+
+    const userToDelete = await User.findById(userId);
+    if (!userToDelete) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Store user info for logging before deletion
+    const userInfo = {
+      targetUserId: userToDelete._id,
+      targetUsername: userToDelete.username,
+      targetEmail: userToDelete.email,
+      targetRole: userToDelete.role
+    };
+
+    await User.findByIdAndDelete(userId);
+
+    // Log successful user deletion
+    await logActions.userDeleted(req.user.id, 'success', req, {
+      ...userInfo,
+      deletedBy: req.user.username,
+      deletionReason: reason
+    });
+
+    res.json({
+      message: 'User deleted successfully',
+      deletedUser: userInfo
+    });
+  } catch (error) {
+    console.error('User deletion error:', error);
+    
+    await logActions.systemError(req.user.id, 'failure', req, {
+      errorCode: 'USER_DELETION_ERROR',
+      component: 'user_management',
+      severity: 'high',
+      errorMessage: error.message
+    });
+    
+    res.status(500).json({ message: 'User deletion failed' });
+  }
+});
+
+// Change user role endpoint (admin only)
+router.put('/users/:userId/role', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { newRole, reason = 'manual_change' } = req.body;
+
+    if (req.user.role !== 'admin') {
+      await logActions.accessDenied(req.user.id, 'failure', req, {
+        resource: `/api/users/${userId}/role`,
+        requiredRole: 'admin',
+        userRole: req.user.role,
+        reason: 'insufficient_permissions'
+      });
+      
+      return res.status(403).json({ message: 'Only admins can change user roles' });
+    }
+
+    if (!newRole || !['admin', 'user'].includes(newRole)) {
+      return res.status(400).json({ message: 'Valid role (admin or user) is required' });
+    }
+
+    const userToUpdate = await User.findById(userId);
+    if (!userToUpdate) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const oldRole = userToUpdate.role;
+
+    // Prevent changing own role
+    if (userId === req.user.id) {
+      await logActions.roleChanged(req.user.id, 'failure', req, {
+        targetUserId: userId,
+        targetUsername: req.user.username,
+        oldRole,
+        newRole,
+        changedBy: req.user.username,
+        changeReason: 'self_role_change_attempt'
+      });
+      
+      return res.status(400).json({ message: 'Cannot change your own role' });
+    }
+
+    // Update user role
+    userToUpdate.role = newRole;
+    await userToUpdate.save();
+
+    // Log successful role change
+    await logActions.roleChanged(req.user.id, 'success', req, {
+      targetUserId: userToUpdate._id,
+      targetUsername: userToUpdate.username,
+      oldRole,
+      newRole,
+      changedBy: req.user.username,
+      changeReason: reason
+    });
+
+    res.json({
+      message: 'User role updated successfully',
+      user: {
+        id: userToUpdate._id,
+        username: userToUpdate.username,
+        email: userToUpdate.email,
+        role: userToUpdate.role
+      },
+      change: {
+        oldRole,
+        newRole,
+        changedBy: req.user.username
+      }
+    });
+  } catch (error) {
+    console.error('Role change error:', error);
+    
+    await logActions.systemError(req.user.id, 'failure', req, {
+      errorCode: 'ROLE_CHANGE_ERROR',
+      component: 'user_management',
+      severity: 'high',
+      errorMessage: error.message
+    });
+    
+    res.status(500).json({ message: 'Role change failed' });
+  }
+});
+
+// Update user settings endpoint
+router.put('/settings', authenticateToken, async (req, res) => {
+  try {
+    const { settingType, settingName, newValue, changeScope = 'user' } = req.body;
+
+    if (!settingType || !settingName || newValue === undefined) {
+      return res.status(400).json({ 
+        message: 'Setting type, name, and new value are required' 
+      });
+    }
+
+    // For now, we'll just log the settings change
+    // In a real application, you'd update actual settings storage
+    const oldValue = 'previous_value'; // This would come from your settings storage
+
+    // Log settings change
+    await logActions.settingsChanged(req.user.id, 'success', req, {
+      settingType,
+      settingName,
+      oldValue,
+      newValue: newValue.toString(),
+      changedBy: req.user.username,
+      changeScope
+    });
+
+    res.json({
+      message: 'Settings updated successfully',
+      setting: {
+        type: settingType,
+        name: settingName,
+        oldValue,
+        newValue,
+        changedBy: req.user.username,
+        changeScope
+      }
+    });
+  } catch (error) {
+    console.error('Settings update error:', error);
+    
+    await logActions.systemError(req.user.id, 'failure', req, {
+      errorCode: 'SETTINGS_UPDATE_ERROR',
+      component: 'settings_management',
+      severity: 'medium',
+      errorMessage: error.message
+    });
+    
+    res.status(500).json({ message: 'Settings update failed' });
   }
 });
 

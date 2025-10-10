@@ -4,6 +4,16 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 import { SecurityLog } from '../models/securityLog.js';
 import { eventBus } from '../services/eventBus.js';
+import { 
+  createSession, 
+  refreshToken, 
+  expireSession, 
+  validateSession,
+  handleFailedLogin,
+  resetFailedLogins,
+  unlockAccount,
+  isAccountLocked
+} from '../services/sessionService.js';
 
 const router = express.Router();
 
@@ -183,14 +193,39 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    // Check if account is locked
+    const isLocked = await isAccountLocked(user._id);
+    if (isLocked) {
+      await logLoginAttempt(user._id, 'failure', req, {
+        reason: 'account_locked',
+        attemptedUsername: username
+      });
+      return res.status(423).json({ 
+        message: 'Account is temporarily locked due to multiple failed login attempts. Please try again later.' 
+      });
+    }
+
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
+      // Handle failed login attempt
+      const lockResult = await handleFailedLogin(user._id, req);
+      
       // Log failed login attempt for wrong password
       await logLoginAttempt(user._id, 'failure', req, {
         reason: 'invalid_password',
-        attemptedUsername: username
+        attemptedUsername: username,
+        attemptsRemaining: lockResult.attemptsRemaining
       });
-      return res.status(401).json({ message: 'Invalid credentials' });
+
+      if (lockResult.shouldLock) {
+        return res.status(423).json({ 
+          message: 'Account has been locked due to multiple failed login attempts. Please try again later.' 
+        });
+      }
+
+      return res.status(401).json({ 
+        message: `Invalid credentials. ${lockResult.attemptsRemaining} attempts remaining.` 
+      });
     }
 
     if (!user.isActive) {
@@ -202,27 +237,29 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Account is deactivated' });
     }
 
+    // Reset failed login attempts on successful login
+    await resetFailedLogins(user._id);
+
     // Update last login
     user.lastLogin = new Date();
     await user.save();
+
+    // Create new session
+    const sessionData = await createSession(user._id, req, 'password');
 
     // Log successful login
     await logLoginAttempt(user._id, 'success', req, {
       reason: 'successful_login',
       loginMethod: 'password',
-      attemptedUsername: username
+      attemptedUsername: username,
+      sessionId: sessionData.sessionId
     });
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id, username: user.username, role: user.role },
-      process.env.JWT_SECRET || 'fallback-secret-key',
-      { expiresIn: '24h' }
-    );
 
     res.json({
       message: 'Login successful',
-      token,
+      token: sessionData.token,
+      sessionId: sessionData.sessionId,
+      expiresAt: sessionData.expiresAt,
       user: {
         id: user._id,
         username: user.username,
@@ -245,10 +282,14 @@ router.post('/logout', async (req, res) => {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
         
+        // Expire the session
+        await expireSession(decoded.userId, decoded.sessionId, req, 'manual_logout');
+        
         // Log logout event
         await logLogoutEvent(decoded.userId, req, {
           reason: 'user_logout',
-          logoutMethod: 'manual'
+          logoutMethod: 'manual',
+          sessionId: decoded.sessionId
         });
       } catch (jwtError) {
         // Token is invalid, but we still want to respond successfully
@@ -303,6 +344,117 @@ router.post('/register', async (req, res) => {
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({ message: 'Registration failed' });
+  }
+});
+
+// Token refresh endpoint
+router.post('/refresh', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ message: 'Token required' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
+    
+    // Validate session
+    const isValidSession = await validateSession(decoded.userId, decoded.sessionId);
+    if (!isValidSession) {
+      return res.status(401).json({ message: 'Invalid or expired session' });
+    }
+
+    // Refresh the token
+    const newSessionData = await refreshToken(decoded.userId, token, req);
+
+    res.json({
+      message: 'Token refreshed successfully',
+      token: newSessionData.token,
+      sessionId: newSessionData.sessionId,
+      expiresAt: newSessionData.expiresAt
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    res.status(401).json({ message: 'Token refresh failed' });
+  }
+});
+
+// Account unlock endpoint (admin only)
+router.post('/unlock-account', async (req, res) => {
+  try {
+    const { userId, unlockedBy } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID required' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!user.isLocked) {
+      return res.status(400).json({ message: 'Account is not locked' });
+    }
+
+    await unlockAccount(userId, unlockedBy || 'admin', req);
+
+    res.json({
+      message: 'Account unlocked successfully',
+      userId: user._id,
+      username: user.username
+    });
+  } catch (error) {
+    console.error('Account unlock error:', error);
+    res.status(500).json({ message: 'Account unlock failed' });
+  }
+});
+
+// Check session status endpoint
+router.get('/session-status', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ message: 'Token required' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
+    
+    // Validate session
+    const isValidSession = await validateSession(decoded.userId, decoded.sessionId);
+    
+    if (!isValidSession) {
+      return res.status(401).json({ 
+        message: 'Invalid or expired session',
+        valid: false 
+      });
+    }
+
+    // Get user info
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      message: 'Session is valid',
+      valid: true,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      },
+      session: {
+        sessionId: user.currentSessionId,
+        expiresAt: user.sessionExpiresAt,
+        lastTokenRefresh: user.lastTokenRefresh
+      }
+    });
+  } catch (error) {
+    console.error('Session status check error:', error);
+    res.status(401).json({ message: 'Session status check failed' });
   }
 });
 

@@ -1,0 +1,1632 @@
+{
+  "type": "full_system",
+  "createdAt": "2025-10-10T19:12:48.216Z",
+  "version": "1.0",
+  "recordCounts": {
+    "securityLogs": 82,
+    "users": 7
+  },
+  "data": {
+    "securityLogs": [
+      {
+        "_id": "68e95ab0bcad2e2e3a148bf1",
+        "userId": "68e95ab0bcad2e2e3a148bc3",
+        "action": "backup_created",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Test Browser)",
+        "details": {
+          "backupType": "users",
+          "backupName": "users_backup_2025-10-10T19-12-48-199Z.json",
+          "backupSize": "2.3 KB",
+          "backupLocation": "backups\\users_backup_2025-10-10T19-12-48-199Z.json",
+          "createdBy": "system",
+          "backupReason": "test",
+          "recordCount": 7,
+          "timestamp": "2025-10-10T19:12:48.203Z",
+          "browser": "Other",
+          "os": "Other",
+          "username": "admin_test"
+        },
+        "timestamp": "2025-10-10T19:12:48.203Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e95ab0bcad2e2e3a148bed",
+        "userId": "68e95ab0bcad2e2e3a148bc3",
+        "action": "backup_created",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Test Browser)",
+        "details": {
+          "backupType": "security_logs",
+          "backupName": "security_logs_backup_2025-10-10T19-12-48-180Z.json",
+          "backupSize": "49.99 KB",
+          "backupLocation": "backups\\security_logs_backup_2025-10-10T19-12-48-180Z.json",
+          "createdBy": "system",
+          "backupReason": "test",
+          "recordCount": 80,
+          "timestamp": "2025-10-10T19:12:48.189Z",
+          "browser": "Other",
+          "os": "Other",
+          "username": "admin_test"
+        },
+        "timestamp": "2025-10-10T19:12:48.189Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e95ab0bcad2e2e3a148be9",
+        "userId": "68e95ab0bcad2e2e3a148bc3",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Test Agent",
+        "details": {
+          "test": true,
+          "index": 4
+        },
+        "timestamp": "2025-10-10T19:12:48.164Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e95ab0bcad2e2e3a148be7",
+        "userId": "68e95ab0bcad2e2e3a148bc3",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Test Agent",
+        "details": {
+          "test": true,
+          "index": 3
+        },
+        "timestamp": "2025-10-10T19:12:48.162Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e95ab0bcad2e2e3a148be5",
+        "userId": "68e95ab0bcad2e2e3a148bc3",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Test Agent",
+        "details": {
+          "test": true,
+          "index": 2
+        },
+        "timestamp": "2025-10-10T19:12:48.160Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e95ab0bcad2e2e3a148be3",
+        "userId": "68e95ab0bcad2e2e3a148bc3",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Test Agent",
+        "details": {
+          "test": true,
+          "index": 1
+        },
+        "timestamp": "2025-10-10T19:12:48.158Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e95ab0bcad2e2e3a148be1",
+        "userId": "68e95ab0bcad2e2e3a148bc3",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Test Agent",
+        "details": {
+          "test": true,
+          "index": 0
+        },
+        "timestamp": "2025-10-10T19:12:48.155Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e95ab0bcad2e2e3a148bdf",
+        "userId": "68e95ab0bcad2e2e3a148bc3",
+        "action": "backup_restored",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Test Browser)",
+        "details": {
+          "backupType": "security_logs",
+          "backupName": "test_backup_2024.json",
+          "backupDate": "2024-01-15T10:30:00Z",
+          "restoredBy": "admin_test",
+          "restoreReason": "data_recovery",
+          "restoreScope": "full",
+          "restoredCount": 150,
+          "timestamp": "2025-10-10T19:12:48.151Z",
+          "browser": "Other",
+          "os": "Other",
+          "username": "admin_test"
+        },
+        "timestamp": "2025-10-10T19:12:48.151Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e95ab0bcad2e2e3a148bdc",
+        "userId": "68e95ab0bcad2e2e3a148bc3",
+        "action": "backup_created",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Test Browser)",
+        "details": {
+          "backupType": "security_logs",
+          "backupName": "test_backup_2024.json",
+          "backupSize": "2.5 MB",
+          "backupLocation": "/backups/test_backup_2024.json",
+          "createdBy": "admin_test",
+          "backupReason": "scheduled",
+          "recordCount": 150,
+          "timestamp": "2025-10-10T19:12:48.146Z",
+          "browser": "Other",
+          "os": "Other",
+          "username": "admin_test"
+        },
+        "timestamp": "2025-10-10T19:12:48.146Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e95ab0bcad2e2e3a148bd9",
+        "userId": "68e95ab0bcad2e2e3a148bc3",
+        "action": "settings_changed",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Test Browser)",
+        "details": {
+          "settingType": "security",
+          "settingName": "session_timeout",
+          "oldValue": "24h",
+          "newValue": "12h",
+          "changedBy": "admin_test",
+          "changeScope": "system",
+          "timestamp": "2025-10-10T19:12:48.140Z",
+          "browser": "Other",
+          "os": "Other",
+          "username": "admin_test"
+        },
+        "timestamp": "2025-10-10T19:12:48.140Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e95ab0bcad2e2e3a148bd6",
+        "userId": "68e95ab0bcad2e2e3a148bc3",
+        "action": "role_changed",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Test Browser)",
+        "details": {
+          "targetUserId": "68e95ab0bcad2e2e3a148bcb",
+          "targetUsername": "user_test",
+          "oldRole": "user",
+          "newRole": "admin",
+          "changedBy": "admin_test",
+          "changeReason": "promotion",
+          "timestamp": "2025-10-10T19:12:48.134Z",
+          "browser": "Other",
+          "os": "Other",
+          "username": "admin_test"
+        },
+        "timestamp": "2025-10-10T19:12:48.134Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e95ab0bcad2e2e3a148bd3",
+        "userId": "68e95ab0bcad2e2e3a148bc3",
+        "action": "user_deleted",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Test Browser)",
+        "details": {
+          "targetUserId": "68e95ab0bcad2e2e3a148bd0",
+          "targetUsername": "delete_test",
+          "targetEmail": "delete@test.com",
+          "deletedBy": "admin_test",
+          "deletionReason": "test_deletion",
+          "timestamp": "2025-10-10T19:12:48.126Z",
+          "browser": "Other",
+          "os": "Other",
+          "username": "admin_test"
+        },
+        "timestamp": "2025-10-10T19:12:48.126Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e95ab0bcad2e2e3a148bce",
+        "userId": "68e95ab0bcad2e2e3a148bc3",
+        "action": "user_created",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Test Browser)",
+        "details": {
+          "targetUserId": "68e95ab0bcad2e2e3a148bcb",
+          "targetUsername": "user_test",
+          "targetEmail": "user@test.com",
+          "targetRole": "user",
+          "createdBy": "admin_test",
+          "timestamp": "2025-10-10T19:12:48.113Z",
+          "browser": "Other",
+          "os": "Other",
+          "username": "admin_test"
+        },
+        "timestamp": "2025-10-10T19:12:48.113Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9592b5526df38800b8058",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "attemptedUsername": "GhulamMohayudin",
+          "sessionId": "sess_1760123179925_k46ttsese",
+          "timestamp": "2025-10-10T19:06:19.931Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T19:06:19.931Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9592b5526df38800b8056",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "session_created",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "sessionId": "sess_1760123179925_k46ttsese",
+          "sessionDuration": "24h",
+          "loginMethod": "password",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+          "timestamp": "2025-10-10T19:06:19.929Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T19:06:19.929Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e959265526df38800b804c",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "account_locked",
+          "attemptedUsername": "Ali",
+          "timestamp": "2025-10-10T19:06:14.363Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T19:06:14.363Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e959225526df38800b8048",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "account_locked",
+          "attemptedUsername": "Ali",
+          "timestamp": "2025-10-10T19:06:10.986Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T19:06:10.986Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e959225526df38800b8044",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "account_locked",
+          "attemptedUsername": "Ali",
+          "timestamp": "2025-10-10T19:06:10.299Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T19:06:10.299Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e959215526df38800b8040",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "invalid_password",
+          "attemptedUsername": "Ali",
+          "attemptsRemaining": 0,
+          "timestamp": "2025-10-10T19:06:09.823Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T19:06:09.823Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e959215526df38800b803d",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "account_locked",
+        "status": "detected",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "lockReason": "failed_attempts",
+          "failedAttempts": 5,
+          "lockoutDuration": "15m",
+          "lockedBy": "system",
+          "timestamp": "2025-10-10T19:06:09.819Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T19:06:09.819Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e959205526df38800b8037",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "invalid_password",
+          "attemptedUsername": "Ali",
+          "attemptsRemaining": 1,
+          "timestamp": "2025-10-10T19:06:08.681Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T19:06:08.681Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9591f5526df38800b8031",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "invalid_password",
+          "attemptedUsername": "Ali",
+          "attemptsRemaining": 2,
+          "timestamp": "2025-10-10T19:06:07.524Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T19:06:07.524Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9591d5526df38800b802b",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "invalid_password",
+          "attemptedUsername": "Ali",
+          "attemptsRemaining": 3,
+          "timestamp": "2025-10-10T19:06:05.794Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T19:06:05.794Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9591c5526df38800b8025",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "invalid_password",
+          "attemptedUsername": "Ali",
+          "attemptsRemaining": 4,
+          "timestamp": "2025-10-10T19:06:04.008Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T19:06:04.008Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e959185526df38800b801f",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "logout",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "user_logout",
+          "logoutMethod": "manual",
+          "sessionId": "sess_1760122745536_kqmsxqisb",
+          "timestamp": "2025-10-10T19:06:00.362Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T19:06:00.362Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e959185526df38800b801c",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "session_expired",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "sessionId": "sess_1760122745536_kqmsxqisb",
+          "sessionDuration": "414s",
+          "expirationReason": "manual_logout",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+          "timestamp": "2025-10-10T19:06:00.360Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T19:06:00.360Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e957795526df38800b7ff3",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "attemptedUsername": "Ali",
+          "sessionId": "sess_1760122745536_kqmsxqisb",
+          "timestamp": "2025-10-10T18:59:05.544Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T18:59:05.544Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e957795526df38800b7ff1",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "session_created",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "sessionId": "sess_1760122745536_kqmsxqisb",
+          "sessionDuration": "24h",
+          "loginMethod": "password",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+          "timestamp": "2025-10-10T18:59:05.542Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T18:59:05.542Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e957735526df38800b7fe7",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "logout",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "user_logout",
+          "logoutMethod": "manual",
+          "sessionId": "sess_1760122718249_c939j1w6n",
+          "timestamp": "2025-10-10T18:58:59.896Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T18:58:59.896Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e957735526df38800b7fe4",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "session_expired",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "sessionId": "sess_1760122718249_c939j1w6n",
+          "sessionDuration": "21s",
+          "expirationReason": "manual_logout",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+          "timestamp": "2025-10-10T18:58:59.891Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T18:58:59.891Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9575e5526df38800b7fcd",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "attemptedUsername": "GhulamMohayudin",
+          "sessionId": "sess_1760122718249_c939j1w6n",
+          "timestamp": "2025-10-10T18:58:38.260Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T18:58:38.260Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9575e5526df38800b7fcb",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "session_created",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "sessionId": "sess_1760122718249_c939j1w6n",
+          "sessionDuration": "24h",
+          "loginMethod": "password",
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+          "timestamp": "2025-10-10T18:58:38.256Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T18:58:38.256Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e937b9083561fffdfe4c90",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "logout",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "user_logout",
+          "logoutMethod": "manual",
+          "timestamp": "2025-10-10T16:43:37.557Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T16:43:37.557Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e93792083561fffdfe4c67",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "attemptedUsername": "GhulamMohayudin",
+          "timestamp": "2025-10-10T16:42:58.540Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T16:42:58.540Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9378da5c07814af9d47b2",
+        "userId": "68e9300f22ca3413eda5eb51",
+        "action": "logout",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "user_logout",
+          "logoutMethod": "manual",
+          "timestamp": "2025-10-10T16:42:53.377Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Moin"
+        },
+        "timestamp": "2025-10-10T16:42:53.377Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9301922ca3413eda5eb5b",
+        "userId": "68e9300f22ca3413eda5eb51",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "attemptedUsername": "Moin",
+          "timestamp": "2025-10-10T16:11:05.342Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Moin"
+        },
+        "timestamp": "2025-10-10T16:11:05.342Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9301422ca3413eda5eb57",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "logout",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "user_logout",
+          "logoutMethod": "manual",
+          "timestamp": "2025-10-10T16:11:00.342Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T16:11:00.342Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9300f22ca3413eda5eb54",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "user_created",
+          "targetUserId": "68e9300f22ca3413eda5eb51",
+          "targetUsername": "Moin",
+          "fieldsChanged": [
+            "username",
+            "email",
+            "role"
+          ],
+          "timestamp": "2025-10-10T16:10:55.441Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T16:10:55.441Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e92ff7385f7457df5ab412",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "Ali",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T16:10:31.912Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T16:10:31.912Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e92ff7385f7457df5ab40d",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "Ali",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T16:10:31.890Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T16:10:31.890Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e92e082629863bc331138e",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "Ali",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T16:02:16.769Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T16:02:16.769Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e92e082629863bc3311389",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "Ali",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T16:02:16.751Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T16:02:16.751Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e927f22629863bc3311339",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "attemptedUsername": "Ali",
+          "timestamp": "2025-10-10T15:36:18.274Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T15:36:18.274Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e927e72629863bc3311332",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "logout",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "user_logout",
+          "logoutMethod": "manual",
+          "timestamp": "2025-10-10T15:36:07.313Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:36:07.313Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e927c12629863bc3311326",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "GhulamMohayudin",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T15:35:29.644Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:35:29.644Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e927c12629863bc3311321",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "GhulamMohayudin",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T15:35:29.624Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:35:29.624Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e927982629863bc331131c",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "GhulamMohayudin",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T15:34:48.552Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:34:48.552Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e927982629863bc3311317",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "GhulamMohayudin",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T15:34:48.521Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:34:48.521Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e927932629863bc3311312",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "GhulamMohayudin",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T15:34:43.792Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:34:43.792Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e927932629863bc331130d",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "GhulamMohayudin",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T15:34:43.767Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:34:43.767Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9278d2629863bc3311308",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "GhulamMohayudin",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T15:34:37.971Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:34:37.971Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9278d2629863bc3311303",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "GhulamMohayudin",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T15:34:37.948Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:34:37.948Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e927062629863bc33112f2",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "GhulamMohayudin",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T15:32:22.862Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:32:22.862Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e927062629863bc33112ed",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "GhulamMohayudin",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T15:32:22.834Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:32:22.834Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9266e2629863bc33112e8",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "GhulamMohayudin",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T15:29:50.115Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:29:50.115Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9266e2629863bc33112e3",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "GhulamMohayudin",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T15:29:50.084Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:29:50.084Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e925842629863bc3311290",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "GhulamMohayudin",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T15:25:56.090Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:25:56.090Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e925842629863bc331128b",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "profile_update",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "admin_user_list_access",
+          "accessedBy": "GhulamMohayudin",
+          "fieldsChanged": [],
+          "timestamp": "2025-10-10T15:25:56.066Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:25:56.066Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e9257d2629863bc331127a",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "attemptedUsername": "GhulamMohayudin",
+          "timestamp": "2025-10-10T15:25:49.742Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:25:49.742Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e925782629863bc3311276",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "attemptedUsername": "GhulamMohayudin",
+          "timestamp": "2025-10-10T15:25:44.756Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:25:44.756Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e925762629863bc3311272",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "attemptedUsername": "GhulamMohayudin",
+          "timestamp": "2025-10-10T15:25:42.407Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:25:42.407Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e925722629863bc331126e",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "attemptedUsername": "GhulamMohayudin",
+          "timestamp": "2025-10-10T15:25:38.144Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:25:38.144Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e92552a8bef2dbf9e02a50",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "logout",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "user_logout",
+          "logoutMethod": "manual",
+          "timestamp": "2025-10-10T15:25:06.422Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T15:25:06.422Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e920ec423ffb911ef5f8c9",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "attemptedUsername": "Ali",
+          "timestamp": "2025-10-10T15:06:20.775Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T15:06:20.775Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e920ea423ffb911ef5f8c5",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "invalid_password",
+          "attemptedUsername": "Ali",
+          "timestamp": "2025-10-10T15:06:18.277Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T15:06:18.277Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e920e7423ffb911ef5f8c2",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "invalid_password",
+          "attemptedUsername": "Ali",
+          "timestamp": "2025-10-10T15:06:15.737Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T15:06:15.737Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e920e2423ffb911ef5f8bf",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "logout",
+        "status": "success",
+        "ipAddress": "127.0.0.1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "user_logout",
+          "logoutMethod": "manual",
+          "timestamp": "2025-10-10T15:06:10.826Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T15:06:10.826Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e91fd3be9cef10ed33cff1",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "timestamp": "2025-10-10T15:01:39.946Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "unknown"
+        },
+        "timestamp": "2025-10-10T15:01:39.946Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e91fcebe9cef10ed33cfed",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "logout",
+        "status": "success",
+        "ipAddress": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "user_logout",
+          "logoutMethod": "manual",
+          "timestamp": "2025-10-10T15:01:34.409Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T15:01:34.409Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e91bc8be9cef10ed33cfd8",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "timestamp": "2025-10-10T14:44:24.923Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "unknown"
+        },
+        "timestamp": "2025-10-10T14:44:24.924Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e91bc6be9cef10ed33cfd4",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "invalid_password",
+          "attemptedUsername": "Ali",
+          "timestamp": "2025-10-10T14:44:22.823Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T14:44:22.823Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e91bc6be9cef10ed33cfd1",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "invalid_password",
+          "attemptedUsername": "Ali",
+          "timestamp": "2025-10-10T14:44:22.223Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T14:44:22.223Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e91bc5be9cef10ed33cfce",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "invalid_password",
+          "attemptedUsername": "Ali",
+          "timestamp": "2025-10-10T14:44:21.708Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T14:44:21.708Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e91bc4be9cef10ed33cfcb",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "invalid_password",
+          "attemptedUsername": "Ali",
+          "timestamp": "2025-10-10T14:44:20.644Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "Ali"
+        },
+        "timestamp": "2025-10-10T14:44:20.644Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e91bbbbe9cef10ed33cfc5",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "logout",
+        "status": "success",
+        "ipAddress": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "user_logout",
+          "logoutMethod": "manual",
+          "timestamp": "2025-10-10T14:44:11.675Z",
+          "browser": "Chrome",
+          "os": "Windows 10",
+          "username": "GhulamMohayudin"
+        },
+        "timestamp": "2025-10-10T14:44:11.675Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e91af2624e68f507529c50",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "timestamp": "2025-10-10T14:40:50.376Z",
+          "browser": "Mozilla/5.0",
+          "os": "Windows"
+        },
+        "timestamp": "2025-10-10T14:40:50.376Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e91aef624e68f507529c4c",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "invalid_password",
+          "attemptedUsername": "GhulamMohayudin",
+          "timestamp": "2025-10-10T14:40:47.943Z",
+          "browser": "Mozilla/5.0",
+          "os": "Windows"
+        },
+        "timestamp": "2025-10-10T14:40:47.943Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e91ae1624e68f507529c47",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "invalid_password",
+          "attemptedUsername": "Ali",
+          "timestamp": "2025-10-10T14:40:33.252Z",
+          "browser": "Mozilla/5.0",
+          "os": "Windows"
+        },
+        "timestamp": "2025-10-10T14:40:33.252Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e91ac8624e68f507529c30",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "timestamp": "2025-10-10T14:40:08.310Z",
+          "browser": "Mozilla/5.0",
+          "os": "Windows"
+        },
+        "timestamp": "2025-10-10T14:40:08.310Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e91ab8624e68f507529c2a",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "failure",
+        "ipAddress": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "invalid_password",
+          "attemptedUsername": "Ali",
+          "timestamp": "2025-10-10T14:39:52.026Z",
+          "browser": "Mozilla/5.0",
+          "os": "Windows"
+        },
+        "timestamp": "2025-10-10T14:39:52.026Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e91aa5624e68f507529c15",
+        "userId": "68e7bf437650209ee8e676e6",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "timestamp": "2025-10-10T14:39:33.222Z",
+          "browser": "Mozilla/5.0",
+          "os": "Windows"
+        },
+        "timestamp": "2025-10-10T14:39:33.222Z",
+        "__v": 0
+      },
+      {
+        "_id": "68e91a73624e68f507529bed",
+        "userId": "68e7bf437650209ee8e676e4",
+        "action": "login",
+        "status": "success",
+        "ipAddress": "::1",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+        "details": {
+          "reason": "successful_login",
+          "loginMethod": "password",
+          "timestamp": "2025-10-10T14:38:43.510Z",
+          "browser": "Mozilla/5.0",
+          "os": "Windows"
+        },
+        "timestamp": "2025-10-10T14:38:43.510Z",
+        "__v": 0
+      }
+    ],
+    "users": [
+      {
+        "_id": "68e95ab0bcad2e2e3a148bd0",
+        "username": "delete_test",
+        "email": "delete@test.com",
+        "role": "user",
+        "isActive": true,
+        "isLocked": false,
+        "lastLogin": null,
+        "createdAt": "2025-10-10T19:12:48.121Z",
+        "updatedAt": "2025-10-10T19:12:48.121Z"
+      },
+      {
+        "_id": "68e95ab0bcad2e2e3a148bcb",
+        "username": "user_test",
+        "email": "user@test.com",
+        "role": "user",
+        "isActive": true,
+        "isLocked": false,
+        "lastLogin": null,
+        "createdAt": "2025-10-10T19:12:48.096Z",
+        "updatedAt": "2025-10-10T19:12:48.096Z"
+      },
+      {
+        "_id": "68e95ab0bcad2e2e3a148bc3",
+        "username": "admin_test",
+        "email": "admin@test.com",
+        "role": "admin",
+        "isActive": true,
+        "isLocked": false,
+        "lastLogin": null,
+        "createdAt": "2025-10-10T19:12:48.063Z",
+        "updatedAt": "2025-10-10T19:12:48.063Z"
+      },
+      {
+        "_id": "68e9300f22ca3413eda5eb51",
+        "username": "Moin",
+        "email": "moin@example.com",
+        "role": "user",
+        "isActive": true,
+        "isLocked": false,
+        "lastLogin": "2025-10-10T16:11:05.338Z",
+        "createdAt": "2025-10-10T16:10:55.436Z",
+        "updatedAt": "2025-10-10T16:11:05.339Z"
+      },
+      {
+        "_id": "68e7bf447650209ee8e676e8",
+        "username": "Zuhaib",
+        "email": "zuhaib@example.com",
+        "role": "user",
+        "isActive": true,
+        "isLocked": false,
+        "lastLogin": "2025-10-10T14:37:16.485Z",
+        "createdAt": "2025-10-09T13:57:24.040Z",
+        "updatedAt": "2025-10-10T14:37:16.492Z"
+      },
+      {
+        "_id": "68e7bf437650209ee8e676e6",
+        "username": "Ali",
+        "email": "alisami@usod.com",
+        "role": "admin",
+        "isActive": true,
+        "isLocked": true,
+        "lastLogin": "2025-10-10T18:59:05.533Z",
+        "createdAt": "2025-10-09T13:57:23.619Z",
+        "updatedAt": "2025-10-10T19:06:09.821Z"
+      },
+      {
+        "_id": "68e7bf437650209ee8e676e4",
+        "username": "GhulamMohayudin",
+        "email": "ghulammohayudin@usod.com",
+        "role": "admin",
+        "isActive": true,
+        "isLocked": false,
+        "lastLogin": "2025-10-10T19:06:19.923Z",
+        "createdAt": "2025-10-09T13:57:23.189Z",
+        "updatedAt": "2025-10-10T19:06:19.927Z"
+      }
+    ]
+  }
+}

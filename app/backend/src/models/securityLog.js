@@ -12,7 +12,18 @@ const SecurityLogSchema = new Schema({
             'profile_update',
             'access_denied',
             'system_error',
-            'security_event'
+            'security_event',
+            'session_created',
+            'session_expired',
+            'token_refresh',
+            'account_locked',
+            'account_unlocked',
+            'user_created',
+            'user_deleted',
+            'role_changed',
+            'settings_changed',
+            'backup_created',
+            'backup_restored'
         ]
     },
     status: { type: String, required: true, enum: ['success', 'failure', 'detected'] },

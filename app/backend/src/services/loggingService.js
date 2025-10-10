@@ -152,5 +152,124 @@ export const logActions = {
       source: details.source || 'unknown',
       target: details.target || 'unknown'
     });
+  },
+
+  // Session management
+  async sessionCreated(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'session_created', status, req, {
+      ...details,
+      sessionId: details.sessionId || 'unknown',
+      sessionDuration: details.sessionDuration || '24h',
+      loginMethod: details.loginMethod || 'password'
+    });
+  },
+
+  async sessionExpired(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'session_expired', status, req, {
+      ...details,
+      sessionId: details.sessionId || 'unknown',
+      sessionDuration: details.sessionDuration || 'unknown',
+      expirationReason: details.expirationReason || 'timeout'
+    });
+  },
+
+  async tokenRefresh(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'token_refresh', status, req, {
+      ...details,
+      sessionId: details.sessionId || 'unknown',
+      refreshReason: details.refreshReason || 'automatic',
+      tokenAge: details.tokenAge || 'unknown'
+    });
+  },
+
+  // Account management
+  async accountLocked(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'account_locked', status, req, {
+      ...details,
+      lockReason: details.lockReason || 'failed_attempts',
+      failedAttempts: details.failedAttempts || 0,
+      lockoutDuration: details.lockoutDuration || '15m',
+      lockedBy: details.lockedBy || 'system'
+    });
+  },
+
+  async accountUnlocked(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'account_unlocked', status, req, {
+      ...details,
+      unlockReason: details.unlockReason || 'manual',
+      unlockedBy: details.unlockedBy || 'system',
+      lockoutDuration: details.lockoutDuration || 'unknown'
+    });
+  },
+
+  // Administrative actions
+  async userCreated(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'user_created', status, req, {
+      ...details,
+      targetUserId: details.targetUserId || 'unknown',
+      targetUsername: details.targetUsername || 'unknown',
+      targetEmail: details.targetEmail || 'unknown',
+      targetRole: details.targetRole || 'unknown',
+      createdBy: details.createdBy || 'system'
+    });
+  },
+
+  async userDeleted(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'user_deleted', status, req, {
+      ...details,
+      targetUserId: details.targetUserId || 'unknown',
+      targetUsername: details.targetUsername || 'unknown',
+      targetEmail: details.targetEmail || 'unknown',
+      deletedBy: details.deletedBy || 'system',
+      deletionReason: details.deletionReason || 'manual'
+    });
+  },
+
+  async roleChanged(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'role_changed', status, req, {
+      ...details,
+      targetUserId: details.targetUserId || 'unknown',
+      targetUsername: details.targetUsername || 'unknown',
+      oldRole: details.oldRole || 'unknown',
+      newRole: details.newRole || 'unknown',
+      changedBy: details.changedBy || 'system',
+      changeReason: details.changeReason || 'manual'
+    });
+  },
+
+  async settingsChanged(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'settings_changed', status, req, {
+      ...details,
+      settingType: details.settingType || 'unknown',
+      settingName: details.settingName || 'unknown',
+      oldValue: details.oldValue || 'unknown',
+      newValue: details.newValue || 'unknown',
+      changedBy: details.changedBy || 'system',
+      changeScope: details.changeScope || 'user' // 'user', 'system', 'global'
+    });
+  },
+
+  async backupCreated(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'backup_created', status, req, {
+      ...details,
+      backupType: details.backupType || 'unknown',
+      backupName: details.backupName || 'unknown',
+      backupSize: details.backupSize || 'unknown',
+      backupLocation: details.backupLocation || 'unknown',
+      createdBy: details.createdBy || 'system',
+      backupReason: details.backupReason || 'scheduled'
+    });
+  },
+
+  async backupRestored(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'backup_restored', status, req, {
+      ...details,
+      backupType: details.backupType || 'unknown',
+      backupName: details.backupName || 'unknown',
+      backupDate: details.backupDate || 'unknown',
+      restoredBy: details.restoredBy || 'system',
+      restoreReason: details.restoreReason || 'manual',
+      restoreScope: details.restoreScope || 'full' // 'full', 'partial', 'specific'
+    });
   }
 };
