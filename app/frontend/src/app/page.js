@@ -7,13 +7,18 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to dashboard
-    router.push('/dashboard');
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    if (token) {
+      router.push('/dashboard');
+    } else {
+      router.push('/login');
+    }
   }, [router]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="text-xl">Redirecting to dashboard...</div>
+      <div className="text-xl">Redirecting...</div>
     </div>
   );
 }

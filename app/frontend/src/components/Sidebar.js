@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 
 // Icons as constants for simplicity
@@ -69,11 +70,28 @@ const navigation = [
 
 function Sidebar({ className = '' }) {
   const pathname = usePathname();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
 
   return (
-    <nav className={`flex flex-col w-64 p-4 bg-white dark:bg-gray-800 shadow dark:shadow-gray-700/20 h-screen ${className}`}>
-      <div className="flex items-center justify-center p-4 mb-6">
-        <h2 className="text-2xl font-bold text-blue-600 dark:text-blue-400">USOD</h2>
+    <div className="relative">
+      <nav className={`flex flex-col ${isCollapsed ? 'w-16' : 'w-64'} p-4 bg-gray-800/80 backdrop-blur-xl border-r border-gray-700/50 h-screen transition-all duration-300 ${className}`}>
+      <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-center'} p-4 mb-6`}>
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/25">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          {!isCollapsed && <h2 className="text-2xl font-bold text-white">USOD</h2>}
+        </div>
       </div>
 
       <div className="flex-1 space-y-1">
@@ -85,29 +103,55 @@ function Sidebar({ className = '' }) {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-200' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/40'}`}
+              className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-4'} py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? 'bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-white border border-emerald-500/30 shadow-lg shadow-emerald-500/10' : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'}`}
+              title={isCollapsed ? item.name : ''}
             >
-              <span className="mr-3">
+              <span className={isCollapsed ? '' : 'mr-3'}>
                 <item.icon />
               </span>
-              {item.name}
+              {!isCollapsed && item.name}
             </Link>
           );
         })}
       </div>
 
-      <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-6">
-        <div className="flex items-center px-4 py-3 text-sm">
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white mr-3">
-            <span>AU</span>
-          </div>
-          <div>
-            <p className="font-medium text-gray-900 dark:text-gray-100">Ghulam Mohayudin</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">ghulammohayudin@gmail.com</p>
+      <div className="border-t border-gray-700/50 pt-4 mt-6">
+        <div className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-4'} py-3 text-sm`}>
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-500/25">
+              <span>{user ? user.username.charAt(0).toUpperCase() : 'U'}</span>
+            </div>
+            {!isCollapsed && user && (
+              <div className="ml-3">
+                <p className="font-medium text-white">{user.username}</p>
+                <p className="text-xs text-gray-400">{user.email}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
-    </nav>
+      </nav>
+      
+      {/* Toggle Button - Positioned outside sidebar */}
+      <button
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="absolute top-1/2 -right-3 transform -translate-y-1/2 w-6 h-6 bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/90 transition-all duration-300 shadow-lg z-10"
+        title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        <svg 
+          className="w-3 h-3 transition-transform duration-300" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          {isCollapsed ? (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          ) : (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          )}
+        </svg>
+      </button>
+    </div>
   );
 }
 

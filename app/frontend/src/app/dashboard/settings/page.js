@@ -20,40 +20,35 @@ function SettingsPage() {
       setError(null);
       
       try {
-        // Try to get the user profile from the API
-        
-        // const data = await getData('/api/user/profile');
-        // setProfile(data);
-        
-        // Set form values from the profile
-        setTheme(data.settings.theme);
-        setNotifications(data.settings.notifications);
-        setEmailAlerts(data.settings.emailAlerts);
-        setTwoFactorAuth(data.settings.twoFactorAuth);
+        // Get user data from localStorage (from login)
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          const userProfile = {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            role: user.role,
+            lastLogin: new Date().toISOString(),
+            settings: {
+              theme: 'system',
+              notifications: true,
+              emailAlerts: true,
+              twoFactorAuth: false
+            }
+          };
+          
+          setProfile(userProfile);
+          setTheme(userProfile.settings.theme);
+          setNotifications(userProfile.settings.notifications);
+          setEmailAlerts(userProfile.settings.emailAlerts);
+          setTwoFactorAuth(userProfile.settings.twoFactorAuth);
+        } else {
+          throw new Error('No user data found');
+        }
       } catch (err) {
         console.error('Error fetching user profile:', err);
-        setError('Failed to load user profile. Using default settings.');
-        
-        // Fallback to default settings
-        const mockProfile = {
-          id: 'user1',
-          username: 'Ghulam Mohayudin',
-          email: 'ghulammohayudin@gmail.com',
-          role: 'Administrator',
-          lastLogin: new Date().toISOString(),
-          settings: {
-            theme: 'system',
-            notifications: true,
-            emailAlerts: true,
-            twoFactorAuth: false
-          }
-        };
-        
-        setProfile(mockProfile);
-        setTheme(mockProfile.settings.theme);
-        setNotifications(mockProfile.settings.notifications);
-        setEmailAlerts(mockProfile.settings.emailAlerts);
-        setTwoFactorAuth(mockProfile.settings.twoFactorAuth);
+        setError('Failed to load user profile. Please log in again.');
       } finally {
         setLoading(false);
       }
@@ -68,15 +63,13 @@ function SettingsPage() {
     setSuccessMessage(null);
     
     try {
-      // Try to update the user settings
+      // For now, just update the local state since we don't have a backend API for settings
       const updatedSettings = {
         theme,
         notifications,
         emailAlerts,
         twoFactorAuth
       };
-      
-      await putData(`/api/user/settings/${profile?.id}`, { settings: updatedSettings });
       
       // Update the local profile state
       setProfile(prev => prev ? {
@@ -128,16 +121,16 @@ function SettingsPage() {
       {/* User Profile */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div className="flex items-start pb-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="h-12 w-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
+          <div className="h-12 w-12 rounded-full overflow-hidden bg-gradient-to-r from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/25">
+            <span className="text-white font-semibold text-lg">
+              {profile?.username ? profile.username.charAt(0).toUpperCase() : 'U'}
+            </span>
           </div>
           <div className="ml-4">
             <h2 className="text-lg font-medium text-gray-900 dark:text-white">{profile?.username}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">{profile?.email}</p>
             <div className="mt-1 flex items-center text-xs text-gray-500 dark:text-gray-400">
-              <span className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 px-2 py-0.5 rounded text-xs font-medium">
+              <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded text-xs font-medium capitalize">
                 {profile?.role}
               </span>
               <span className="ml-2">Last login: {new Date(profile?.lastLogin || '').toLocaleString()}</span>
