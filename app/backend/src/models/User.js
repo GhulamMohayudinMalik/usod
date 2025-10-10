@@ -1,7 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 const UserSchema = new Schema({
-  username: { type: String, required: true, unique: true, trim: true, minlength: 3, index: true },
+  username: { type: String, required: true, unique: true, trim: true, minlength: 2, index: true },
   email: { type: String, required: true, unique: true, trim: true, lowercase: true, index: true },
   password: { type: String, required: true, minlength: 6 },
   role: { type: String, enum: ['admin', 'user'], default: 'user' },

@@ -1,5 +1,6 @@
 import express from 'express';
 import { SecurityLog } from '../models/SecurityLog.js';
+import { User } from '../models/User.js';
 
 const router = express.Router();
 
@@ -40,32 +41,71 @@ router.get('/all', async (req, res) => {
 
 router.get('/dashboard-stats', async (req, res) => {
     try {
-        const securityEventsCount = await SecurityLog.countDocuments({ action: 'security_event', 'details.resolved': false });
-        const securityScore = Math.floor(Math.random() * 30) + 70;
-        const stats = { securityScore, activeThreats: securityEventsCount || Math.floor(Math.random() * 10) + 5, protectedUsers: Math.floor(Math.random() * 50) + 100, meanTimeToResolve: Math.floor(Math.random() * 6) + 2, lastUpdated: new Date().toISOString() };
-        res.json(stats);
-    } catch (error) { console.error('Error fetching dashboard stats:', error); res.status(500).json({ error: 'Failed to fetch dashboard statistics' }); }
+        const [activeThreats, activeUsers] = await Promise.all([
+            SecurityLog.countDocuments({ action: 'security_event', 'details.resolved': false }),
+            User.countDocuments({ isActive: true })
+        ]);
+
+        // MTTR (hours): average of (resolvedAt - createdAt) for resolved security events
+        const mttrAgg = await SecurityLog.aggregate([
+            { $match: { action: 'security_event', 'details.resolved': true, 'details.resolvedAt': { $exists: true } } },
+            { $project: { diffMs: { $subtract: [ '$details.resolvedAt', '$timestamp' ] } } },
+            { $group: { _id: null, avgMs: { $avg: '$diffMs' } } }
+        ]);
+        const meanTimeToResolve = mttrAgg.length ? Math.max(0, Math.round((mttrAgg[0].avgMs / (1000 * 60 * 60)) * 10) / 10) : null;
+
+        // Security score: simple heuristic combining threat pressure and resolution
+        const totalThreats = await SecurityLog.countDocuments({ action: 'security_event' });
+        const resolvedThreats = await SecurityLog.countDocuments({ action: 'security_event', 'details.resolved': true });
+        const resolutionRate = totalThreats > 0 ? resolvedThreats / totalThreats : 1;
+        const pressure = totalThreats > 0 ? Math.min(1, activeThreats / Math.max(5, totalThreats)) : 0; // higher pressure lowers score
+        const rawScore = 0.5 * (1 - pressure) + 0.5 * resolutionRate;
+        const securityScore = Math.round(rawScore * 100);
+
+        res.json({
+            securityScore,
+            activeThreats,
+            protectedUsers: activeUsers,
+            meanTimeToResolve,
+            lastUpdated: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+        res.status(500).json({ error: 'Failed to fetch dashboard statistics' });
+    }
 });
 
 router.get('/login-attempts', async (req, res) => {
     try {
-        const count = parseInt(req.query.count) || 10;
-        const loginLogs = await SecurityLog.find({ action: { $in: ['login'] } }).sort({ timestamp: -1 }).limit(count).populate('userId', 'username email');
-        const loginAttempts = loginLogs.map((log) => ({ 
-            id: log._id.toString(), 
-            username: log.userId ? log.userId.username : 'Unknown', 
-            email: log.userId ? log.userId.email : 'unknown@example.com', 
-            ipAddress: log.ipAddress, 
-            userAgent: log.userAgent, 
-            timestamp: log.timestamp, 
-            successful: log.status === 'success', 
-            location: log.details?.location || { country: 'Unknown', city: 'Unknown', coordinates: [0, 0] }, 
-            failureReason: log.status === 'failure' ? 'Invalid credentials' : undefined 
+        const countParam = req.query.count;
+        let count = 10;
+        if (countParam !== undefined) {
+            const parsed = parseInt(countParam);
+            if (!Number.isNaN(parsed) && parsed > 0) count = Math.min(parsed, 200);
+        }
+
+        const loginLogs = await SecurityLog
+            .find({ action: 'login' })
+            .sort({ timestamp: -1 })
+            .limit(count)
+            .lean();
+
+        const loginAttempts = loginLogs.map((log) => ({
+            id: log._id?.toString?.() || String(log._id),
+            username: 'user',
+            email: 'user@example.com',
+            ipAddress: log.ipAddress,
+            userAgent: log.userAgent,
+            timestamp: log.timestamp,
+            successful: log.status === 'success',
+            location: log.details?.location || { country: 'Unknown', city: 'Unknown', coordinates: [0, 0] },
+            failureReason: log.status === 'failure' ? (log.details?.failureReason || 'Invalid credentials') : undefined
         }));
+
         res.json(loginAttempts);
-    } catch (error) { 
-        console.error('Error fetching login attempts:', error); 
-        res.status(500).json({ error: 'Failed to fetch login attempts' }); 
+    } catch (error) {
+        console.error('Error fetching login attempts:', error);
+        res.status(500).json({ error: 'Failed to fetch login attempts' });
     }
 });
 
