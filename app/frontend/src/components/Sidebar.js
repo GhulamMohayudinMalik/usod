@@ -58,12 +58,31 @@ const SettingsIcon = () => (
   </svg>
 );
 
+const UsersIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+
+const KeyIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+    <circle cx="7.5" cy="15.5" r="5.5" />
+    <path d="M21 2l-9.6 9.6" />
+    <path d="M15.5 7.5l3 3L22 7l-3-3" />
+  </svg>
+);
+
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
   { name: 'Threat Analysis', href: '/dashboard/threats', icon: ThreatIcon },
   { name: 'Logs Analysis', href: '/dashboard/logs', icon: LogIcon },
   { name: 'Analytics', href: '/dashboard/analytics', icon: AnalyticsIcon },
   { name: 'AI Insights', href: '/dashboard/ai-insights', icon: AiInsightsIcon },
+  { name: 'User Management', href: '/dashboard/users', icon: UsersIcon },
+  { name: 'Change Password', href: '/dashboard/change-password', icon: KeyIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
 ];
 

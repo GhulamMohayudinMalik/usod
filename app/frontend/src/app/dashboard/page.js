@@ -1,6 +1,6 @@
 
 "use client";
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { getData } from '@/services/api';
 import { StatsCard } from '@/components/StatsCard';
 import { ThreatCard } from '@/components/ThreatCard';
@@ -10,11 +10,8 @@ export default function DashboardIndex() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [live, setLive] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState(null);
-  const pollingRef = useRef(null);
 
-  const load = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
       const [s, e] = await Promise.all([
@@ -24,26 +21,15 @@ export default function DashboardIndex() {
       setStats(s);
       setEvents(e);
       setLoading(false);
-      setLastUpdated(new Date());
     } catch (err) {
       setError('Failed to load dashboard');
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, []);
-
-  useEffect(() => {
-    if (live) {
-      pollingRef.current = setInterval(load, 10000);
-    } else if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
-    }
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, [live]);
+  useEffect(() => { 
+    loadData(); 
+  }, []);
 
   if (loading) return <div className="p-6">Loading dashboard…</div>;
   if (error) return <div className="p-6 text-red-600">{error}</div>;
@@ -56,23 +42,12 @@ export default function DashboardIndex() {
           <h1 className="text-2xl font-semibold text-gray-100">Dashboard Overview</h1>
           <p className="text-sm text-gray-400">Welcome to your security operations dashboard</p>
         </div>
-        <div className="flex items-center gap-3 text-sm">
-          {lastUpdated && (
-            <span className="text-gray-400">Last updated: {lastUpdated.toLocaleTimeString()}</span>
-          )}
-          <button
-            className={`px-3 py-1 rounded ${live ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-100'}`}
-            onClick={() => setLive(v => !v)}
-          >
-            Live Updates: {live ? 'ON' : 'OFF'}
-          </button>
-          <button className="px-3 py-1 rounded bg-blue-600 text-white" onClick={load}>Refresh</button>
-        </div>
-      </div>
-
-      {/* Live banner */}
-      <div className="rounded-md px-3 py-2 text-sm bg-emerald-900/40 text-emerald-300 border border-emerald-700">
-        Live monitoring {live ? 'active' : 'paused'} — Dashboard will {live ? 'automatically update' : 'not auto update'}
+        <button 
+          className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all"
+          onClick={loadData}
+        >
+          Refresh Data
+        </button>
       </div>
 
       {/* Stat cards */}
@@ -87,7 +62,7 @@ export default function DashboardIndex() {
       {/* Recent threats */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-100">Recent Threats</h2>
-        <button className="text-sm text-blue-400 hover:underline" onClick={load}>View All</button>
+        <button className="text-sm text-blue-400 hover:underline" onClick={loadData}>View All</button>
       </div>
       {events && events.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
