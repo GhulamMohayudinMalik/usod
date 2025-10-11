@@ -97,5 +97,18 @@ export const logController = {
       console.error('Error creating log:', error);
       return res.status(500).json({ message: 'Error creating log', error: error.message });
     }
+  },
+
+  clearLogs: async (req, res) => {
+    try {
+      const result = await SecurityLog.deleteMany({});
+      return res.json({
+        message: 'All logs cleared successfully',
+        deletedCount: result.deletedCount
+      });
+    } catch (error) {
+      console.error('Error clearing logs:', error);
+      return res.status(500).json({ message: 'Error clearing logs', error: error.message });
+    }
   }
 };

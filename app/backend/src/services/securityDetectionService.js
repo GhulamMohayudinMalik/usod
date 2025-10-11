@@ -61,6 +61,130 @@ const SECURITY_PATTERNS = {
     /passwd/i,
     /shadow/i,
     /etc\/passwd/i
+  ],
+
+  // LDAP Injection patterns
+  LDAP_INJECTION: [
+    /\*\)/gi,
+    /\)/gi,
+    /\(/gi,
+    /&/gi,
+    /\|/gi,
+    /!/gi,
+    /cn=/gi,
+    /ou=/gi,
+    /dc=/gi,
+    /objectClass=/gi,
+    /userPassword=/gi,
+    /uid=/gi
+  ],
+
+  // NoSQL Injection patterns
+  NOSQL_INJECTION: [
+    /\$where/gi,
+    /\$ne/gi,
+    /\$gt/gi,
+    /\$lt/gi,
+    /\$regex/gi,
+    /\$exists/gi,
+    /\$in/gi,
+    /\$nin/gi,
+    /\$or/gi,
+    /\$and/gi,
+    /\$not/gi,
+    /\$nor/gi,
+    /\$all/gi,
+    /\$elemMatch/gi,
+    /\$size/gi,
+    /\$type/gi
+  ],
+
+  // Command Injection patterns
+  COMMAND_INJECTION: [
+    /;\s*ls/gi,
+    /;\s*cat/gi,
+    /;\s*rm/gi,
+    /;\s*mkdir/gi,
+    /;\s*whoami/gi,
+    /;\s*id/gi,
+    /;\s*pwd/gi,
+    /;\s*ps/gi,
+    /;\s*netstat/gi,
+    /;\s*ifconfig/gi,
+    /\|\s*ls/gi,
+    /\|\s*cat/gi,
+    /\|\s*rm/gi,
+    /`.*`/gi,
+    /\$\(.*\)/gi,
+    /&&\s*ls/gi,
+    /&&\s*cat/gi,
+    /&&\s*rm/gi
+  ],
+
+  // Path Traversal patterns
+  PATH_TRAVERSAL: [
+    /\.\.\/\.\.\/\.\.\//gi,
+    /\.\.\\\.\.\\\.\.\\/gi,
+    /\.\.%2f\.\.%2f\.\.%2f/gi,
+    /\.\.%5c\.\.%5c\.\.%5c/gi,
+    /\.\.%252f\.\.%252f\.\.%252f/gi,
+    /\.\.%255c\.\.%255c\.\.%255c/gi,
+    /\.\.%c0%af\.\.%c0%af\.\.%c0%af/gi,
+    /\.\.%c1%9c\.\.%c1%9c\.\.%c1%9c/gi,
+    /\.\.%2e%2e%2f/gi,
+    /\.\.%2e%2e%5c/gi
+  ],
+
+  // Server-Side Request Forgery (SSRF) patterns
+  SSRF: [
+    /http:\/\/localhost/gi,
+    /http:\/\/127\.0\.0\.1/gi,
+    /http:\/\/0\.0\.0\.0/gi,
+    /http:\/\/169\.254\.169\.254/gi,
+    /http:\/\/metadata\.googleapis\.com/gi,
+    /http:\/\/169\.254\.169\.254\/latest\/meta-data/gi,
+    /file:\/\/\/etc\/passwd/gi,
+    /file:\/\/\/proc\/self\/environ/gi,
+    /gopher:\/\//gi,
+    /dict:\/\//gi,
+    /ftp:\/\//gi,
+    /ldap:\/\//gi
+  ],
+
+  // XML External Entity (XXE) patterns
+  XXE: [
+    /<!DOCTYPE/gi,
+    /<!ENTITY/gi,
+    /SYSTEM/gi,
+    /PUBLIC/gi,
+    /%[a-zA-Z0-9_]+;/gi,
+    /&[a-zA-Z0-9_]+;/gi,
+    /file:\/\/\//gi,
+    /http:\/\/\//gi,
+    /ftp:\/\/\//gi,
+    /expect:\/\/\//gi
+  ],
+
+  // Information Disclosure patterns
+  INFORMATION_DISCLOSURE: [
+    /version/i,
+    /build/i,
+    /release/i,
+    /debug/i,
+    /test/i,
+    /staging/i,
+    /dev/i,
+    /development/i,
+    /localhost/i,
+    /127\.0\.0\.1/i,
+    /internal/i,
+    /private/i,
+    /secret/i,
+    /password/i,
+    /key/i,
+    /token/i,
+    /api_key/i,
+    /access_key/i
   ]
 };
 
@@ -177,7 +301,8 @@ export function detectSQLInjection(input, req) {
       target: 'database',
       description: 'SQL injection attempt detected',
       maliciousInput: input.substring(0, 100), // Log first 100 chars
-      detectedAt: new Date().toISOString()
+      detectedAt: new Date().toISOString(),
+      userId: null // Explicitly set to null for security events
     });
 
     // Add to suspicious IPs
@@ -368,7 +493,7 @@ export function detectSuspiciousActivity(input, req) {
     
     logActions.securityEvent(null, 'detected', req, {
       eventType: 'suspicious_activity',
-      severity: 'medium',
+      severity: 'low',
       source: ip,
       description: 'Suspicious activity pattern detected',
       suspiciousInput: input.substring(0, 100),
@@ -386,6 +511,272 @@ export function detectSuspiciousActivity(input, req) {
     });
 
     console.log(`⚠️ Suspicious activity detected from ${ip}`);
+    return true;
+  }
+
+  return false;
+}
+
+// Check for LDAP injection attempts
+export function detectLDAPInjection(input, req) {
+  if (!input || typeof input !== 'string') return false;
+
+  const hasLDAPInjection = SECURITY_PATTERNS.LDAP_INJECTION.some(pattern => 
+    pattern.test(input)
+  );
+
+  if (hasLDAPInjection) {
+    const ip = getRealIP(req);
+    
+    logActions.securityEvent(null, 'detected', req, {
+      eventType: 'ldap_injection_attempt',
+      severity: 'high',
+      source: ip,
+      target: 'ldap_server',
+      description: 'LDAP injection attempt detected',
+      maliciousInput: input.substring(0, 100),
+      detectedAt: new Date().toISOString()
+    });
+
+    // Add to suspicious IPs
+    suspiciousIPs.add(ip);
+    
+    // Emit security event
+    eventBus.emit('security.ldap_injection', {
+      ip,
+      input: input.substring(0, 100),
+      timestamp: new Date()
+    });
+
+    console.log(`🚨 LDAP injection attempt detected from ${ip}`);
+    return true;
+  }
+
+  return false;
+}
+
+// Check for NoSQL injection attempts
+export function detectNoSQLInjection(input, req) {
+  if (!input || typeof input !== 'string') return false;
+
+  const hasNoSQLInjection = SECURITY_PATTERNS.NOSQL_INJECTION.some(pattern => 
+    pattern.test(input)
+  );
+
+  if (hasNoSQLInjection) {
+    const ip = getRealIP(req);
+    
+    logActions.securityEvent(null, 'detected', req, {
+      eventType: 'nosql_injection_attempt',
+      severity: 'high',
+      source: ip,
+      target: 'nosql_database',
+      description: 'NoSQL injection attempt detected',
+      maliciousInput: input.substring(0, 100),
+      detectedAt: new Date().toISOString()
+    });
+
+    // Add to suspicious IPs
+    suspiciousIPs.add(ip);
+    
+    // Emit security event
+    eventBus.emit('security.nosql_injection', {
+      ip,
+      input: input.substring(0, 100),
+      timestamp: new Date()
+    });
+
+    console.log(`🚨 NoSQL injection attempt detected from ${ip}`);
+    return true;
+  }
+
+  return false;
+}
+
+// Check for command injection attempts
+export function detectCommandInjection(input, req) {
+  if (!input || typeof input !== 'string') return false;
+
+  const hasCommandInjection = SECURITY_PATTERNS.COMMAND_INJECTION.some(pattern => 
+    pattern.test(input)
+  );
+
+  if (hasCommandInjection) {
+    const ip = getRealIP(req);
+    
+    logActions.securityEvent(null, 'detected', req, {
+      eventType: 'command_injection_attempt',
+      severity: 'critical',
+      source: ip,
+      target: 'system_shell',
+      description: 'Command injection attempt detected',
+      maliciousInput: input.substring(0, 100),
+      detectedAt: new Date().toISOString()
+    });
+
+    // Block IP immediately for command injection
+    blockIP(ip, 'command_injection_attempt');
+    
+    // Emit security event
+    eventBus.emit('security.command_injection', {
+      ip,
+      input: input.substring(0, 100),
+      timestamp: new Date()
+    });
+
+    console.log(`🚨 Command injection attempt detected from ${ip} - IP BLOCKED`);
+    return true;
+  }
+
+  return false;
+}
+
+// Check for path traversal attempts
+export function detectPathTraversal(input, req) {
+  if (!input || typeof input !== 'string') return false;
+
+  const hasPathTraversal = SECURITY_PATTERNS.PATH_TRAVERSAL.some(pattern => 
+    pattern.test(input)
+  );
+
+  if (hasPathTraversal) {
+    const ip = getRealIP(req);
+    
+    logActions.securityEvent(null, 'detected', req, {
+      eventType: 'path_traversal_attempt',
+      severity: 'high',
+      source: ip,
+      target: 'file_system',
+      description: 'Path traversal attempt detected',
+      maliciousInput: input.substring(0, 100),
+      detectedAt: new Date().toISOString()
+    });
+
+    // Add to suspicious IPs
+    suspiciousIPs.add(ip);
+    
+    // Emit security event
+    eventBus.emit('security.path_traversal', {
+      ip,
+      input: input.substring(0, 100),
+      timestamp: new Date()
+    });
+
+    console.log(`🚨 Path traversal attempt detected from ${ip}`);
+    return true;
+  }
+
+  return false;
+}
+
+// Check for SSRF attempts
+export function detectSSRF(input, req) {
+  if (!input || typeof input !== 'string') return false;
+
+  const hasSSRF = SECURITY_PATTERNS.SSRF.some(pattern => 
+    pattern.test(input)
+  );
+
+  if (hasSSRF) {
+    const ip = getRealIP(req);
+    
+    logActions.securityEvent(null, 'detected', req, {
+      eventType: 'ssrf_attempt',
+      severity: 'high',
+      source: ip,
+      target: 'internal_network',
+      description: 'SSRF attempt detected',
+      maliciousInput: input.substring(0, 100),
+      detectedAt: new Date().toISOString()
+    });
+
+    // Add to suspicious IPs
+    suspiciousIPs.add(ip);
+    
+    // Emit security event
+    eventBus.emit('security.ssrf', {
+      ip,
+      input: input.substring(0, 100),
+      timestamp: new Date()
+    });
+
+    console.log(`🚨 SSRF attempt detected from ${ip}`);
+    return true;
+  }
+
+  return false;
+}
+
+// Check for XXE attempts
+export function detectXXE(input, req) {
+  if (!input || typeof input !== 'string') return false;
+
+  const hasXXE = SECURITY_PATTERNS.XXE.some(pattern => 
+    pattern.test(input)
+  );
+
+  if (hasXXE) {
+    const ip = getRealIP(req);
+    
+    logActions.securityEvent(null, 'detected', req, {
+      eventType: 'xxe_attempt',
+      severity: 'high',
+      source: ip,
+      target: 'xml_parser',
+      description: 'XXE attack attempt detected',
+      maliciousInput: input.substring(0, 100),
+      detectedAt: new Date().toISOString()
+    });
+
+    // Add to suspicious IPs
+    suspiciousIPs.add(ip);
+    
+    // Emit security event
+    eventBus.emit('security.xxe', {
+      ip,
+      input: input.substring(0, 100),
+      timestamp: new Date()
+    });
+
+    console.log(`🚨 XXE attack attempt detected from ${ip}`);
+    return true;
+  }
+
+  return false;
+}
+
+// Check for information disclosure attempts
+export function detectInformationDisclosure(input, req) {
+  if (!input || typeof input !== 'string') return false;
+
+  const hasInfoDisclosure = SECURITY_PATTERNS.INFORMATION_DISCLOSURE.some(pattern => 
+    pattern.test(input)
+  );
+
+  if (hasInfoDisclosure) {
+    const ip = getRealIP(req);
+    
+    logActions.securityEvent(null, 'detected', req, {
+      eventType: 'information_disclosure_attempt',
+      severity: 'low',
+      source: ip,
+      target: 'system_info',
+      description: 'Information disclosure attempt detected',
+      maliciousInput: input.substring(0, 100),
+      detectedAt: new Date().toISOString()
+    });
+
+    // Add to suspicious IPs
+    suspiciousIPs.add(ip);
+    
+    // Emit security event
+    eventBus.emit('security.information_disclosure', {
+      ip,
+      input: input.substring(0, 100),
+      timestamp: new Date()
+    });
+
+    console.log(`⚠️ Information disclosure attempt detected from ${ip}`);
     return true;
   }
 
@@ -421,6 +812,62 @@ export function performSecurityCheck(req, res, next) {
       return res.status(400).json({
         message: 'Invalid request: Malicious input detected',
         code: 'XSS_DETECTED'
+      });
+    }
+    
+    // Check for LDAP injection
+    if (detectLDAPInjection(bodyString, req)) {
+      return res.status(400).json({
+        message: 'Invalid request: Malicious input detected',
+        code: 'LDAP_INJECTION_DETECTED'
+      });
+    }
+    
+    // Check for NoSQL injection
+    if (detectNoSQLInjection(bodyString, req)) {
+      return res.status(400).json({
+        message: 'Invalid request: Malicious input detected',
+        code: 'NOSQL_INJECTION_DETECTED'
+      });
+    }
+    
+    // Check for command injection
+    if (detectCommandInjection(bodyString, req)) {
+      return res.status(400).json({
+        message: 'Invalid request: Malicious input detected',
+        code: 'COMMAND_INJECTION_DETECTED'
+      });
+    }
+    
+    // Check for path traversal
+    if (detectPathTraversal(bodyString, req)) {
+      return res.status(400).json({
+        message: 'Invalid request: Malicious input detected',
+        code: 'PATH_TRAVERSAL_DETECTED'
+      });
+    }
+    
+    // Check for SSRF
+    if (detectSSRF(bodyString, req)) {
+      return res.status(400).json({
+        message: 'Invalid request: Malicious input detected',
+        code: 'SSRF_DETECTED'
+      });
+    }
+    
+    // Check for XXE
+    if (detectXXE(bodyString, req)) {
+      return res.status(400).json({
+        message: 'Invalid request: Malicious input detected',
+        code: 'XXE_DETECTED'
+      });
+    }
+    
+    // Check for information disclosure
+    if (detectInformationDisclosure(bodyString, req)) {
+      return res.status(400).json({
+        message: 'Invalid request: Information disclosure attempt detected',
+        code: 'INFORMATION_DISCLOSURE_DETECTED'
       });
     }
     

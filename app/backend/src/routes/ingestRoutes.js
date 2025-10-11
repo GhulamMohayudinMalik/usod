@@ -2,11 +2,12 @@ import express from 'express';
 import { apiKeyAuth } from '../middleware/apiKeyAuth.js';
 import { SecurityLog } from '../models/SecurityLog.js';
 import { eventBus } from '../services/eventBus.js';
+import { performSecurityCheck } from '../services/securityDetectionService.js';
 
 const router = express.Router();
 
 // Ingest login attempt only (first real log type)
-router.post('/login', apiKeyAuth, async (req, res) => {
+router.post('/login', performSecurityCheck, apiKeyAuth, async (req, res) => {
   try {
     const { userId, status, ipAddress, userAgent, details, timestamp } = req.body || {};
     if (!userId || !status) {
@@ -35,7 +36,7 @@ router.post('/login', apiKeyAuth, async (req, res) => {
 });
 
 // Ingest a single log
-router.post('/log', apiKeyAuth, async (req, res) => {
+router.post('/log', performSecurityCheck, apiKeyAuth, async (req, res) => {
   try {
     const payload = req.body || {};
     if (!payload.action || !payload.status) {
@@ -64,7 +65,7 @@ router.post('/log', apiKeyAuth, async (req, res) => {
 });
 
 // Ingest batch logs
-router.post('/logs', apiKeyAuth, async (req, res) => {
+router.post('/logs', performSecurityCheck, apiKeyAuth, async (req, res) => {
   try {
     const items = Array.isArray(req.body) ? req.body : (req.body?.logs || []);
     if (!Array.isArray(items) || items.length === 0) {

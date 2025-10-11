@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { logActions } from '../services/loggingService.js';
+import { performSecurityCheck } from '../services/securityDetectionService.js';
 import { 
   createSecurityLogsBackup, 
   createUsersBackup, 
@@ -12,7 +13,8 @@ import {
 
 const router = express.Router();
 
-// All backup routes require authentication
+// All backup routes require authentication and security checks
+router.use(performSecurityCheck);
 router.use(authenticateToken);
 
 // Create security logs backup

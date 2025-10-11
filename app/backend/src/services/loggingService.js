@@ -79,8 +79,7 @@ export async function logSecurityEvent(userId, action, status, req, details = {}
       }
     }
     
-    const logEntry = await SecurityLog.create({
-      userId,
+    const logData = {
       action,
       status,
       ipAddress: getRealIP(req),
@@ -93,7 +92,14 @@ export async function logSecurityEvent(userId, action, status, req, details = {}
         username
       },
       timestamp: new Date()
-    });
+    };
+    
+    // Only add userId if it's not null
+    if (userId) {
+      logData.userId = userId;
+    }
+    
+    const logEntry = await SecurityLog.create(logData);
     
     eventBus.emit('log.created', logEntry);
     return logEntry;

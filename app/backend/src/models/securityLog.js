@@ -1,7 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 const SecurityLogSchema = new Schema({
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: false },
     action: {
         type: String,
         required: true,

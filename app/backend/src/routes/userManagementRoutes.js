@@ -3,11 +3,12 @@ import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { logActions } from '../services/loggingService.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { performSecurityCheck } from '../services/securityDetectionService.js';
 
 const router = express.Router();
 
 // Create user endpoint
-router.post('/create', authenticateToken, async (req, res) => {
+router.post('/create', performSecurityCheck, authenticateToken, async (req, res) => {
   try {
     const { username, email, password, role = 'user' } = req.body;
     
@@ -91,7 +92,7 @@ router.post('/create', authenticateToken, async (req, res) => {
 });
 
 // Change password endpoint
-router.post('/change-password', authenticateToken, async (req, res) => {
+router.post('/change-password', performSecurityCheck, authenticateToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     
@@ -153,7 +154,7 @@ router.post('/change-password', authenticateToken, async (req, res) => {
 });
 
 // Update profile endpoint
-router.put('/profile', authenticateToken, async (req, res) => {
+router.put('/profile', performSecurityCheck, authenticateToken, async (req, res) => {
   try {
     const { email, username } = req.body;
     const allowedFields = ['email', 'username'];
@@ -265,7 +266,7 @@ router.get('/users', authenticateToken, async (req, res) => {
 });
 
 // Delete user endpoint (admin only)
-router.delete('/users/:userId', authenticateToken, async (req, res) => {
+router.delete('/users/:userId', performSecurityCheck, authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
     const { reason = 'manual_deletion' } = req.body;
@@ -334,7 +335,7 @@ router.delete('/users/:userId', authenticateToken, async (req, res) => {
 });
 
 // Change user role endpoint (admin only)
-router.put('/users/:userId/role', authenticateToken, async (req, res) => {
+router.put('/users/:userId/role', performSecurityCheck, authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
     const { newRole, reason = 'manual_change' } = req.body;
@@ -418,7 +419,7 @@ router.put('/users/:userId/role', authenticateToken, async (req, res) => {
 });
 
 // Update user settings endpoint
-router.put('/settings', authenticateToken, async (req, res) => {
+router.put('/settings', performSecurityCheck, authenticateToken, async (req, res) => {
   try {
     const { settingType, settingName, newValue, changeScope = 'user' } = req.body;
 
