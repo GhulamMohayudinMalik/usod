@@ -2,6 +2,32 @@
 
 A modern security operations dashboard for monitoring security events, login attempts, and system activities in real-time.
 
+## 🚨 DEPLOYMENT READINESS CHECKLIST
+
+**⚠️ NOT READY FOR PRODUCTION DEPLOYMENT - The following items must be completed:**
+
+### Critical Missing Items:
+- [ ] **Environment Files**: Create `.env` files for both frontend and backend
+- [ ] **Hardcoded URLs**: Replace all `localhost:5000` references with environment variables
+- [ ] **Production Configuration**: Add Docker files and production build scripts
+- [ ] **Database Setup**: Configure production MongoDB connection
+- [ ] **CORS Configuration**: Update for production domains
+- [ ] **Security Secrets**: Change default JWT secrets and API keys
+- [ ] **SSL/HTTPS**: Configure secure connections
+- [ ] **Monitoring**: Set up production logging and alerting
+
+### Files to Create/Update:
+- [ ] `backend/.env.example` and `backend/.env`
+- [ ] `frontend/.env.local.example` and `frontend/.env.local`
+- [ ] `Dockerfile` for backend and frontend
+- [ ] `docker-compose.yml` for local development
+- [ ] Update all hardcoded URLs in frontend components
+- [ ] Add production build scripts to package.json
+
+**Note**: This checklist can be removed once all items are completed.
+
+---
+
 ## Current Version
 
 V3.0 - **Fully Secured Application**
