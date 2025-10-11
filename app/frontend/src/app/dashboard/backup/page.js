@@ -26,6 +26,12 @@ export default function BackupPage() {
       });
 
       if (!response.ok) {
+        if (response.status === 403) {
+          // User doesn't have permission to view backups
+          setError('You do not have permission to view backup management. This feature is restricted to administrators.');
+          setBackups([]);
+          return;
+        }
         throw new Error('Failed to fetch backups');
       }
 
@@ -53,6 +59,9 @@ export default function BackupPage() {
       if (response.ok) {
         const data = await response.json();
         setStats(data.stats);
+      } else if (response.status === 403) {
+        // User doesn't have permission to view backup stats
+        setStats(null);
       }
     } catch (err) {
       console.error('Error fetching backup stats:', err);
@@ -209,23 +218,30 @@ export default function BackupPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-white">Backup Management</h1>
-          <p className="text-gray-400 mt-2">Create, restore, and manage system backups</p>
+          <p className="text-gray-400 mt-2">
+            {error && error.includes('permission') 
+              ? 'Access restricted to administrators only' 
+              : 'Create, restore, and manage system backups'
+            }
+          </p>
         </div>
-        <div className="flex space-x-3">
-          <button
-            onClick={handleCleanup}
-            disabled={loading}
-            className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-lg font-medium hover:from-orange-700 hover:to-red-700 disabled:opacity-50 transition-all transform hover:scale-[1.02] shadow-lg shadow-orange-500/25"
-          >
-            {loading ? 'Cleaning...' : 'Cleanup Old'}
-          </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-gradient-to-r from-emerald-600 to-cyan-600 text-white px-6 py-3 rounded-lg font-medium hover:from-emerald-700 hover:to-cyan-700 transition-all transform hover:scale-[1.02] shadow-lg shadow-emerald-500/25"
-          >
-            Create Backup
-          </button>
-        </div>
+        {!error && (
+          <div className="flex space-x-3">
+            <button
+              onClick={handleCleanup}
+              disabled={loading}
+              className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-lg font-medium hover:from-orange-700 hover:to-red-700 disabled:opacity-50 transition-all transform hover:scale-[1.02] shadow-lg shadow-orange-500/25"
+            >
+              {loading ? 'Cleaning...' : 'Cleanup Old'}
+            </button>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-gradient-to-r from-emerald-600 to-cyan-600 text-white px-6 py-3 rounded-lg font-medium hover:from-emerald-700 hover:to-cyan-700 transition-all transform hover:scale-[1.02] shadow-lg shadow-emerald-500/25"
+            >
+              Create Backup
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Success/Error Messages */}
@@ -241,8 +257,8 @@ export default function BackupPage() {
         </div>
       )}
 
-      {/* Statistics Cards */}
-      {stats && (
+      {/* Statistics Cards - Only show if user has permission */}
+      {stats && !error && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
             <div className="flex items-center">
@@ -306,8 +322,9 @@ export default function BackupPage() {
         </div>
       )}
 
-      {/* Backups Table */}
-      <div className="bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-700/50 overflow-hidden">
+      {/* Backups Table - Only show if user has permission */}
+      {!error && (
+        <div className="bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-700/50 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-700/50">
           <h2 className="text-xl font-semibold text-white">Available Backups</h2>
           <p className="text-gray-400 text-sm">Total backups: {backups.length}</p>
@@ -378,9 +395,10 @@ export default function BackupPage() {
           </table>
         </div>
       </div>
+      )}
 
-      {/* Create Backup Modal */}
-      {showCreateModal && (
+      {/* Create Backup Modal - Only show if user has permission */}
+      {showCreateModal && !error && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-gray-800/90 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50 max-w-md w-full mx-4">
             <h3 className="text-xl font-semibold text-white mb-4">Create New Backup</h3>
@@ -417,8 +435,8 @@ export default function BackupPage() {
         </div>
       )}
 
-      {/* Restore Backup Modal */}
-      {showRestoreModal && selectedBackup && (
+      {/* Restore Backup Modal - Only show if user has permission */}
+      {showRestoreModal && selectedBackup && !error && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-gray-800/90 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50 max-w-md w-full mx-4">
             <h3 className="text-xl font-semibold text-white mb-4">Restore Backup</h3>

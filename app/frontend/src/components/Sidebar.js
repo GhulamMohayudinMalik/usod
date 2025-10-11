@@ -89,6 +89,16 @@ const SecurityIcon = () => (
   </svg>
 );
 
+const SecurityLabIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+    <path d="M9 12l2 2 4-4" />
+    <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3" />
+    <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3" />
+    <path d="M12 3c0 1-1 3-3 3s-3-2-3-3 1-3 3-3 3 2 3 3" />
+    <path d="M12 21c0-1 1-3 3-3s3 2 3 3-1 3-3 3-3-2-3-3" />
+  </svg>
+);
+
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
   { name: 'Threat Analysis', href: '/dashboard/threats', icon: ThreatIcon },
@@ -97,6 +107,7 @@ const navigation = [
   { name: 'AI Insights', href: '/dashboard/ai-insights', icon: AiInsightsIcon },
   { name: 'User Management', href: '/dashboard/users', icon: UsersIcon },
   { name: 'Security Management', href: '/dashboard/security', icon: SecurityIcon },
+  { name: 'Security Lab', href: '/dashboard/security-lab', icon: SecurityLabIcon },
   { name: 'Backup Management', href: '/dashboard/backup', icon: BackupIcon },
   { name: 'Change Password', href: '/dashboard/change-password', icon: KeyIcon },
   { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },

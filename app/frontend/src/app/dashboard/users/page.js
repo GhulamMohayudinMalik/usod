@@ -33,6 +33,12 @@ export default function UsersPage() {
       });
 
       if (!response.ok) {
+        if (response.status === 403) {
+          // User doesn't have permission to view users
+          setError('You do not have permission to view user management. This feature is restricted to administrators.');
+          setUsers([]);
+          return;
+        }
         throw new Error('Failed to fetch users');
       }
 
@@ -197,18 +203,25 @@ export default function UsersPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-white">User Management</h1>
-          <p className="text-gray-400 mt-2">Manage system users and their permissions</p>
+          <p className="text-gray-400 mt-2">
+            {error && error.includes('permission') 
+              ? 'Access restricted to administrators only' 
+              : 'Manage system users and their permissions'
+            }
+          </p>
         </div>
-        <button
-          onClick={() => setShowCreateForm(!showCreateForm)}
-          className="bg-gradient-to-r from-emerald-600 to-cyan-600 text-white px-6 py-3 rounded-lg font-medium hover:from-emerald-700 hover:to-cyan-700 transition-all transform hover:scale-[1.02] shadow-lg shadow-emerald-500/25"
-        >
-          {showCreateForm ? 'Cancel' : 'Create User'}
-        </button>
+        {!error && (
+          <button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className="bg-gradient-to-r from-emerald-600 to-cyan-600 text-white px-6 py-3 rounded-lg font-medium hover:from-emerald-700 hover:to-cyan-700 transition-all transform hover:scale-[1.02] shadow-lg shadow-emerald-500/25"
+          >
+            {showCreateForm ? 'Cancel' : 'Create User'}
+          </button>
+        )}
       </div>
 
-      {/* Create User Form */}
-      {showCreateForm && (
+      {/* Create User Form - Only show if user has permission */}
+      {showCreateForm && !error && (
         <div className="bg-gray-800/80 backdrop-blur-xl rounded-2xl p-6 border border-gray-700/50">
           <h2 className="text-xl font-semibold text-white mb-4">Create New User</h2>
           <form onSubmit={handleCreateUser} className="space-y-4">
@@ -299,93 +312,95 @@ export default function UsersPage() {
         </div>
       )}
 
-      {/* Users Table */}
-      <div className="bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-700/50 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-700/50">
-          <h2 className="text-xl font-semibold text-white">All Users</h2>
-          <p className="text-gray-400 text-sm">Total users: {users.length}</p>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-700/50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Username
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Last Login
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700/50">
-              {users.map((user) => (
-                <tr key={user._id || user.id} className="hover:bg-gray-700/30">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-white font-medium">
-                    {user.username}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    {user.email}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      user.role === 'admin' 
-                        ? 'bg-purple-900/30 text-purple-300 border border-purple-700/50' 
-                        : 'bg-blue-900/30 text-blue-300 border border-blue-700/50'
-                    }`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-900/30 text-green-300 border border-green-700/50">
-                      Active
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => openRoleModal(user)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
-                        title="Change Role"
-                      >
-                        Role
-                      </button>
-                      <button
-                        onClick={() => openDeleteModal(user)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
-                        title="Delete User"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
+      {/* Users Table - Only show if user has permission */}
+      {!error && (
+        <div className="bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-700/50 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-700/50">
+            <h2 className="text-xl font-semibold text-white">All Users</h2>
+            <p className="text-gray-400 text-sm">Total users: {users.length}</p>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-700/50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Username
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Last Login
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Created
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-700/50">
+                {users.map((user) => (
+                  <tr key={user._id || user.id} className="hover:bg-gray-700/30">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white font-medium">
+                      {user.username}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      {user.email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        user.role === 'admin' 
+                          ? 'bg-purple-900/30 text-purple-300 border border-purple-700/50' 
+                          : 'bg-blue-900/30 text-blue-300 border border-blue-700/50'
+                      }`}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-900/30 text-green-300 border border-green-700/50">
+                        Active
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => openRoleModal(user)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                          title="Change Role"
+                        >
+                          Role
+                        </button>
+                        <button
+                          onClick={() => openDeleteModal(user)}
+                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
+                          title="Delete User"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Delete User Modal */}
       {showDeleteModal && (
