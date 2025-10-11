@@ -168,11 +168,19 @@ USOD V3.0 features **enterprise-grade security** with protection across ALL appl
 - **CSRF Protection** - Validates request origins and tokens
 - **Brute Force Detection** - Tracks and blocks repeated failed attempts
 - **Suspicious Activity Monitoring** - Flags unusual patterns and behaviors
+- **Information Disclosure Detection** - Prevents sensitive data exposure attempts
+- **LDAP Injection Protection** - Blocks LDAP injection attacks
+- **NoSQL Injection Protection** - Prevents NoSQL injection attempts
+- **Command Injection Protection** - Blocks system command injection
+- **Path Traversal Protection** - Prevents directory traversal attacks
+- **SSRF Protection** - Blocks server-side request forgery attempts
+- **XXE Protection** - Prevents XML external entity attacks
 
 #### 🚫 **IP Management**
 - **Automatic IP Blocking** - Blocks IPs after multiple failed attempts
 - **Manual IP Management** - Admin can manually block/unblock IPs
 - **IP Whitelisting** - Support for trusted IP addresses
+- **Suspicious IP Tracking** - Monitors and flags suspicious IP addresses
 
 #### 🧪 **Security Testing Lab**
 - **Interactive Testing Environment** - Test security features in real-time
@@ -184,6 +192,64 @@ USOD V3.0 features **enterprise-grade security** with protection across ALL appl
 - **Real-time Threat Detection** - Immediate alerts for security events
 - **Security Statistics** - Track blocked IPs, detected attacks, and threat levels
 - **Comprehensive Logging** - All security events logged with detailed information
+
+#### 🔧 **Security Management Tools**
+- **IP Unblock Script** - Reset security state when needed for testing
+- **Security State Reset** - Clear blocked IPs and suspicious activity tracking
+- **Manual Security Override** - Admin tools for security management
+
+#### 🎯 **Attack Detection Patterns**
+The system detects and blocks the following attack patterns:
+
+**SQL Injection Patterns:**
+- `UNION SELECT`, `DROP TABLE`, `INSERT INTO`, `UPDATE SET`, `DELETE FROM`
+- `OR 1=1`, `' OR '1'='1`, `--`, `/* */`, `xp_cmdshell`, `sp_executesql`
+
+**XSS Patterns:**
+- `<script>`, `javascript:`, `onload=`, `<iframe>`, `<object>`, `<embed>`
+- `expression()`, `url()`, `@import`
+
+**LDAP Injection Patterns:**
+- `*)`, `(`, `)`, `&`, `|`, `!`, `cn=`, `ou=`, `dc=`, `objectClass=`
+
+**Command Injection Patterns:**
+- `;`, `|`, `&`, `$`, `>`, `<`, `\`, `'`, `"`, `\n`, `\r`
+
+**Path Traversal Patterns:**
+- `../`, `..\\`, `%2e%2e%2f`, `%2e%2e%5c`
+
+**Information Disclosure Patterns:**
+- `version`, `build`, `release`, `debug`, `test`, `staging`, `dev`, `localhost`
+- `127.0.0.1`, `internal`, `private`, `secret`, `password`, `key`, `token`
+
+**SSRF Patterns:**
+- `http://`, `https://`, `ftp://`, `file://`, `gopher://`, `ldap://`
+
+**XXE Patterns:**
+- `<!DOCTYPE`, `<!ENTITY`, `SYSTEM`, `PUBLIC`, `%`, `&`
+
+#### ⚙️ **Security Configuration**
+The security system uses the following thresholds and settings:
+
+**Brute Force Protection:**
+- **Threshold**: 5 failed attempts within 15 minutes
+- **Action**: IP blocked for 1 hour
+- **Window**: 15-minute sliding window
+
+**Suspicious Activity:**
+- **Threshold**: 3 failed attempts within 5 minutes
+- **Action**: IP added to suspicious list
+- **Window**: 5-minute sliding window
+
+**IP Blocking:**
+- **Duration**: 1 hour (60 minutes)
+- **Max Attempts**: 20 attempts per IP before permanent blocking
+- **Auto-cleanup**: Every 5 minutes
+
+**Account Locking:**
+- **Max Failed Attempts**: 5 attempts per account
+- **Lockout Duration**: 30 minutes
+- **Auto-unlock**: After lockout period expires
 
 ### Protected Endpoints
 
@@ -197,7 +263,25 @@ USOD V3.0 features **enterprise-grade security** with protection across ALL appl
 
 ## Comprehensive Logging System
 
-The USOD system implements a comprehensive logging system that captures **18 different types of security events** with detailed information for each event type.
+The USOD system implements a comprehensive logging system that captures **30 different types of events** (18 application events + 12 security events) with detailed information for each event type.
+
+### Security Event Types
+
+The system logs **12 different types of security events** with detailed information:
+
+#### Attack Detection Events
+1. **SQL Injection Attempt** - `sql_injection_attempt`
+2. **XSS Attack Attempt** - `xss_attempt`
+3. **LDAP Injection Attempt** - `ldap_injection_attempt`
+4. **NoSQL Injection Attempt** - `nosql_injection_attempt`
+5. **Command Injection Attempt** - `command_injection_attempt`
+6. **Path Traversal Attempt** - `path_traversal_attempt`
+7. **SSRF Attempt** - `ssrf_attempt`
+8. **XXE Attempt** - `xxe_attempt`
+9. **Information Disclosure Attempt** - `information_disclosure_attempt`
+10. **Suspicious Activity** - `suspicious_activity`
+11. **CSRF Attempt** - `csrf_attempt`
+12. **Brute Force Attack** - `brute_force_detected`
 
 ### Log Types Overview
 
@@ -525,6 +609,9 @@ curl -X POST http://localhost:5000/api/backup/cleanup -H "Authorization: Bearer 
 - **Attack Types**: SQL injection, XSS, brute force, suspicious activity, CSRF
 - **Educational Interface**: Learn about different attack vectors
 - **Live Logs**: View security logs in real-time during testing
+- **Attack Simulation**: Test 12 different attack types safely
+- **Response Analysis**: See exactly how the system responds to each attack
+- **Learning Mode**: Educational tool for understanding security threats
 
 #### Backup Management (`/dashboard/backup`)
 - **Create Backups**: Full system, security logs, or users-only backups (admin only)
@@ -638,18 +725,41 @@ usod-testing/
 │   │   ├── middleware/      # Authentication & API key middleware
 │   │   ├── models/          # MongoDB schemas
 │   │   ├── routes/          # API routes
-│   │   ├── scripts/         # Database seeding scripts
+│   │   ├── scripts/         # Database seeding & security scripts
 │   │   ├── services/        # Business logic services
 │   │   └── server.js        # Main server file
+│   ├── backups/             # System backup files
 │   └── package.json
 ├── frontend/
 │   ├── src/
 │   │   ├── app/             # Next.js app router pages
+│   │   │   ├── dashboard/   # Dashboard pages
+│   │   │   └── login/       # Authentication pages
 │   │   ├── components/      # React components
 │   │   └── services/        # API service functions
 │   └── package.json
 └── README.md
 ```
+
+### Key Files and Their Purposes
+
+#### Backend Security Files
+- `src/services/securityDetectionService.js` - Main security detection logic
+- `src/middleware/auth.js` - JWT authentication middleware
+- `src/middleware/apiKeyAuth.js` - API key authentication
+- `src/scripts/fullSecurityReset.js` - Security state reset script
+
+#### Frontend Dashboard Pages
+- `src/app/dashboard/security-lab/page.js` - Security testing interface
+- `src/app/dashboard/logs/page.js` - Real-time log monitoring
+- `src/app/dashboard/users/page.js` - User management interface
+- `src/app/dashboard/backup/page.js` - Backup management interface
+
+#### Configuration Files
+- `backend/.env` - Backend environment variables
+- `frontend/next.config.mjs` - Next.js configuration
+- `backend/package.json` - Backend dependencies
+- `frontend/package.json` - Frontend dependencies
 
 ## Development
 
@@ -670,6 +780,143 @@ npm run dev  # Development server with hot reload
 cd backend
 npm run seed  # Reset and seed database with initial users
 ```
+
+### Available Scripts
+
+#### Backend Scripts (`backend/src/scripts/`)
+
+**1. Database Seeding (`seedUsers.js`)**
+```bash
+npm run seed
+```
+- Creates initial user accounts for testing
+- Admin accounts: `GhulamMohayudin/gm123`, `Ali/ali123`
+- User accounts: `Zuhaib/zuhaib123`, `AliSami/user123`, `ZuhaibIqbal/user123`
+
+**2. Security Reset (`fullSecurityReset.js`)**
+```bash
+node src/scripts/fullSecurityReset.js
+```
+- Unblocks all IP addresses
+- Clears suspicious IPs list
+- Resets IP attempts tracking
+- Unlocks all locked accounts
+- Resets failed login attempts
+- **Use after security testing**
+
+**3. Log Generation (`generate.js`)**
+```bash
+node src/scripts/generate.js
+```
+- Generates sample security logs for testing
+- Creates realistic log data for demonstrations
+- Useful for populating the dashboard with test data
+
+#### Frontend Scripts (`frontend/`)
+
+**Development Server**
+```bash
+npm run dev  # Start Next.js development server
+```
+
+**Production Build**
+```bash
+npm run build  # Build for production
+npm start      # Start production server
+```
+
+### Security Management
+
+#### Unblock IP Address (For Testing)
+If you get locked out due to security testing or false positives, use the security reset script:
+
+```bash
+# From backend directory
+cd backend
+node src/scripts/fullSecurityReset.js
+```
+
+This script will:
+- Unblock your IP address (127.0.0.1)
+- Clear the suspicious IPs list
+- Reset IP attempts tracking (brute force protection)
+- Unlock any locked user accounts
+- Reset failed login attempts for all users
+- Allow you to log in normally again
+
+**Note**: This script is intended for development and testing purposes. In production, use proper admin tools for security management.
+
+### Security Testing Workflow
+
+#### Testing Attack Detection
+The security system blocks malicious attempts and locks out the IP address. Here's how to test it:
+
+**Step 1: Test SQL Injection Attack**
+```bash
+# This will trigger SQL injection detection and block your IP
+Invoke-RestMethod -Uri "http://localhost:5000/api/auth/login" -Method POST -ContentType "application/json" -Body '{"username":"admin","password":"'' OR 1=1 --"}'
+
+# Expected Response: {"message":"Invalid request: Malicious input detected","code":"SQL_INJECTION_DETECTED"}
+```
+
+**Step 2: Verify IP is Blocked**
+```bash
+# This should fail because your IP is now blocked
+Invoke-RestMethod -Uri "http://localhost:5000/api/auth/login" -Method POST -ContentType "application/json" -Body '{"username":"GhulamMohayudin","password":"gm123"}'
+
+# Expected Response: {"message":"Access denied: IP address is blocked","code":"IP_BLOCKED"}
+```
+
+**Step 3: Unblock Your IP**
+```bash
+# Run the security reset script to unblock your IP
+cd backend
+node src/scripts/fullSecurityReset.js
+
+# Expected Output: Security state reset successfully
+```
+
+**Step 4: Verify Normal Login Works**
+```bash
+# This should now work normally
+Invoke-RestMethod -Uri "http://localhost:5000/api/auth/login" -Method POST -ContentType "application/json" -Body '{"username":"GhulamMohayudin","password":"gm123"}'
+
+# Expected Response: Login successful with JWT token
+```
+
+#### Testing XSS Attacks
+```bash
+# Test XSS detection
+Invoke-RestMethod -Uri "http://localhost:5000/api/auth/login" -Method POST -ContentType "application/json" -Body '{"username":"<script>alert(1)</script>","password":"test"}'
+
+# Expected Response: {"message":"Invalid request: Malicious input detected","code":"XSS_DETECTED"}
+```
+
+#### Testing Other Attack Types
+```bash
+# Test LDAP Injection
+Invoke-RestMethod -Uri "http://localhost:5000/api/auth/login" -Method POST -ContentType "application/json" -Body '{"username":"admin)(&(password=*))","password":"test"}'
+
+# Test Command Injection
+Invoke-RestMethod -Uri "http://localhost:5000/api/auth/login" -Method POST -ContentType "application/json" -Body '{"username":"admin; ls -la","password":"test"}'
+
+# Test Path Traversal
+Invoke-RestMethod -Uri "http://localhost:5000/api/auth/login" -Method POST -ContentType "application/json" -Body '{"username":"../../../etc/passwd","password":"test"}'
+```
+
+#### When to Use the Unblock Script
+Run the unblock script (`node src/scripts/fullSecurityReset.js`) when:
+- You get "IP address is blocked" errors
+- You've been testing security features
+- You need to reset the security state for demonstrations
+- You're locked out due to false positives during development
+
+#### Security Testing Best Practices
+1. **Always test in a development environment**
+2. **Use the unblock script after testing attacks**
+3. **Test both attack detection AND normal functionality**
+4. **Verify the system works end-to-end**
+5. **Document any issues for production deployment**
 
 ## Environment Variables
 
@@ -698,6 +945,16 @@ npm run seed  # Reset and seed database with initial users
 4. **Frontend Not Loading**
    - Check if the backend is running on the correct port
    - Verify the `FRONTEND_URL` in your backend `.env` file
+
+5. **Login Blocked Due to Security Testing**
+   - If you get "Invalid request: Malicious input detected" or similar errors
+   - Run the security reset script: `cd backend && node src/scripts/fullSecurityReset.js`
+   - This happens when security patterns are detected in your input during testing
+
+6. **IP Address Blocked**
+   - If your IP is blocked due to multiple failed attempts
+   - Use the security reset script to reset security state
+   - Check the security logs in the dashboard for details
 
 ### Health Check
 ```bash
