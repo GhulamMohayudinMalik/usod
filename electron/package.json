@@ -1,0 +1,16 @@
+{
+  "name": "electron-app",
+  "version": "1.0.0",
+  "description": "Simple Electron app with login and dashboard",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "keywords": ["electron", "desktop", "app"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^38.2.2"
+  }
+}
