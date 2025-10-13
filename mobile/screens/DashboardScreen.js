@@ -5,36 +5,10 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-const DashboardScreen = ({ navigation, route }) => {
-  const { username } = route.params || { username: 'User' };
-
-  const handleLogout = () => {
-    navigation.navigate('Login');
-  };
-
+const DashboardScreen = ({ username = 'User' }) => {
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.userInfo}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {username.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-            <View style={styles.userDetails}>
-              <Text style={styles.welcomeText}>Welcome back,</Text>
-              <Text style={styles.usernameText}>{username}</Text>
-            </View>
-          </View>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
+    <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.successContainer}>
           <View style={styles.successIcon}>
@@ -74,7 +48,7 @@ const DashboardScreen = ({ navigation, route }) => {
           </View>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -82,67 +56,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#111827',
-  },
-  header: {
-    backgroundColor: 'rgba(17, 24, 39, 0.9)',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(55, 65, 81, 0.3)',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    minHeight: 50,
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 16,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#10B981',
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  avatarText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  userDetails: {
-    flex: 1,
-    minWidth: 0,
-  },
-  welcomeText: {
-    color: '#9CA3AF',
-    fontSize: 12,
-  },
-  usernameText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    flexShrink: 1,
-  },
-  logoutButton: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-    minWidth: 60,
-  },
-  logoutButtonText: {
-    color: '#EF4444',
-    fontSize: 14,
-    fontWeight: '500',
   },
   content: {
     flex: 1,
@@ -196,9 +109,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   infoText: {
-    fontSize: 14,
-    color: '#D1D5DB',
-    lineHeight: 20,
+    fontSize: 15,
+    color: '#E5E7EB',
+    lineHeight: 22,
     marginBottom: 12,
   },
   statsContainer: {
@@ -222,9 +135,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#9CA3AF',
+    fontSize: 13,
+    color: '#D1D5DB',
     textAlign: 'center',
+    fontWeight: '500',
   },
 });
 

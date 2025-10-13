@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const LoginScreen = ({ navigation }) => {
+const LoginScreen = ({ onLogin }) => {
   const insets = useSafeAreaInsets();
   const [formData, setFormData] = useState({
     username: '',
@@ -33,7 +33,9 @@ const LoginScreen = ({ navigation }) => {
     setTimeout(() => {
       setLoading(false);
       // For demo purposes, accept any credentials
-      navigation.navigate('Dashboard', { username: formData.username });
+      if (onLogin) {
+        onLogin(formData.username);
+      }
     }, 1500);
   };
 
@@ -199,9 +201,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#D1D5DB',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#E5E7EB',
     marginBottom: 8,
   },
   input: {
@@ -245,17 +247,18 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(55, 65, 81, 0.5)',
   },
   demoTitle: {
-    fontSize: 14,
-    color: '#9CA3AF',
+    fontSize: 16,
+    color: '#D1D5DB',
     marginBottom: 12,
+    fontWeight: '500',
   },
   demoAccounts: {
-    gap: 4,
+    gap: 6,
   },
   demoText: {
-    fontSize: 12,
-    color: '#D1D5DB',
-    lineHeight: 16,
+    fontSize: 14,
+    color: '#E5E7EB',
+    lineHeight: 20,
   },
 });
 
