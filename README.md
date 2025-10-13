@@ -1,38 +1,18 @@
 # USOD - Unified Security Operations Dashboard
 
-A modern security operations dashboard for monitoring security events, login attempts, and system activities in real-time.
+A modern security operations dashboard for monitoring security events, login attempts, and system activities in real-time. Available as both a web application and desktop application.
 
-## 🚨 DEPLOYMENT READINESS CHECKLIST
+## Current Versions
 
-**⚠️ NOT READY FOR PRODUCTION DEPLOYMENT - The following items must be completed:**
-
-### Critical Missing Items:
-- [ ] **Environment Files**: Create `.env` files for both frontend and backend
-- [ ] **Hardcoded URLs**: Replace all `localhost:5000` references with environment variables
-- [ ] **Production Configuration**: Add Docker files and production build scripts
-- [ ] **Database Setup**: Configure production MongoDB connection
-- [ ] **CORS Configuration**: Update for production domains
-- [ ] **Security Secrets**: Change default JWT secrets and API keys
-- [ ] **SSL/HTTPS**: Configure secure connections
-- [ ] **Monitoring**: Set up production logging and alerting
-
-### Files to Create/Update:
-- [ ] `backend/.env.example` and `backend/.env`
-- [ ] `frontend/.env.local.example` and `frontend/.env.local`
-- [ ] `Dockerfile` for backend and frontend
-- [ ] `docker-compose.yml` for local development
-- [ ] Update all hardcoded URLs in frontend components
-- [ ] Add production build scripts to package.json
-
-**Note**: This checklist can be removed once all items are completed.
-
----
-
-## Current Version
-
-V3.1 - **Enhanced Security & Stability**
+### 🌐 **Web Application - V3.1**
+**Enhanced Security & Stability**
 
 Complete security implementation across all endpoints with comprehensive attack detection and prevention. Latest update includes critical bug fixes and enhanced error handling for improved reliability.
+
+### 🖥️ **Desktop Application - V1.0**
+**Electron Desktop App**
+
+Native desktop application built with Electron, featuring the same security-focused design and functionality as the web app. Includes login authentication, dashboard overview, and threat monitoring with a professional dark theme optimized for desktop use.
 
 ## Recent Updates (V3.1)
 
@@ -67,6 +47,98 @@ Complete security implementation across all endpoints with comprehensive attack 
 - 🛡️ **Comprehensive Security** - SQL injection, XSS, CSRF, and brute force protection across ALL endpoints
 - 🧪 **Security Testing Lab** - Interactive security testing environment for real-time attack simulation
 
+## 🖥️ Desktop Application (Electron)
+
+The USOD desktop application provides a native desktop experience with the same security-focused functionality as the web application.
+
+### Desktop App Features
+
+**🔐 Authentication System:**
+- Secure login with JWT-based authentication
+- Demo credentials pre-configured for testing
+- Session management with automatic logout
+
+**📊 Dashboard Overview:**
+- Real-time security metrics display
+- Interactive stat cards with trend indicators
+- Professional dark theme with emerald/cyan accents
+- Smooth animations and transitions
+
+**🚨 Threat Monitoring:**
+- Security event cards with severity levels (High, Medium, Low, Critical)
+- Real-time threat information with timestamps
+- Interactive threat action buttons
+- Color-coded threat indicators
+
+**🤖 AI Analysis:**
+- Text analysis for potential security threats
+- Interactive textarea for threat input
+- Analysis simulation with loading states
+- Results notification system
+
+**🎨 User Interface:**
+- Dark professional theme matching web app
+- Glass-morphism design with backdrop blur
+- Responsive layout optimized for desktop
+- Toast notifications for user feedback
+
+### Desktop App Setup
+
+#### Prerequisites
+- **Node.js** (v18 or higher)
+- **Git**
+
+#### Installation & Setup
+
+```bash
+# Navigate to electron directory
+cd electron
+
+# Install dependencies
+npm install
+
+# Start the desktop application
+npm start
+```
+
+#### Demo Credentials
+
+The desktop app includes the same demo credentials as the web application:
+
+**Admin Accounts:**
+- `GhulamMohayudin/gm1234`
+- `Ali/ali123`
+
+**User Accounts:**
+- `Zuhaib/zuhaib123`
+- `GhulamMohayudin/user123`
+- `AliSami/user123`
+- `ZuhaibIqbal/user123`
+
+**Default Account:**
+- `admin/password123`
+
+#### Desktop App Structure
+
+```
+electron/
+├── main.js              # Main Electron process
+├── login.html           # Login page with authentication
+├── dashboard.html       # Main dashboard with stats and threats
+├── package.json         # Dependencies and scripts
+└── README.md           # Desktop app documentation
+```
+
+#### Development Commands
+
+```bash
+# Start desktop app
+npm start
+
+# Start with development tools
+npm run dev
+```
+
 ## Tech Stack
 
 ### Backend
@@ -80,6 +152,12 @@ Complete security implementation across all endpoints with comprehensive attack 
 - **Next.js 15** with React 19
 - **Tailwind CSS** for styling
 - **Responsive design** with dark theme
+
+### Desktop Application
+- **Electron** for native desktop functionality
+- **HTML/CSS/JavaScript** for UI components
+- **Node.js** integration for backend communication
+- **Glass-morphism design** with dark theme
 
 ## Prerequisites
 
@@ -154,8 +232,27 @@ npm run dev
 
 ### 6. Access the Application
 
-- **Frontend:** http://localhost:3000
+- **Web Frontend:** http://localhost:3000
 - **Backend API:** http://localhost:5000
+
+### 7. Desktop Application (Optional)
+
+```bash
+# Navigate to electron directory
+cd electron
+
+# Install dependencies
+npm install
+
+# Start the desktop application
+npm start
+```
+
+**Desktop App Features:**
+- Native desktop experience
+- Same authentication and dashboard as web app
+- Professional dark theme with emerald/cyan accents
+- Demo credentials pre-configured
 
 ## API Documentation
 
@@ -788,6 +885,11 @@ usod-testing/
 │   │   ├── components/      # React components
 │   │   └── services/        # API service functions
 │   └── package.json
+├── electron/                # Desktop application
+│   ├── main.js              # Main Electron process
+│   ├── login.html           # Login page
+│   ├── dashboard.html       # Dashboard page
+│   └── package.json         # Desktop app dependencies
 └── README.md
 ```
 
@@ -804,6 +906,12 @@ usod-testing/
 - `src/app/dashboard/logs/page.js` - Real-time log monitoring
 - `src/app/dashboard/users/page.js` - User management interface
 - `src/app/dashboard/backup/page.js` - Backup management interface
+
+#### Desktop Application Files
+- `electron/main.js` - Main Electron process with window management
+- `electron/login.html` - Desktop login page with authentication
+- `electron/dashboard.html` - Desktop dashboard with stats and threats
+- `electron/package.json` - Desktop app dependencies and scripts
 
 #### Configuration Files
 - `backend/.env` - Backend environment variables
@@ -823,6 +931,13 @@ npm run dev  # Auto-restart on file changes
 ```bash
 cd frontend
 npm run dev  # Development server with hot reload
+```
+
+### Desktop Application Development
+```bash
+cd electron
+npm start    # Start desktop application
+npm run dev  # Start with development tools (DevTools)
 ```
 
 ### Database Seeding
@@ -1026,6 +1141,30 @@ curl http://localhost:5000/health
 3. Make your changes
 4. Test thoroughly
 5. Submit a pull request
+
+## 🚨 DEPLOYMENT READINESS CHECKLIST
+
+**⚠️ NOT READY FOR PRODUCTION DEPLOYMENT - The following items must be completed:**
+
+### Critical Missing Items:
+- [ ] **Environment Files**: Create `.env` files for both frontend and backend
+- [ ] **Hardcoded URLs**: Replace all `localhost:5000` references with environment variables
+- [ ] **Production Configuration**: Add Docker files and production build scripts
+- [ ] **Database Setup**: Configure production MongoDB connection
+- [ ] **CORS Configuration**: Update for production domains
+- [ ] **Security Secrets**: Change default JWT secrets and API keys
+- [ ] **SSL/HTTPS**: Configure secure connections
+- [ ] **Monitoring**: Set up production logging and alerting
+
+### Files to Create/Update:
+- [ ] `backend/.env.example` and `backend/.env`
+- [ ] `frontend/.env.local.example` and `frontend/.env.local`
+- [ ] `Dockerfile` for backend and frontend
+- [ ] `docker-compose.yml` for local development
+- [ ] Update all hardcoded URLs in frontend components
+- [ ] Add production build scripts to package.json
+
+**Note**: This checklist can be removed once all items are completed.
 
 ## License
 
