@@ -128,7 +128,7 @@ export default function LoginPage() {
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-gray-300">Admins:</span>
-                <span className="text-gray-400">GhulamMohayudin/gm123, Ali/ali123</span>
+                <span className="text-gray-400">GhulamMohayudin/gm1234, Ali/ali123</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-300">Users:</span>

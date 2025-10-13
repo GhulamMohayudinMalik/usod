@@ -368,7 +368,7 @@ export function detectXSS(input, req) {
 
 // Check for CSRF attempts
 export function detectCSRF(req) {
-  const csrfToken = req.headers['x-csrf-token'] || req.body._csrf;
+  const csrfToken = req.headers['x-csrf-token'] || (req.body && req.body._csrf);
   const referer = req.headers.referer;
   const origin = req.headers.origin;
 
@@ -500,13 +500,18 @@ export function trackFailedLogin(ip, username, req) {
 export function detectSuspiciousActivity(input, req) {
   if (!input || typeof input !== 'string') return false;
 
+  // Skip suspicious activity detection for localhost in development
+  const ip = getRealIP(req);
+  if (process.env.NODE_ENV === 'development' && 
+      (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1')) {
+    return false;
+  }
+
   const hasSuspiciousPattern = SECURITY_PATTERNS.SUSPICIOUS.some(pattern => 
     pattern.test(input)
   );
 
   if (hasSuspiciousPattern) {
-    const ip = getRealIP(req);
-    
     logActions.securityEvent(null, 'detected', req, {
       eventType: 'suspicious_activity',
       severity: 'low',

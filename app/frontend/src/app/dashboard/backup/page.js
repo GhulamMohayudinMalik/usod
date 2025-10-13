@@ -18,6 +18,16 @@ export default function BackupPage() {
   const fetchBackups = async () => {
     try {
       const token = localStorage.getItem('token');
+      
+      // Check if token exists
+      if (!token) {
+        setError('Please log in to access backup management.');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Fetching backups with token:', token.substring(0, 20) + '...');
+      
       const response = await fetch('http://localhost:5000/api/backup/list', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -25,21 +35,36 @@ export default function BackupPage() {
         }
       });
 
+      console.log('Backup API response status:', response.status);
+
       if (!response.ok) {
+        if (response.status === 401) {
+          setError('Your session has expired. Please log in again.');
+          // Clear invalid token
+          localStorage.removeItem('token');
+          return;
+        }
         if (response.status === 403) {
           // User doesn't have permission to view backups
           setError('You do not have permission to view backup management. This feature is restricted to administrators.');
           setBackups([]);
           return;
         }
-        throw new Error('Failed to fetch backups');
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        throw new Error(`Failed to fetch backups: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      setBackups(data.backups);
+      console.log('Backup data received:', data);
+      setBackups(data.backups || []);
     } catch (err) {
-      setError('Failed to load backups');
       console.error('Error fetching backups:', err);
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        setError('Unable to connect to the server. Please check if the backend is running.');
+      } else {
+        setError(`Failed to load backups: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -49,6 +74,11 @@ export default function BackupPage() {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('token');
+      
+      if (!token) {
+        return; // Skip stats if no token
+      }
+
       const response = await fetch('http://localhost:5000/api/backup/stats', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -62,9 +92,13 @@ export default function BackupPage() {
       } else if (response.status === 403) {
         // User doesn't have permission to view backup stats
         setStats(null);
+      } else if (response.status === 401) {
+        // Token expired, will be handled by fetchBackups
+        setStats(null);
       }
     } catch (err) {
       console.error('Error fetching backup stats:', err);
+      setStats(null);
     }
   };
 
@@ -200,8 +234,15 @@ export default function BackupPage() {
   };
 
   useEffect(() => {
-    fetchBackups();
-    fetchStats();
+    // Only fetch data if user is logged in
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchBackups();
+      fetchStats();
+    } else {
+      setError('Please log in to access backup management.');
+      setLoading(false);
+    }
   }, []);
 
   if (loading && backups.length === 0) {

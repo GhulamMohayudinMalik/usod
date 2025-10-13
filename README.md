@@ -30,9 +30,26 @@ A modern security operations dashboard for monitoring security events, login att
 
 ## Current Version
 
-V3.0 - **Fully Secured Application**
+V3.1 - **Enhanced Security & Stability**
 
-Complete security implementation across all endpoints with comprehensive attack detection and prevention.
+Complete security implementation across all endpoints with comprehensive attack detection and prevention. Latest update includes critical bug fixes and enhanced error handling for improved reliability.
+
+## Recent Updates (V3.1)
+
+### 🔧 **Critical Bug Fixes**
+- **Fixed CSRF Token Validation**: Resolved crash when accessing backup endpoints due to undefined request body
+- **Enhanced Error Handling**: Improved backup page error messages and debugging capabilities
+- **Development Experience**: Better security detection for localhost development while maintaining production security
+
+### 🛡️ **Security Improvements**
+- **Production Security Maintained**: All security features remain fully active in production environments
+- **Development Convenience**: Suspicious activity detection relaxed only for localhost in development mode
+- **Better Error Messages**: Clear feedback for authentication, permission, and network issues
+
+### 📊 **Backup System Enhancements**
+- **Improved Error Handling**: Better user feedback for backup operations
+- **Enhanced Debugging**: Console logging for troubleshooting API issues
+- **Token Validation**: Proper handling of expired or missing authentication tokens
 
 ## Features
 
@@ -266,6 +283,8 @@ The security system uses the following thresholds and settings:
 - **Threshold**: 3 failed attempts within 5 minutes
 - **Action**: IP added to suspicious list
 - **Window**: 5-minute sliding window
+- **Development Mode**: Suspicious activity detection disabled for localhost (127.0.0.1) when `NODE_ENV=development`
+- **Production Mode**: Full suspicious activity detection active for all IPs
 
 **IP Blocking:**
 - **Duration**: 1 hour (60 minutes)
@@ -276,6 +295,11 @@ The security system uses the following thresholds and settings:
 - **Max Failed Attempts**: 5 attempts per account
 - **Lockout Duration**: 30 minutes
 - **Auto-unlock**: After lockout period expires
+
+**Environment-Based Security:**
+- **Development**: Relaxed security for localhost testing
+- **Production**: Full security enforcement for all connections
+- **CSRF Protection**: Enhanced validation to prevent crashes
 
 ### Protected Endpoints
 
@@ -981,6 +1005,13 @@ Run the unblock script (`node src/scripts/fullSecurityReset.js`) when:
    - If your IP is blocked due to multiple failed attempts
    - Use the security reset script to reset security state
    - Check the security logs in the dashboard for details
+
+7. **Backup Page "Failed to fetch backups" Error**
+   - Check if you're logged in (token exists in localStorage)
+   - Verify backend server is running on port 5000
+   - Check browser console for detailed error messages
+   - Ensure you're using an admin account (backup management is admin-only)
+   - If token is expired, log out and log back in
 
 ### Health Check
 ```bash
