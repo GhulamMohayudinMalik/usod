@@ -1,16 +1,77 @@
 {
-  "name": "electron-app",
+  "name": "usod-desktop",
   "version": "1.0.0",
-  "description": "Simple Electron app with login and dashboard",
-  "main": "main.js",
+  "description": "USOD Desktop Application - Security Operations Dashboard",
+  "main": "public/electron.js",
+  "homepage": "./",
   "scripts": {
-    "start": "electron .",
-    "dev": "electron . --dev"
+    "start": "cross-env BROWSER=none react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "electron": "electron .",
+    "electron-dev": "ELECTRON_IS_DEV=true electron .",
+    "electron-pack": "electron-builder",
+    "preelectron-pack": "npm run build",
+    "dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\" --kill-others-on-fail",
+    "build-electron": "npm run build && electron-builder"
   },
-  "keywords": ["electron", "desktop", "app"],
-  "author": "",
+  "keywords": [
+    "electron",
+    "react",
+    "desktop",
+    "security",
+    "dashboard"
+  ],
+  "author": "USOD Team",
   "license": "ISC",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.8.0",
+    "react-scripts": "5.0.1"
+  },
+  "browser": {
+    "electron": false
+  },
   "devDependencies": {
-    "electron": "^38.2.2"
+    "concurrently": "^7.6.0",
+    "cross-env": "^7.0.3",
+    "electron": "^38.2.2",
+    "electron-builder": "^24.0.0",
+    "wait-on": "^7.0.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "build": {
+    "appId": "com.usod.desktop",
+    "productName": "USOD Desktop",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "build/**/*",
+      "public/electron.js",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }

@@ -1,23 +1,28 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const isDev = process.env.ELECTRON_IS_DEV === 'true';
 
 let mainWindow;
 
 function createWindow() {
   // Create the browser window
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1400,
+    height: 900,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
     },
     icon: path.join(__dirname, 'assets/icon.png'), // Optional: add an icon
-    show: false // Don't show until ready
+    show: false, // Don't show until ready
+    minWidth: 1200,
+    minHeight: 800
   });
 
-  // Load the login page
-  mainWindow.loadFile('login.html');
+  // Load the React app
+  const startUrl = 'http://localhost:3000';
+  
+  mainWindow.loadURL(startUrl);
 
   // Show window when ready to prevent visual flash
   mainWindow.once('ready-to-show', () => {
@@ -25,7 +30,7 @@ function createWindow() {
   });
 
   // Open DevTools in development
-  if (process.argv.includes('--dev')) {
+  if (isDev) {
     mainWindow.webContents.openDevTools();
   }
 }
@@ -72,23 +77,8 @@ ipcMain.handle('login', async (event, credentials) => {
   }
 });
 
-// Handle navigation to dashboard
-ipcMain.handle('navigate-to-dashboard', async () => {
-  if (mainWindow) {
-    mainWindow.loadFile('dashboard.html');
-  }
-});
-
-// Handle navigation to logs
-ipcMain.handle('navigate-to-logs', async () => {
-  if (mainWindow) {
-    mainWindow.loadFile('logs.html');
-  }
-});
-
-// Handle logout
+// Handle logout (will be handled by React Router)
 ipcMain.handle('logout', async () => {
-  if (mainWindow) {
-    mainWindow.loadFile('login.html');
-  }
+  // This will be handled by React Router navigation
+  return { success: true };
 });
