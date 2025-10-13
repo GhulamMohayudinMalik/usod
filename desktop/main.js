@@ -79,6 +79,13 @@ ipcMain.handle('navigate-to-dashboard', async () => {
   }
 });
 
+// Handle navigation to logs
+ipcMain.handle('navigate-to-logs', async () => {
+  if (mainWindow) {
+    mainWindow.loadFile('logs.html');
+  }
+});
+
 // Handle logout
 ipcMain.handle('logout', async () => {
   if (mainWindow) {
