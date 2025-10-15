@@ -1,6 +1,6 @@
 # USOD - Unified Security Operations Dashboard
 
-A modern security operations dashboard for monitoring security events, login attempts, and system activities in real-time. Available as both a web application and desktop application.
+A modern security operations dashboard for monitoring security events, login attempts, and system activities in real-time. Available as web application, desktop application, and mobile application.
 
 ## Current Versions
 
@@ -13,6 +13,11 @@ Complete security implementation across all endpoints with comprehensive attack 
 **Electron Desktop App**
 
 Native desktop application built with Electron, featuring the same security-focused design and functionality as the web app. Includes login authentication, dashboard overview, and threat monitoring with a professional dark theme optimized for desktop use.
+
+### 📱 **Mobile Application - V1.0**
+**React Native Mobile App**
+
+Cross-platform mobile application built with React Native and Expo, providing full access to all security management features on mobile devices. Features comprehensive security monitoring, threat analysis, user management, and interactive security testing with a mobile-optimized interface.
 
 ## Recent Updates (V3.1)
 
@@ -46,6 +51,7 @@ Native desktop application built with Electron, featuring the same security-focu
 - 🚫 **Account Security** - Account locking, unlock functionality, and failed login tracking
 - 🛡️ **Comprehensive Security** - SQL injection, XSS, CSRF, and brute force protection across ALL endpoints
 - 🧪 **Security Testing Lab** - Interactive security testing environment for real-time attack simulation
+- 📱 **Mobile Support** - Full-featured mobile application with all security management capabilities
 
 ## 🖥️ Desktop Application (Electron)
 
@@ -139,6 +145,249 @@ npm start
 npm run dev
 ```
 
+## 📱 Mobile Application (React Native)
+
+The USOD mobile application provides a comprehensive security management experience on mobile devices, built with React Native and Expo for cross-platform compatibility.
+
+### Mobile App Features
+
+**🔐 Authentication System:**
+- Secure login with JWT-based authentication
+- Demo credentials pre-configured for testing
+- Session management with automatic logout
+- Mobile-optimized login interface
+
+**📊 Dashboard Overview:**
+- Real-time security metrics display
+- Interactive stat cards with trend indicators
+- Professional dark theme with emerald/cyan accents
+- Mobile-optimized layout and navigation
+
+**🚨 Comprehensive Security Management:**
+- **Threat Analysis**: Interactive text analysis for potential security threats
+- **Security Lab**: Interactive attack testing with 12 different attack types
+- **Logs Analysis**: Real-time security logs with filtering and pagination
+- **Analytics Dashboard**: Security insights with charts and metrics
+- **User Management**: Create, delete, and manage user roles
+- **Backup Management**: Create, restore, and schedule backups
+- **Settings Configuration**: Comprehensive settings management
+
+**🛡️ Interactive Security Lab:**
+- **Attack Testing**: Test 12 different attack types (SQL injection, XSS, brute force, etc.)
+- **Real-time Detection**: See security events as they're detected
+- **Educational Interface**: Learn about different attack vectors
+- **Live Logs**: View security logs in real-time during testing
+- **Attack Simulation**: Safe testing environment for security features
+
+**📱 Mobile-Optimized Interface:**
+- **Responsive Design**: Optimized for various screen sizes
+- **Touch-Friendly**: Large buttons and touch-optimized controls
+- **Sidebar Navigation**: Easy access to all features
+- **Pull-to-Refresh**: Intuitive data refresh functionality
+- **Dark Theme**: Professional dark theme with proper contrast
+
+### Mobile App Setup
+
+#### Prerequisites
+- **Node.js** (v18 or higher)
+- **Expo CLI** (`npm install -g @expo/cli`)
+- **Expo Go App** (for testing on physical devices)
+- **Git**
+
+#### Installation & Setup
+
+```bash
+# Navigate to mobile directory
+cd mobile
+
+# Install dependencies
+npm install
+
+# Start the mobile application
+npx expo start
+```
+
+#### Development Commands
+
+```bash
+# Start Expo development server
+npx expo start
+
+# Start with tunnel (for testing on physical devices)
+npx expo start --tunnel
+
+# Start with specific platform
+npx expo start --android
+npx expo start --ios
+
+# Build for production
+npx expo build:android
+npx expo build:ios
+```
+
+#### Demo Credentials
+
+The mobile app uses the same demo credentials as the web and desktop applications:
+
+**Admin Accounts:**
+- `GhulamMohayudin/gm1234`
+- `Ali/ali123`
+
+**User Accounts:**
+- `Zuhaib/zuhaib123`
+- `GhulamMohayudin/user123`
+- `AliSami/user123`
+- `ZuhaibIqbal/user123`
+
+**Default Account:**
+- `admin/password123`
+
+#### Mobile App Structure
+
+```
+mobile/
+├── App.js                    # Main application entry point
+├── screens/                  # All application screens
+│   ├── LoginScreen.js        # Authentication screen
+│   ├── DashboardScreen.js    # Main dashboard with security stats
+│   ├── ThreatsScreen.js      # Threat analysis and testing
+│   ├── LogsScreen.js         # Security logs analysis
+│   ├── AnalyticsScreen.js    # Analytics dashboard
+│   ├── AIInsightsScreen.js   # AI-powered insights
+│   ├── UsersScreen.js        # User management
+│   ├── SecurityScreen.js     # Security management
+│   ├── SecurityLabScreen.js  # Interactive security testing
+│   ├── BackupScreen.js       # Backup management
+│   ├── ChangePasswordScreen.js # Password change form
+│   └── SettingsScreen.js     # Settings configuration
+├── components/               # Reusable components
+│   ├── Header.js            # Application header
+│   └── Sidebar.js           # Navigation sidebar
+├── package.json             # Dependencies and scripts
+└── README.md               # Mobile app documentation
+```
+
+#### Mobile App Screens
+
+**🔐 Login Screen:**
+- Secure authentication interface
+- Demo credentials display
+- Loading states and error handling
+- Mobile-optimized form inputs
+
+**📊 Dashboard Screen:**
+- Real-time security statistics
+- Recent threats display
+- AI analysis interface
+- Interactive refresh functionality
+
+**🚨 Threat Analysis Screen:**
+- Text input for threat analysis
+- AI-powered threat detection
+- Analysis history with pagination
+- Real-time results display
+
+**📝 Logs Analysis Screen:**
+- Comprehensive security logs
+- Advanced filtering options
+- Paginated data display
+- Export capabilities
+
+**📈 Analytics Screen:**
+- Security metrics and trends
+- Interactive charts and graphs
+- Event breakdown by type and severity
+- Performance indicators
+
+**🤖 AI Insights Screen:**
+- Intelligent security recommendations
+- Threat analysis results
+- Automated insights generation
+- Interactive recommendations
+
+**👥 User Management Screen:**
+- User creation and deletion
+- Role management
+- Activity tracking
+- Permission management
+
+**🛡️ Security Management Screen:**
+- IP blocking and management
+- Security statistics
+- Threat monitoring
+- Security status indicators
+
+**🧪 Security Lab Screen:**
+- Interactive attack testing
+- 12 different attack types
+- Real-time security detection
+- Educational interface
+
+**💾 Backup Management Screen:**
+- Backup creation and restoration
+- Backup scheduling
+- Storage management
+- Backup history
+
+**🔐 Change Password Screen:**
+- Secure password change
+- Password strength validation
+- Security requirements
+- Additional security options
+
+**⚙️ Settings Screen:**
+- Comprehensive configuration
+- Security settings
+- Notification preferences
+- App information
+
+#### Testing on Devices
+
+**Using Expo Go (Recommended for Development):**
+1. Install Expo Go app on your mobile device
+2. Run `npx expo start` in the mobile directory
+3. Scan the QR code with Expo Go app
+4. The app will load on your device
+
+**Using Physical Device:**
+1. Connect your device via USB
+2. Enable USB debugging (Android) or developer mode (iOS)
+3. Run `npx expo start --android` or `npx expo start --ios`
+4. The app will install and run on your device
+
+**Using Simulator/Emulator:**
+1. Install Android Studio (Android) or Xcode (iOS)
+2. Set up simulator/emulator
+3. Run `npx expo start --android` or `npx expo start --ios`
+4. The app will open in the simulator
+
+#### Mobile App Features
+
+**🎯 Key Capabilities:**
+- **Full Feature Parity**: All web app features available on mobile
+- **Offline Support**: Basic functionality works without internet
+- **Real-time Updates**: Live data synchronization
+- **Push Notifications**: Security alerts and updates
+- **Biometric Authentication**: Fingerprint/Face ID support (future)
+- **Dark Mode**: Professional dark theme
+- **Responsive Design**: Works on phones and tablets
+
+**🛡️ Security Features:**
+- **Interactive Security Lab**: Test 12 different attack types
+- **Real-time Threat Detection**: Immediate security alerts
+- **Comprehensive Logging**: All security events tracked
+- **User Management**: Full user administration capabilities
+- **Backup Management**: Complete backup and restore functionality
+- **Settings Management**: Granular security and privacy controls
+
+**📱 Mobile-Specific Features:**
+- **Touch-Optimized**: Large buttons and touch-friendly interface
+- **Swipe Navigation**: Intuitive gesture-based navigation
+- **Pull-to-Refresh**: Easy data refresh functionality
+- **Responsive Layout**: Adapts to different screen sizes
+- **Mobile Notifications**: Native mobile notifications
+- **Offline Mode**: Basic functionality without internet connection
+
 ## Tech Stack
 
 ### Backend
@@ -158,6 +407,14 @@ npm run dev
 - **HTML/CSS/JavaScript** for UI components
 - **Node.js** integration for backend communication
 - **Glass-morphism design** with dark theme
+
+### Mobile Application
+- **React Native** with Expo for cross-platform development
+- **React Navigation** for navigation management
+- **React Native Safe Area Context** for device compatibility
+- **StyleSheet** for mobile-optimized styling
+- **Expo CLI** for development and deployment
+- **Cross-platform compatibility** (iOS and Android)
 
 ## Prerequisites
 
@@ -252,6 +509,26 @@ npm start
 - Native desktop experience
 - Same authentication and dashboard as web app
 - Professional dark theme with emerald/cyan accents
+- Demo credentials pre-configured
+
+### 8. Mobile Application (Optional)
+
+```bash
+# Navigate to mobile directory
+cd mobile
+
+# Install dependencies
+npm install
+
+# Start the mobile application
+npx expo start
+```
+
+**Mobile App Features:**
+- Cross-platform mobile experience (iOS and Android)
+- Full feature parity with web and desktop apps
+- Interactive security lab with 12 attack types
+- Mobile-optimized interface with touch controls
 - Demo credentials pre-configured
 
 ## API Documentation
@@ -890,6 +1167,25 @@ usod-testing/
 │   ├── login.html           # Login page
 │   ├── dashboard.html       # Dashboard page
 │   └── package.json         # Desktop app dependencies
+├── mobile/                  # Mobile application
+│   ├── App.js               # Main React Native app entry
+│   ├── screens/             # All application screens
+│   │   ├── LoginScreen.js   # Authentication screen
+│   │   ├── DashboardScreen.js # Main dashboard
+│   │   ├── ThreatsScreen.js # Threat analysis
+│   │   ├── LogsScreen.js    # Security logs
+│   │   ├── AnalyticsScreen.js # Analytics dashboard
+│   │   ├── AIInsightsScreen.js # AI insights
+│   │   ├── UsersScreen.js   # User management
+│   │   ├── SecurityScreen.js # Security management
+│   │   ├── SecurityLabScreen.js # Interactive security lab
+│   │   ├── BackupScreen.js  # Backup management
+│   │   ├── ChangePasswordScreen.js # Password change
+│   │   └── SettingsScreen.js # Settings configuration
+│   ├── components/          # Reusable components
+│   │   ├── Header.js        # Application header
+│   │   └── Sidebar.js       # Navigation sidebar
+│   └── package.json         # Mobile app dependencies
 └── README.md
 ```
 
