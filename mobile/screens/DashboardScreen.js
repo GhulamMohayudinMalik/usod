@@ -1,54 +1,190 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  RefreshControl,
+  Dimensions 
 } from 'react-native';
 
-const DashboardScreen = ({ username = 'User' }) => {
-  return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.successContainer}>
-          <View style={styles.successIcon}>
-            <Text style={styles.successIconText}>✅</Text>
-          </View>
-          <Text style={styles.successTitle}>Login Successful!</Text>
-          <Text style={styles.successMessage}>
-            You have successfully logged into the USOD mobile application.
-          </Text>
-        </View>
+const { width } = Dimensions.get('window');
 
-        <View style={styles.infoContainer}>
-          <Text style={styles.infoTitle}>Security Dashboard</Text>
-          <Text style={styles.infoText}>
-            This is your unified security operations dashboard. From here you can monitor security events, manage users, and access various security tools.
-          </Text>
-          <Text style={styles.infoText}>
-            The mobile app provides a streamlined interface for quick access to critical security information while on the go.
-          </Text>
-          <Text style={styles.infoText}>
-            All your security data is synchronized with the main USOD system for real-time monitoring and response.
-          </Text>
+const DashboardScreen = ({ username = 'User' }) => {
+  const [refreshing, setRefreshing] = useState(false);
+  const [stats, setStats] = useState({
+    securityScore: 95,
+    activeThreats: 3,
+    protectedUsers: 1247,
+    recentEvents: 12
+  });
+  const [recentThreats, setRecentThreats] = useState([
+    {
+      id: 1,
+      type: 'SQL Injection Attempt',
+      severity: 'high',
+      source: '192.168.1.100',
+      timestamp: new Date(Date.now() - 1000 * 60 * 15).toLocaleString(),
+      description: 'Detected SQL injection pattern in login form'
+    },
+    {
+      id: 2,
+      type: 'Brute Force Attack',
+      severity: 'medium',
+      source: '10.0.0.50',
+      timestamp: new Date(Date.now() - 1000 * 60 * 45).toLocaleString(),
+      description: 'Multiple failed login attempts detected'
+    },
+    {
+      id: 3,
+      type: 'XSS Attempt',
+      severity: 'high',
+      source: '172.16.0.25',
+      timestamp: new Date(Date.now() - 1000 * 60 * 90).toLocaleString(),
+      description: 'Cross-site scripting payload detected'
+    }
+  ]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    // Simulate API call
+    setTimeout(() => {
+      setStats(prev => ({
+        ...prev,
+        securityScore: Math.floor(Math.random() * 10) + 90,
+        activeThreats: Math.floor(Math.random() * 5) + 1,
+        recentEvents: Math.floor(Math.random() * 20) + 5
+      }));
+      setRefreshing(false);
+    }, 1500);
+  };
+
+  const getSeverityColor = (severity) => {
+    switch (severity) {
+      case 'critical': return '#EF4444';
+      case 'high': return '#F59E0B';
+      case 'medium': return '#3B82F6';
+      case 'low': return '#10B981';
+      default: return '#6B7280';
+    }
+  };
+
+  const getSeverityBgColor = (severity) => {
+    switch (severity) {
+      case 'critical': return 'rgba(239, 68, 68, 0.1)';
+      case 'high': return 'rgba(245, 158, 11, 0.1)';
+      case 'medium': return 'rgba(59, 130, 246, 0.1)';
+      case 'low': return 'rgba(16, 185, 129, 0.1)';
+      default: return 'rgba(107, 114, 128, 0.1)';
+    }
+  };
+
+  return (
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      <View style={styles.content}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.welcomeText}>Welcome back, {username}!</Text>
+          <Text style={styles.subtitleText}>Security Dashboard Overview</Text>
+          <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+            <Text style={styles.refreshButtonText}>🔄 Refresh</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Stats Cards */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{stats.securityScore}%</Text>
+            <Text style={styles.statLabel}>Security Score</Text>
+            <Text style={styles.statChange}>+3% from last week</Text>
+          </View>
+          
+          <View style={styles.statCard}>
+            <Text style={[styles.statNumber, { color: '#F59E0B' }]}>{stats.activeThreats}</Text>
+            <Text style={styles.statLabel}>Active Threats</Text>
+            <Text style={styles.statChange}>-2 from yesterday</Text>
+          </View>
         </View>
 
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>24/7</Text>
-            <Text style={styles.statLabel}>Monitoring</Text>
+            <Text style={[styles.statNumber, { color: '#3B82F6' }]}>{stats.protectedUsers.toLocaleString()}</Text>
+            <Text style={styles.statLabel}>Protected Users</Text>
+            <Text style={styles.statChange}>+5 new users</Text>
           </View>
+          
           <View style={styles.statCard}>
-            <Text style={styles.statNumber}>99.9%</Text>
-            <Text style={styles.statLabel}>Uptime</Text>
+            <Text style={[styles.statNumber, { color: '#8B5CF6' }]}>{stats.recentEvents}</Text>
+            <Text style={styles.statLabel}>Recent Events</Text>
+            <Text style={styles.statChange}>Last 24 hours</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>Real-time</Text>
-            <Text style={styles.statLabel}>Alerts</Text>
+        </View>
+        
+        {/* Recent Threats Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Threats</Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAllText}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {recentThreats.map((threat) => (
+            <View key={threat.id} style={[styles.threatCard, { backgroundColor: getSeverityBgColor(threat.severity) }]}>
+              <View style={styles.threatHeader}>
+                <View style={styles.threatInfo}>
+                  <Text style={styles.threatType}>{threat.type}</Text>
+                  <Text style={styles.threatSource}>Source: {threat.source}</Text>
+                </View>
+                <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(threat.severity) }]}>
+                  <Text style={styles.severityText}>{threat.severity.toUpperCase()}</Text>
+                </View>
+              </View>
+              <Text style={styles.threatDescription}>{threat.description}</Text>
+              <Text style={styles.threatTimestamp}>{threat.timestamp}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* AI Analysis Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>AI-Powered Threat Analysis</Text>
+          <View style={styles.aiCard}>
+            <Text style={styles.aiDescription}>
+              Analyze text or network traffic for potential security threats using advanced AI detection.
+            </Text>
+            <TouchableOpacity style={styles.analyzeButton}>
+              <Text style={styles.analyzeButtonText}>Run Analysis</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* System Status */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>System Status</Text>
+          <View style={styles.statusContainer}>
+            <View style={styles.statusItem}>
+              <View style={[styles.statusIndicator, { backgroundColor: '#10B981' }]} />
+              <Text style={styles.statusText}>All Systems Operational</Text>
+            </View>
+            <View style={styles.statusItem}>
+              <View style={[styles.statusIndicator, { backgroundColor: '#10B981' }]} />
+              <Text style={styles.statusText}>Monitoring Active</Text>
+            </View>
+            <View style={styles.statusItem}>
+              <View style={[styles.statusIndicator, { backgroundColor: '#10B981' }]} />
+              <Text style={styles.statusText}>Backup Complete</Text>
+            </View>
           </View>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -58,87 +194,181 @@ const styles = StyleSheet.create({
     backgroundColor: '#111827',
   },
   content: {
-    flex: 1,
-    padding: 20,
+    padding: 16,
+    paddingBottom: 30,
   },
-  successContainer: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
+  header: {
     marginBottom: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.2)',
   },
-  successIcon: {
-    width: 60,
-    height: 60,
-    backgroundColor: '#10B981',
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  successIconText: {
-    fontSize: 24,
-  },
-  successTitle: {
-    fontSize: 24,
+  welcomeText: {
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginBottom: 8,
   },
-  successMessage: {
+  subtitleText: {
     fontSize: 16,
-    color: '#D1D5DB',
-    textAlign: 'center',
-    lineHeight: 24,
+    color: '#9CA3AF',
+    marginBottom: 16,
   },
-  infoContainer: {
-    backgroundColor: 'rgba(31, 41, 55, 0.8)',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
+  refreshButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(55, 65, 81, 0.5)',
+    borderColor: 'rgba(16, 185, 129, 0.3)',
   },
-  infoTitle: {
-    fontSize: 18,
+  refreshButtonText: {
+    color: '#10B981',
+    fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 12,
-  },
-  infoText: {
-    fontSize: 15,
-    color: '#E5E7EB',
-    lineHeight: 22,
-    marginBottom: 12,
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    marginBottom: 16,
   },
   statCard: {
     flex: 1,
-    backgroundColor: 'rgba(31, 41, 55, 0.8)',
-    borderRadius: 12,
+    backgroundColor: '#1F2937',
     padding: 16,
+    borderRadius: 12,
+    marginHorizontal: 4,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(55, 65, 81, 0.5)',
   },
   statNumber: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#10B981',
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#D1D5DB',
     textAlign: 'center',
-    fontWeight: '500',
+    marginBottom: 4,
+  },
+  statChange: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    textAlign: 'center',
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  viewAllText: {
+    fontSize: 14,
+    color: '#3B82F6',
+    fontWeight: '600',
+  },
+  threatCard: {
+    backgroundColor: '#1F2937',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(55, 65, 81, 0.5)',
+  },
+  threatHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  threatInfo: {
+    flex: 1,
+  },
+  threatType: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  threatSource: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  severityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  severityText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  threatDescription: {
+    fontSize: 14,
+    color: '#D1D5DB',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  threatTimestamp: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  aiCard: {
+    backgroundColor: '#1F2937',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(55, 65, 81, 0.5)',
+  },
+  aiDescription: {
+    fontSize: 14,
+    color: '#D1D5DB',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  analyzeButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  analyzeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  statusContainer: {
+    backgroundColor: '#1F2937',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(55, 65, 81, 0.5)',
+  },
+  statusItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statusIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 12,
+  },
+  statusText: {
+    fontSize: 14,
+    color: '#D1D5DB',
   },
 });
 
