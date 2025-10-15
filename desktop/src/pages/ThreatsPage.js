@@ -3,6 +3,9 @@ import React, { useState, useEffect } from 'react';
 const ThreatsPage = () => {
   const [threats, setThreats] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [inputText, setInputText] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
 
   useEffect(() => {
     // Simulate loading data
@@ -80,6 +83,37 @@ const ThreatsPage = () => {
 
   const formatTimestamp = (timestamp) => {
     return new Date(timestamp).toLocaleString();
+  };
+
+  const handleAnalyze = async () => {
+    if (!inputText.trim()) return;
+    
+    setIsAnalyzing(true);
+    
+    try {
+      // Mock AI analysis
+      setTimeout(() => {
+        const mockResponse = {
+          threat_level: inputText.toLowerCase().includes('hack') || inputText.toLowerCase().includes('attack') ? 'high' : 
+                        inputText.toLowerCase().includes('suspicious') ? 'medium' : 'low',
+          confidence: Math.random() * 0.5 + 0.5,
+          categories: ['sentiment', 'behavioral'],
+          explanation: `Analysis complete for text: "${inputText.substring(0, 50)}${inputText.length > 50 ? '...' : ''}".`,
+          recommendations: [
+            'Monitor user activity',
+            'Review content regularly',
+            inputText.toLowerCase().includes('hack') ? 'Escalate to security team' : null,
+            inputText.toLowerCase().includes('attack') ? 'Block source IP address' : null,
+          ].filter(Boolean),
+        };
+        
+        setAnalysisResult(mockResponse);
+        setIsAnalyzing(false);
+      }, 2000);
+    } catch (error) {
+      console.error('Error analyzing text:', error);
+      setIsAnalyzing(false);
+    }
   };
 
   if (loading) {
@@ -184,6 +218,99 @@ const ThreatsPage = () => {
           </div>
         </div>
       </div>
+
+      {/* AI Threat Analysis Section */}
+      <div className="card" style={{ marginBottom: '2rem' }}>
+        <h2 style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>
+          AI-Powered Threat Detection
+        </h2>
+        <div style={{ marginBottom: '1rem' }}>
+          <textarea
+            style={{
+              width: '100%',
+              padding: '1rem',
+              background: 'rgba(55, 65, 81, 0.5)',
+              border: '1px solid rgba(75, 85, 99, 0.5)',
+              borderRadius: '0.5rem',
+              color: 'white',
+              fontSize: '0.875rem',
+              minHeight: '120px',
+              resize: 'vertical'
+            }}
+            rows={6}
+            placeholder="Enter text to analyze for potential threats..."
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+          />
+        </div>
+        <button
+          style={{
+            padding: '0.75rem 1.5rem',
+            background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '0.5rem',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            opacity: isAnalyzing || !inputText.trim() ? 0.5 : 1
+          }}
+          onClick={handleAnalyze}
+          disabled={isAnalyzing || !inputText.trim()}
+        >
+          {isAnalyzing ? 'Analyzing...' : 'Analyze Text'}
+        </button>
+      </div>
+
+      {/* Analysis Result */}
+      {analysisResult && (
+        <div className="card" style={{ marginBottom: '2rem' }}>
+          <h2 style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>
+            Analysis Result
+          </h2>
+          <div style={{
+            background: 'rgba(31, 41, 55, 0.5)',
+            border: '1px solid rgba(55, 65, 81, 0.3)',
+            borderRadius: '0.75rem',
+            padding: '1.5rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+              <div style={{
+                width: '3rem',
+                height: '3rem',
+                background: `linear-gradient(135deg, ${getSeverityColor(analysisResult.threat_level)} 0%, ${getSeverityColor(analysisResult.threat_level)}CC 100%)`,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.5rem'
+              }}>
+                🛡️
+              </div>
+              <div>
+                <h3 style={{ color: 'white', fontWeight: '600', fontSize: '1.1rem' }}>
+                  Threat Level: {analysisResult.threat_level.toUpperCase()}
+                </h3>
+                <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
+                  Confidence: {(analysisResult.confidence * 100).toFixed(1)}%
+                </p>
+              </div>
+            </div>
+            <p style={{ color: '#d1d5db', marginBottom: '1rem' }}>
+              {analysisResult.explanation}
+            </p>
+            <div>
+              <h4 style={{ color: 'white', fontWeight: '600', marginBottom: '0.5rem' }}>
+                Recommendations:
+              </h4>
+              <ul style={{ color: '#d1d5db', paddingLeft: '1.5rem' }}>
+                {analysisResult.recommendations.map((rec, index) => (
+                  <li key={index} style={{ marginBottom: '0.25rem' }}>{rec}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Threats List */}
       <div className="card">

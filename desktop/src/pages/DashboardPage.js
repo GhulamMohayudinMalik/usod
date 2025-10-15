@@ -27,7 +27,7 @@ const DashboardPage = () => {
           type: 'SQL Injection',
           severity: 'High',
           timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-          source: '192.168.1.100',
+          source: '192.168.1.101',
           status: 'Blocked'
         },
         {

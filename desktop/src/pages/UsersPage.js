@@ -3,6 +3,20 @@ import React, { useState, useEffect } from 'react';
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    username: '',
+    email: '',
+    password: '',
+    role: 'Security Analyst'
+  });
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [newRole, setNewRole] = useState('');
+  const [deleteReason, setDeleteReason] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     // Simulate loading data
@@ -91,6 +105,97 @@ const UsersPage = () => {
 
   const getUserInitials = (username) => {
     return username.charAt(0).toUpperCase();
+  };
+
+  // Create user
+  const handleCreateUser = (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      const newUser = {
+        id: users.length + 1,
+        username: createForm.username,
+        email: createForm.email,
+        role: createForm.role,
+        status: 'Active',
+        lastLogin: new Date().toISOString(),
+        loginCount: 0
+      };
+
+      setUsers([newUser, ...users]);
+      setCreateForm({ username: '', email: '', password: '', role: 'Security Analyst' });
+      setShowCreateForm(false);
+      setSuccessMessage('User created successfully!');
+    } catch (err) {
+      setError('Failed to create user');
+      console.error('Error creating user:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete user
+  const handleDeleteUser = () => {
+    if (!selectedUser) return;
+    
+    setLoading(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      setUsers(users.filter(user => user.id !== selectedUser.id));
+      setShowDeleteModal(false);
+      setSelectedUser(null);
+      setDeleteReason('');
+      setSuccessMessage('User deleted successfully!');
+    } catch (err) {
+      setError('Failed to delete user');
+      console.error('Error deleting user:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Change user role
+  const handleChangeRole = () => {
+    if (!selectedUser || !newRole) return;
+    
+    setLoading(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      setUsers(users.map(user => 
+        user.id === selectedUser.id
+          ? { ...user, role: newRole }
+          : user
+      ));
+      setShowRoleModal(false);
+      setSelectedUser(null);
+      setNewRole('');
+      setSuccessMessage(`User role changed to ${newRole} successfully!`);
+    } catch (err) {
+      setError('Failed to change user role');
+      console.error('Error changing user role:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Open delete modal
+  const openDeleteModal = (user) => {
+    setSelectedUser(user);
+    setShowDeleteModal(true);
+  };
+
+  // Open role change modal
+  const openRoleModal = (user) => {
+    setSelectedUser(user);
+    setNewRole(user.role);
+    setShowRoleModal(true);
   };
 
   if (loading) {
@@ -196,12 +301,201 @@ const UsersPage = () => {
         </div>
       </div>
 
+      {/* Create User Form */}
+      {showCreateForm && (
+        <div className="card" style={{ marginBottom: '2rem' }}>
+          <h2 style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>
+            Create New User
+          </h2>
+          <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '1rem'
+            }}>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  color: '#e5e7eb',
+                  marginBottom: '0.5rem'
+                }}>
+                  Username
+                </label>
+                <input
+                  type="text"
+                  value={createForm.username}
+                  onChange={(e) => setCreateForm({...createForm, username: e.target.value})}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: 'rgba(55, 65, 81, 0.5)',
+                    border: '1px solid rgba(75, 85, 99, 0.5)',
+                    borderRadius: '0.5rem',
+                    color: 'white',
+                    fontSize: '0.875rem'
+                  }}
+                  placeholder="Enter username"
+                />
+              </div>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  color: '#e5e7eb',
+                  marginBottom: '0.5rem'
+                }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm({...createForm, email: e.target.value})}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: 'rgba(55, 65, 81, 0.5)',
+                    border: '1px solid rgba(75, 85, 99, 0.5)',
+                    borderRadius: '0.5rem',
+                    color: 'white',
+                    fontSize: '0.875rem'
+                  }}
+                  placeholder="Enter email"
+                />
+              </div>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  color: '#e5e7eb',
+                  marginBottom: '0.5rem'
+                }}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm({...createForm, password: e.target.value})}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: 'rgba(55, 65, 81, 0.5)',
+                    border: '1px solid rgba(75, 85, 99, 0.5)',
+                    borderRadius: '0.5rem',
+                    color: 'white',
+                    fontSize: '0.875rem'
+                  }}
+                  placeholder="Enter password"
+                />
+              </div>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  color: '#e5e7eb',
+                  marginBottom: '0.5rem'
+                }}>
+                  Role
+                </label>
+                <select
+                  value={createForm.role}
+                  onChange={(e) => setCreateForm({...createForm, role: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: 'rgba(55, 65, 81, 0.5)',
+                    border: '1px solid rgba(75, 85, 99, 0.5)',
+                    borderRadius: '0.5rem',
+                    color: 'white',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  <option value="Security Analyst">Security Analyst</option>
+                  <option value="Security Admin">Security Admin</option>
+                  <option value="Administrator">Administrator</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => setShowCreateForm(false)}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: 'rgba(75, 85, 99, 0.5)',
+                  color: '#e5e7eb',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  opacity: loading ? 0.5 : 1
+                }}
+              >
+                {loading ? 'Creating...' : 'Create User'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Success/Error Messages */}
+      {successMessage && (
+        <div style={{
+          background: 'rgba(16, 185, 129, 0.2)',
+          border: '1px solid rgba(16, 185, 129, 0.5)',
+          borderRadius: '0.5rem',
+          padding: '1rem',
+          color: '#10b981',
+          marginBottom: '1rem'
+        }}>
+          {successMessage}
+        </div>
+      )}
+      
+      {error && (
+        <div style={{
+          background: 'rgba(239, 68, 68, 0.2)',
+          border: '1px solid rgba(239, 68, 68, 0.5)',
+          borderRadius: '0.5rem',
+          padding: '1rem',
+          color: '#ef4444',
+          marginBottom: '1rem'
+        }}>
+          {error}
+        </div>
+      )}
+
       {/* Users Table */}
       <div className="card">
         <div className="card-header">
           <h2 className="card-title">Users</h2>
-          <button className="btn btn-primary">
-            Add User
+          <button 
+            className="btn btn-primary"
+            onClick={() => setShowCreateForm(!showCreateForm)}
+          >
+            {showCreateForm ? 'Cancel' : 'Add User'}
           </button>
         </div>
 
@@ -290,11 +584,19 @@ const UsersPage = () => {
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}>
-                        Edit
+                      <button 
+                        className="btn btn-secondary" 
+                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                        onClick={() => openRoleModal(user)}
+                      >
+                        Role
                       </button>
-                      <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}>
-                        View
+                      <button 
+                        className="btn btn-primary" 
+                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                        onClick={() => openDeleteModal(user)}
+                      >
+                        Delete
                       </button>
                     </div>
                   </td>
@@ -304,6 +606,203 @@ const UsersPage = () => {
           </table>
         </div>
       </div>
+
+      {/* Delete User Modal */}
+      {showDeleteModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50
+        }}>
+          <div style={{
+            background: 'rgba(31, 41, 55, 0.9)',
+            backdropFilter: 'blur(12px)',
+            borderRadius: '1rem',
+            padding: '1.5rem',
+            border: '1px solid rgba(75, 85, 99, 0.3)',
+            maxWidth: '28rem',
+            width: '100%',
+            margin: '1rem'
+          }}>
+            <h3 style={{ color: 'white', fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
+              Delete User
+            </h3>
+            <p style={{ color: '#d1d5db', marginBottom: '1rem' }}>
+              Are you sure you want to delete user <strong>{selectedUser?.username}</strong>? 
+              This action cannot be undone.
+            </p>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#e5e7eb',
+                marginBottom: '0.5rem'
+              }}>
+                Reason for deletion (optional)
+              </label>
+              <input
+                type="text"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  background: 'rgba(55, 65, 81, 0.5)',
+                  border: '1px solid rgba(75, 85, 99, 0.5)',
+                  borderRadius: '0.5rem',
+                  color: 'white',
+                  fontSize: '0.875rem'
+                }}
+                placeholder="Enter reason for deletion"
+              />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setSelectedUser(null);
+                  setDeleteReason('');
+                }}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: 'rgba(75, 85, 99, 0.5)',
+                  color: '#e5e7eb',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteUser}
+                disabled={loading}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  opacity: loading ? 0.5 : 1
+                }}
+              >
+                {loading ? 'Deleting...' : 'Delete User'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Role Modal */}
+      {showRoleModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 50
+        }}>
+          <div style={{
+            background: 'rgba(31, 41, 55, 0.9)',
+            backdropFilter: 'blur(12px)',
+            borderRadius: '1rem',
+            padding: '1.5rem',
+            border: '1px solid rgba(75, 85, 99, 0.3)',
+            maxWidth: '28rem',
+            width: '100%',
+            margin: '1rem'
+          }}>
+            <h3 style={{ color: 'white', fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
+              Change User Role
+            </h3>
+            <p style={{ color: '#d1d5db', marginBottom: '1rem' }}>
+              Change role for user <strong>{selectedUser?.username}</strong>
+            </p>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#e5e7eb',
+                marginBottom: '0.5rem'
+              }}>
+                New Role
+              </label>
+              <select
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  background: 'rgba(55, 65, 81, 0.5)',
+                  border: '1px solid rgba(75, 85, 99, 0.5)',
+                  borderRadius: '0.5rem',
+                  color: 'white',
+                  fontSize: '0.875rem'
+                }}
+              >
+                <option value="Security Analyst">Security Analyst</option>
+                <option value="Security Admin">Security Admin</option>
+                <option value="Administrator">Administrator</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                onClick={() => {
+                  setShowRoleModal(false);
+                  setSelectedUser(null);
+                  setNewRole('');
+                }}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: 'rgba(75, 85, 99, 0.5)',
+                  color: '#e5e7eb',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChangeRole}
+                disabled={loading || newRole === selectedUser?.role}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  opacity: loading || newRole === selectedUser?.role ? 0.5 : 1
+                }}
+              >
+                {loading ? 'Changing...' : 'Change Role'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

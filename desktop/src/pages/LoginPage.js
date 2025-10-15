@@ -39,7 +39,7 @@ const LoginPage = ({ onLogin }) => {
         { username: 'GhulamMohayudin', password: 'gm1234' },
         { username: 'Ali', password: 'ali123' },
         { username: 'Zuhaib', password: 'zuhaib123' },
-        { username: 'GhulamMohayudin', password: 'user123' },
+        { username: 'GM', password: 'user123' },
         { username: 'AliSami', password: 'user123' },
         { username: 'ZuhaibIqbal', password: 'user123' }
       ];

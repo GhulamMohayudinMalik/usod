@@ -89,7 +89,7 @@ const LogsPage = () => {
       id: 9,
       timestamp: new Date(Date.now() - 180 * 60 * 1000).toISOString(),
       action: 'access_denied',
-      userId: { username: 'user123' },
+      userId: { username: 'user1234' },
       ipAddress: '192.168.1.150',
       status: 'failure',
       details: { resource: '/api/users', requiredRole: 'admin', userRole: 'user' }
