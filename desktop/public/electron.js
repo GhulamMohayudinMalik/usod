@@ -20,13 +20,54 @@ function createWindow() {
   });
 
   // Load the React app
-  const startUrl = 'http://localhost:3000';
+  const startUrl = 'http://localhost:3001';
   
   mainWindow.loadURL(startUrl);
 
   // Show window when ready to prevent visual flash
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+  });
+
+  // Comprehensive focus fix for Electron
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.executeJavaScript(`
+      // Global focus fix for Electron input issues
+      function fixElectronFocus() {
+        // Force document focus
+        document.body.focus();
+        
+        // Add click handlers to all inputs
+        document.addEventListener('click', function(e) {
+          if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            setTimeout(() => {
+              e.target.focus();
+            }, 10);
+          }
+        });
+        
+        // Add mousedown handlers for better focus
+        document.addEventListener('mousedown', function(e) {
+          if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            e.target.focus();
+          }
+        });
+      }
+      
+      // Run immediately
+      fixElectronFocus();
+      
+      // Run after DOM changes
+      const observer = new MutationObserver(fixElectronFocus);
+      observer.observe(document.body, { childList: true, subtree: true });
+    `);
+  });
+
+  // Additional focus handling for window events
+  mainWindow.on('focus', () => {
+    mainWindow.webContents.executeJavaScript(`
+      document.body.focus();
+    `);
   });
 
   // Open DevTools in development
@@ -51,34 +92,5 @@ app.on('activate', () => {
   }
 });
 
-// Handle login authentication
-ipcMain.handle('login', async (event, credentials) => {
-  const { username, password } = credentials;
-  
-  // Hardcoded credentials matching the web app
-  const validCredentials = [
-    { username: 'admin', password: 'password123' },
-    { username: 'GhulamMohayudin', password: 'gm1234' },
-    { username: 'Ali', password: 'ali123' },
-    { username: 'Zuhaib', password: 'zuhaib123' },
-    { username: 'GhulamMohayudin', password: 'user123' },
-    { username: 'AliSami', password: 'user123' },
-    { username: 'ZuhaibIqbal', password: 'user123' }
-  ];
-  
-  const isValid = validCredentials.some(cred => 
-    cred.username === username && cred.password === password
-  );
-  
-  if (isValid) {
-    return { success: true, message: 'Login successful' };
-  } else {
-    return { success: false, message: 'Invalid credentials' };
-  }
-});
+// IPC handlers removed - using React-only authentication
 
-// Handle logout (will be handled by React Router)
-ipcMain.handle('logout', async () => {
-  // This will be handled by React Router navigation
-  return { success: true };
-});
