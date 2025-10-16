@@ -11,7 +11,6 @@ import BackupPage from './pages/BackupPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import SecurityPage from './pages/SecurityPage';
 import SecurityLabPage from './pages/SecurityLabPage';
-import TestPage from './pages/TestPage';
 import LoginPage from './pages/LoginPage';
 import Layout from './components/Layout';
 import './App.css';
@@ -186,10 +185,6 @@ function AppContent() {
               <Navigate to="/login" replace />
             )
           } 
-        />
-        <Route 
-          path="/test" 
-          element={<TestPage />} 
         />
       </Routes>
     </div>

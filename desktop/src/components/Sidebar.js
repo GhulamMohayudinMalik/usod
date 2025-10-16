@@ -10,12 +10,6 @@ const Sidebar = ({ currentPath, onNavigate }) => {
       description: 'Overview & Analytics'
     },
     {
-      path: '/security',
-      icon: '🛡️',
-      label: 'Security',
-      description: 'Security Monitoring'
-    },
-    {
       path: '/threats',
       icon: '🚨',
       label: 'Threats',
@@ -44,6 +38,12 @@ const Sidebar = ({ currentPath, onNavigate }) => {
       icon: '🔬',
       label: 'Security Lab',
       description: 'Testing Tools'
+    },
+    {
+      path: '/security',
+      icon: '🛡️',
+      label: 'Security',
+      description: 'Security Monitoring'
     },
     {
       path: '/users',
