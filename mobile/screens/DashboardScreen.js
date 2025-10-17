@@ -8,57 +8,55 @@ import {
   RefreshControl,
   Dimensions 
 } from 'react-native';
+import apiService from '../services/api';
 
 const { width } = Dimensions.get('window');
 
-const DashboardScreen = ({ username = 'User' }) => {
+const DashboardScreen = ({ user }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
-    securityScore: 95,
-    activeThreats: 3,
-    protectedUsers: 1247,
-    recentEvents: 12
+    securityScore: 0,
+    activeThreats: 0,
+    protectedUsers: 0,
+    recentEvents: 0
   });
-  const [recentThreats, setRecentThreats] = useState([
-    {
-      id: 1,
-      type: 'SQL Injection Attempt',
-      severity: 'high',
-      source: '192.168.1.100',
-      timestamp: new Date(Date.now() - 1000 * 60 * 15).toLocaleString(),
-      description: 'Detected SQL injection pattern in login form'
-    },
-    {
-      id: 2,
-      type: 'Brute Force Attack',
-      severity: 'medium',
-      source: '10.0.0.50',
-      timestamp: new Date(Date.now() - 1000 * 60 * 45).toLocaleString(),
-      description: 'Multiple failed login attempts detected'
-    },
-    {
-      id: 3,
-      type: 'XSS Attempt',
-      severity: 'high',
-      source: '172.16.0.25',
-      timestamp: new Date(Date.now() - 1000 * 60 * 90).toLocaleString(),
-      description: 'Cross-site scripting payload detected'
-    }
-  ]);
+  const [recentThreats, setRecentThreats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    // Simulate API call
-    setTimeout(() => {
-      setStats(prev => ({
-        ...prev,
-        securityScore: Math.floor(Math.random() * 10) + 90,
-        activeThreats: Math.floor(Math.random() * 5) + 1,
-        recentEvents: Math.floor(Math.random() * 20) + 5
-      }));
+    try {
+      await fetchDashboardData();
+    } catch (error) {
+      console.error('Error refreshing dashboard:', error);
+    } finally {
       setRefreshing(false);
-    }, 1500);
+    }
   };
+
+  const fetchDashboardData = async () => {
+    try {
+      setError(null);
+      // Fetch dashboard stats
+      const statsData = await apiService.getDashboardStats();
+      setStats(statsData);
+
+      // Fetch recent security events
+      const eventsData = await apiService.getSecurityEvents();
+      setRecentThreats(eventsData.slice(0, 3)); // Show only recent 3 events
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setError('Failed to load dashboard data');
+      // Keep existing data on error
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   const getSeverityColor = (severity) => {
     switch (severity) {
@@ -80,6 +78,29 @@ const DashboardScreen = ({ username = 'User' }) => {
     }
   };
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading dashboard...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchDashboardData}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <ScrollView 
       style={styles.container}
@@ -90,7 +111,7 @@ const DashboardScreen = ({ username = 'User' }) => {
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.welcomeText}>Welcome back, {username}!</Text>
+          <Text style={styles.welcomeText}>Welcome back, {user?.username || 'User'}!</Text>
           <Text style={styles.subtitleText}>Security Dashboard Overview</Text>
           <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
             <Text style={styles.refreshButtonText}>🔄 Refresh</Text>
@@ -102,13 +123,13 @@ const DashboardScreen = ({ username = 'User' }) => {
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{stats.securityScore}%</Text>
             <Text style={styles.statLabel}>Security Score</Text>
-            <Text style={styles.statChange}>+3% from last week</Text>
+            <Text style={styles.statChange}>Overall security posture</Text>
           </View>
           
           <View style={styles.statCard}>
             <Text style={[styles.statNumber, { color: '#F59E0B' }]}>{stats.activeThreats}</Text>
             <Text style={styles.statLabel}>Active Threats</Text>
-            <Text style={styles.statChange}>-2 from yesterday</Text>
+            <Text style={styles.statChange}>Threats requiring attention</Text>
           </View>
         </View>
 
@@ -116,13 +137,13 @@ const DashboardScreen = ({ username = 'User' }) => {
           <View style={styles.statCard}>
             <Text style={[styles.statNumber, { color: '#3B82F6' }]}>{stats.protectedUsers.toLocaleString()}</Text>
             <Text style={styles.statLabel}>Protected Users</Text>
-            <Text style={styles.statChange}>+5 new users</Text>
+            <Text style={styles.statChange}>Users with security policies</Text>
           </View>
           
           <View style={styles.statCard}>
-            <Text style={[styles.statNumber, { color: '#8B5CF6' }]}>{stats.recentEvents}</Text>
+            <Text style={[styles.statNumber, { color: '#8B5CF6' }]}>{recentThreats.length}</Text>
             <Text style={styles.statLabel}>Recent Events</Text>
-            <Text style={styles.statChange}>Last 24 hours</Text>
+            <Text style={styles.statChange}>Latest security events</Text>
           </View>
         </View>
         
@@ -135,21 +156,27 @@ const DashboardScreen = ({ username = 'User' }) => {
             </TouchableOpacity>
           </View>
           
-          {recentThreats.map((threat) => (
-            <View key={threat.id} style={[styles.threatCard, { backgroundColor: getSeverityBgColor(threat.severity) }]}>
-              <View style={styles.threatHeader}>
-                <View style={styles.threatInfo}>
-                  <Text style={styles.threatType}>{threat.type}</Text>
-                  <Text style={styles.threatSource}>Source: {threat.source}</Text>
+          {recentThreats.length > 0 ? (
+            recentThreats.map((threat) => (
+              <View key={threat.id} style={[styles.threatCard, { backgroundColor: getSeverityBgColor(threat.severity) }]}>
+                <View style={styles.threatHeader}>
+                  <View style={styles.threatInfo}>
+                    <Text style={styles.threatType}>{threat.type || 'Security Event'}</Text>
+                    <Text style={styles.threatSource}>Source: {threat.source || 'Unknown'}</Text>
+                  </View>
+                  <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(threat.severity) }]}>
+                    <Text style={styles.severityText}>{threat.severity?.toUpperCase() || 'MEDIUM'}</Text>
+                  </View>
                 </View>
-                <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(threat.severity) }]}>
-                  <Text style={styles.severityText}>{threat.severity.toUpperCase()}</Text>
-                </View>
+                <Text style={styles.threatDescription}>{threat.description || 'Security event detected'}</Text>
+                <Text style={styles.threatTimestamp}>{new Date(threat.timestamp).toLocaleString()}</Text>
               </View>
-              <Text style={styles.threatDescription}>{threat.description}</Text>
-              <Text style={styles.threatTimestamp}>{threat.timestamp}</Text>
+            ))
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No recent threats detected</Text>
             </View>
-          ))}
+          )}
         </View>
 
         {/* AI Analysis Section */}
@@ -369,6 +396,48 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 14,
     color: '#D1D5DB',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#9CA3AF',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
 });
 

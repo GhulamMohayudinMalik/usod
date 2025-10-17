@@ -9,6 +9,7 @@ import {
   Alert,
   Dimensions 
 } from 'react-native';
+import apiService from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -31,144 +32,6 @@ const LogsScreen = () => {
   });
   const [showFilters, setShowFilters] = useState(false);
 
-  // Dummy logs data
-  const dummyLogs = [
-    {
-      id: 1,
-      timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-      action: 'login',
-      userId: { username: 'admin' },
-      ipAddress: '192.168.1.100',
-      status: 'success',
-      details: { description: 'Successful login attempt' }
-    },
-    {
-      id: 2,
-      timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-      action: 'sql_injection_attempt',
-      userId: { username: 'unknown' },
-      ipAddress: '203.0.113.1',
-      status: 'detected',
-      details: { description: 'SQL injection pattern detected in login form' }
-    },
-    {
-      id: 3,
-      timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      action: 'logout',
-      userId: { username: 'user1' },
-      ipAddress: '10.0.0.50',
-      status: 'success',
-      details: { description: 'User logged out successfully' }
-    },
-    {
-      id: 4,
-      timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-      action: 'brute_force_detected',
-      userId: { username: 'unknown' },
-      ipAddress: '198.51.100.5',
-      status: 'detected',
-      details: { description: 'Multiple failed login attempts detected' }
-    },
-    {
-      id: 5,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-      action: 'password_change',
-      userId: { username: 'admin' },
-      ipAddress: '192.168.1.100',
-      status: 'success',
-      details: { description: 'Password changed successfully' }
-    },
-    {
-      id: 6,
-      timestamp: new Date(Date.now() - 1000 * 60 * 75).toISOString(),
-      action: 'xss_attempt',
-      userId: { username: 'unknown' },
-      ipAddress: '172.16.0.25',
-      status: 'detected',
-      details: { description: 'XSS payload detected in user input' }
-    },
-    {
-      id: 7,
-      timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-      action: 'profile_update',
-      userId: { username: 'user2' },
-      ipAddress: '10.0.0.75',
-      status: 'success',
-      details: { description: 'User profile updated' }
-    },
-    {
-      id: 8,
-      timestamp: new Date(Date.now() - 1000 * 60 * 105).toISOString(),
-      action: 'access_denied',
-      userId: { username: 'user3' },
-      ipAddress: '192.168.1.200',
-      status: 'failed',
-      details: { description: 'Access denied to restricted resource' }
-    },
-    {
-      id: 9,
-      timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-      action: 'session_created',
-      userId: { username: 'admin' },
-      ipAddress: '192.168.1.100',
-      status: 'success',
-      details: { description: 'New session created' }
-    },
-    {
-      id: 10,
-      timestamp: new Date(Date.now() - 1000 * 60 * 135).toISOString(),
-      action: 'suspicious_activity',
-      userId: { username: 'unknown' },
-      ipAddress: '203.0.113.10',
-      status: 'detected',
-      details: { description: 'Suspicious file upload attempt' }
-    },
-    {
-      id: 11,
-      timestamp: new Date(Date.now() - 1000 * 60 * 150).toISOString(),
-      action: 'user_created',
-      userId: { username: 'admin' },
-      ipAddress: '192.168.1.100',
-      status: 'success',
-      details: { description: 'New user account created' }
-    },
-    {
-      id: 12,
-      timestamp: new Date(Date.now() - 1000 * 60 * 165).toISOString(),
-      action: 'csrf_attempt',
-      userId: { username: 'unknown' },
-      ipAddress: '198.51.100.15',
-      status: 'detected',
-      details: { description: 'CSRF token validation failed' }
-    },
-    {
-      id: 13,
-      timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-      action: 'backup_created',
-      userId: { username: 'admin' },
-      ipAddress: '192.168.1.100',
-      status: 'success',
-      details: { description: 'System backup created successfully' }
-    },
-    {
-      id: 14,
-      timestamp: new Date(Date.now() - 1000 * 60 * 195).toISOString(),
-      action: 'ip_blocked',
-      userId: { username: 'system' },
-      ipAddress: '203.0.113.20',
-      status: 'success',
-      details: { description: 'IP address blocked due to suspicious activity' }
-    },
-    {
-      id: 15,
-      timestamp: new Date(Date.now() - 1000 * 60 * 210).toISOString(),
-      action: 'role_changed',
-      userId: { username: 'admin' },
-      ipAddress: '192.168.1.100',
-      status: 'success',
-      details: { description: 'User role changed from user to admin' }
-    }
-  ];
 
   useEffect(() => {
     fetchLogs();
@@ -176,32 +39,37 @@ const LogsScreen = () => {
 
   const fetchLogs = async () => {
     setLoading(true);
+    setError(null);
     try {
-      // Simulate API call
-      setTimeout(() => {
-        let filteredLogs = [...dummyLogs];
-        
-        // Apply filters
-        if (filters.action) {
-          filteredLogs = filteredLogs.filter(log => log.action === filters.action);
-        }
-        
-        // Apply pagination
-        const startIndex = (pagination.page - 1) * pagination.limit;
-        const endIndex = startIndex + pagination.limit;
-        const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
-        
-        setLogs(paginatedLogs);
-        setPagination(prev => ({
-          ...prev,
-          total: filteredLogs.length,
-          totalPages: Math.ceil(filteredLogs.length / pagination.limit)
-        }));
-        setLastUpdated(new Date());
-        setLoading(false);
-      }, 1000);
-    } catch (err) {
-      setError('Failed to load logs');
+      const response = await apiService.getLogs({
+        page: pagination.page,
+        limit: pagination.limit,
+        ...filters
+      });
+      
+      // Handle different response structures
+      let logsData = [];
+      let paginationData = pagination;
+      
+      if (Array.isArray(response)) {
+        logsData = response;
+      } else if (response && response.logs) {
+        logsData = response.logs;
+        paginationData = response.pagination || pagination;
+      } else if (response && Array.isArray(response.data)) {
+        logsData = response.data;
+        paginationData = response.pagination || pagination;
+      }
+      
+      setLogs(logsData);
+      setPagination(paginationData);
+      setLastUpdated(new Date());
+      setError(null);
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+      setError(`Failed to fetch logs: ${error.message}`);
+      setLogs([]);
+    } finally {
       setLoading(false);
     }
   };
@@ -363,8 +231,12 @@ const LogsScreen = () => {
         {error && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={fetchLogs}>
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
           </View>
         )}
+
 
         {/* Logs List */}
         <View style={styles.logsSection}>
@@ -378,12 +250,12 @@ const LogsScreen = () => {
             </View>
           ) : (
             <>
-              {logs.map((log) => {
+              {logs.map((log, index) => {
                 const statusColor = getStatusColor(log.status);
                 const statusBgColor = getStatusBgColor(log.status);
                 
                 return (
-                  <View key={log.id} style={[styles.logCard, { backgroundColor: statusBgColor }]}>
+                  <View key={log.id || log._id || `log-${index}`} style={[styles.logCard, { backgroundColor: statusBgColor }]}>
                     <View style={styles.logHeader}>
                       <View style={styles.logInfo}>
                         <Text style={styles.logTime}>{formatTimestamp(log.timestamp)}</Text>
@@ -700,6 +572,19 @@ const styles = StyleSheet.create({
   paginationButtonText: {
     color: '#D1D5DB',
     fontSize: 14,
+  },
+  retryButton: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 12,
+    alignSelf: 'flex-start',
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 

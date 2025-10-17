@@ -11,7 +11,7 @@ import {
 
 const { width } = Dimensions.get('window');
 
-const Sidebar = ({ visible, onClose, onNavigate, activeRoute }) => {
+const Sidebar = ({ visible, onClose, onNavigate, activeRoute, user }) => {
   const navigationItems = [
     { name: 'Dashboard', route: 'Dashboard', icon: '📊' },
     { name: 'Threat Analysis', route: 'Threats', icon: '⚠️' },
@@ -85,11 +85,13 @@ const Sidebar = ({ visible, onClose, onNavigate, activeRoute }) => {
           <View style={styles.footer}>
             <View style={styles.userInfo}>
               <View style={styles.userAvatar}>
-                <Text style={styles.userAvatarText}>U</Text>
+                <Text style={styles.userAvatarText}>
+                  {user?.username ? user.username.charAt(0).toUpperCase() : 'U'}
+                </Text>
               </View>
               <View style={styles.userDetails}>
-                <Text style={styles.userName}>User</Text>
-                <Text style={styles.userEmail}>user@usod.com</Text>
+                <Text style={styles.userName}>{user?.username || 'User'}</Text>
+                <Text style={styles.userEmail}>{user?.email || 'user@usod.com'}</Text>
               </View>
             </View>
             <TouchableOpacity style={styles.logoutButton} onPress={() => handleNavigation('Login')}>

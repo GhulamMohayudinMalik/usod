@@ -12,6 +12,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import apiService from '../services/api';
 
 const LoginScreen = ({ onLogin }) => {
   const insets = useSafeAreaInsets();
@@ -29,14 +30,20 @@ const LoginScreen = ({ onLogin }) => {
 
     setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-      // For demo purposes, accept any credentials
-      if (onLogin) {
-        onLogin(formData.username);
+    try {
+      const response = await apiService.login(formData.username, formData.password);
+      
+      if (response.token && onLogin) {
+        onLogin(response.user);
+      } else {
+        Alert.alert('Error', 'Login failed - no token received');
       }
-    }, 1500);
+    } catch (error) {
+      Alert.alert('Login Error', error.message || 'An error occurred during login');
+      console.error('Login error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleInputChange = (field, value) => {
@@ -112,6 +119,7 @@ const LoginScreen = ({ onLogin }) => {
                 <Text style={styles.loginButtonText}>Sign In</Text>
               )}
             </TouchableOpacity>
+
           </View>
 
           {/* Demo Accounts */}

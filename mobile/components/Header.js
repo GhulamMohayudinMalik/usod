@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const Header = ({ onMenuPress, username }) => {
+const Header = ({ onMenuPress, user }) => {
   const insets = useSafeAreaInsets();
 
   return (
@@ -20,7 +20,12 @@ const Header = ({ onMenuPress, username }) => {
         <Text style={styles.subtitle}>Mobile Application</Text>
       </View>
       <View style={styles.userInfo}>
-        <Text style={styles.usernameText}>{username || 'User'}</Text>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>
+            {user?.username ? user.username.charAt(0).toUpperCase() : 'U'}
+          </Text>
+        </View>
+        <Text style={styles.usernameText}>{user?.username || 'User'}</Text>
       </View>
     </View>
   );

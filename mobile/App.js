@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -18,6 +18,7 @@ import ChangePasswordScreen from './screens/ChangePasswordScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import apiService from './services/api';
 
 const Stack = createStackNavigator();
 
@@ -25,17 +26,40 @@ function MainNavigator() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [currentRoute, setCurrentRoute] = useState('Dashboard');
-  const [username, setUsername] = useState('User');
+  const [user, setUser] = useState(null);
 
-  const handleLogin = (user) => {
-    setUsername(user);
+  // Check for existing session on app start
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const currentUser = await apiService.getCurrentUser();
+        if (currentUser && apiService.isAuthenticated()) {
+          setUser(currentUser);
+          setIsLoggedIn(true);
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      }
+    };
+    checkSession();
+  }, []);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
     setIsLoggedIn(true);
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setCurrentRoute('Dashboard');
-    setSidebarVisible(false);
+  const handleLogout = async () => {
+    try {
+      await apiService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+      setIsLoggedIn(false);
+      setCurrentRoute('Dashboard');
+      setSidebarVisible(false);
+    }
   };
 
   const handleMenuPress = () => {
@@ -57,7 +81,7 @@ function MainNavigator() {
   const renderScreen = () => {
     switch (currentRoute) {
       case 'Dashboard':
-        return <DashboardScreen username={username} />;
+        return <DashboardScreen user={user} />;
       case 'Threats':
         return <ThreatsScreen />;
       case 'Logs':
@@ -79,7 +103,7 @@ function MainNavigator() {
       case 'Settings':
         return <SettingsScreen />;
       default:
-        return <DashboardScreen username={username} />;
+        return <DashboardScreen user={user} />;
     }
   };
 
@@ -96,13 +120,14 @@ function MainNavigator() {
   return (
     <SafeAreaProvider>
       <View style={{ flex: 1, backgroundColor: '#111827' }}>
-        <Header onMenuPress={handleMenuPress} username={username} />
+        <Header onMenuPress={handleMenuPress} user={user} />
         {renderScreen()}
         <Sidebar
           visible={sidebarVisible}
           onClose={handleSidebarClose}
           onNavigate={handleNavigation}
           activeRoute={currentRoute}
+          user={user}
         />
       </View>
     </SafeAreaProvider>

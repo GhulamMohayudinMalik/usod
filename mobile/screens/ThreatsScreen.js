@@ -10,6 +10,7 @@ import {
   RefreshControl,
   Dimensions 
 } from 'react-native';
+import apiService from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -18,92 +19,41 @@ const ThreatsScreen = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [historyEvents, setHistoryEvents] = useState([]);
+  const [totalEvents, setTotalEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Dummy threat history data
-  const dummyThreats = [
-    {
-      id: 1,
-      timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      source: '192.168.1.100',
-      description: 'SQL injection attempt detected in login form',
-      severity: 'high',
-      type: 'sql_injection_attempt'
-    },
-    {
-      id: 2,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-      source: '10.0.0.50',
-      description: 'Multiple failed login attempts from same IP',
-      severity: 'medium',
-      type: 'brute_force_detected'
-    },
-    {
-      id: 3,
-      timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
-      source: '172.16.0.25',
-      description: 'XSS payload detected in user input',
-      severity: 'high',
-      type: 'xss_attempt'
-    },
-    {
-      id: 4,
-      timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-      source: '203.0.113.1',
-      description: 'Suspicious file upload attempt',
-      severity: 'medium',
-      type: 'suspicious_activity'
-    },
-    {
-      id: 5,
-      timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-      source: '198.51.100.5',
-      description: 'CSRF token validation failed',
-      severity: 'low',
-      type: 'csrf_attempt'
-    },
-    {
-      id: 6,
-      timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
-      source: '192.0.2.10',
-      description: 'Path traversal attempt detected',
-      severity: 'high',
-      type: 'path_traversal_attempt'
-    },
-    {
-      id: 7,
-      timestamp: new Date(Date.now() - 1000 * 60 * 300).toISOString(),
-      source: '203.0.113.15',
-      description: 'LDAP injection attempt in search query',
-      severity: 'medium',
-      type: 'ldap_injection_attempt'
-    },
-    {
-      id: 8,
-      timestamp: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
-      source: '198.51.100.20',
-      description: 'Command injection attempt detected',
-      severity: 'critical',
-      type: 'command_injection_attempt'
-    }
-  ];
 
   useEffect(() => {
     loadThreatHistory();
   }, [page, itemsPerPage]);
 
-  const loadThreatHistory = () => {
+  const loadThreatHistory = async () => {
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Fetch security events from the API
+      const events = await apiService.getSecurityEvents();
+      
+      // Sort by timestamp, newest first
+      const sortedEvents = events.sort((a, b) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+      
+      setTotalEvents(sortedEvents);
+      
+      // Paginate the results
       const startIndex = (page - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
-      setHistoryEvents(dummyThreats.slice(startIndex, endIndex));
+      const paginatedEvents = sortedEvents.slice(startIndex, endIndex);
+      
+      setHistoryEvents(paginatedEvents);
+    } catch (error) {
+      console.error('Error fetching security events:', error);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   const onRefresh = () => {
@@ -163,7 +113,7 @@ const ThreatsScreen = () => {
     }
   };
 
-  const totalPages = Math.ceil(dummyThreats.length / itemsPerPage);
+  const totalPages = Math.ceil(totalEvents.length / itemsPerPage);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -242,7 +192,7 @@ const ThreatsScreen = () => {
             <Text style={styles.sectionTitle}>Analysis History</Text>
             <View style={styles.paginationInfo}>
               <Text style={styles.paginationText}>
-                Showing {historyEvents.length > 0 ? (page - 1) * itemsPerPage + 1 : 0} to {Math.min(page * itemsPerPage, dummyThreats.length)} of {dummyThreats.length} entries
+                Showing {historyEvents.length > 0 ? (page - 1) * itemsPerPage + 1 : 0} to {Math.min(page * itemsPerPage, totalEvents.length)} of {totalEvents.length} entries
               </Text>
             </View>
           </View>
