@@ -384,15 +384,20 @@ export function detectCSRF(req) {
     return false; // Allow mobile app requests
   }
 
+  // Skip CSRF check for desktop apps (Electron)
+  if (platform === 'desktop' || userAgent.includes('Electron')) {
+    return false; // Allow desktop app requests
+  }
+
   // Skip CSRF check for direct API calls without referer/origin
   if (!referer && !origin && (req.ip === '127.0.0.1' || req.ip === '192.168.100.113')) {
     return false; // Allow localhost and network IP direct API calls
   }
 
-  // Basic CSRF validation
+  // Basic CSRF validation - allow web app (3000) and desktop app (3001)
   const isValidCSRF = csrfToken && 
-    (referer && referer.includes('localhost:3000')) ||
-    (origin && origin.includes('localhost:3000'));
+    (referer && (referer.includes('localhost:3000') || referer.includes('localhost:3001'))) ||
+    (origin && (origin.includes('localhost:3000') || origin.includes('localhost:3001')));
 
   if (!isValidCSRF && req.method !== 'GET') {
     const ip = getRealIP(req);

@@ -106,7 +106,7 @@ const LogsPage = () => {
   ];
 
   useEffect(() => {
-    // Simulate loading
+    // Simulate loading logs
     setTimeout(() => {
       setLogs(staticLogs);
       setLoading(false);

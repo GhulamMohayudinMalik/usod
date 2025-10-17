@@ -13,7 +13,8 @@
     "electron-dev": "ELECTRON_IS_DEV=true electron .",
     "electron-pack": "electron-builder",
     "preelectron-pack": "npm run build",
-    "dev": "concurrently \"npm start\" \"wait-on http://localhost:3001 && electron .\" --kill-others-on-fail",
+    "dev": "concurrently \"npm start\" \"wait-on http://localhost:3001 && cross-env ELECTRON_IS_DEV=true electron .\" --kill-others-on-fail",
+    "dev-simple": "concurrently \"npm start\" \"timeout 10 && cross-env ELECTRON_IS_DEV=true electron .\" --kill-others-on-fail",
     "build-electron": "npm run build && electron-builder"
   },
   "keywords": [

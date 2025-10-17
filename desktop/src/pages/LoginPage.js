@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/api';
 
 const LoginPage = ({ onLogin }) => {
   const [credentials, setCredentials] = useState({
@@ -7,7 +8,6 @@ const LoginPage = ({ onLogin }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
   // Reset form when component mounts
   useEffect(() => {
     setCredentials({
@@ -33,28 +33,18 @@ const LoginPage = ({ onLogin }) => {
     setError('');
 
     try {
-      // Mock authentication - in a real app, this would call the backend
-      const validCredentials = [
-        { username: 'admin', password: 'password123' },
-        { username: 'GhulamMohayudin', password: 'gm1234' },
-        { username: 'Ali', password: 'ali123' },
-        { username: 'Zuhaib', password: 'zuhaib123' },
-        { username: 'GM', password: 'user123' },
-        { username: 'AliSami', password: 'user123' },
-        { username: 'ZuhaibIqbal', password: 'user123' }
-      ];
-
-      const isValid = validCredentials.some(cred => 
-        cred.username === credentials.username && cred.password === credentials.password
-      );
-
-      if (isValid) {
+      // Use real backend authentication
+      const result = await apiService.login(credentials.username, credentials.password);
+      
+      if (result.success) {
         onLogin({
-          username: credentials.username,
+          username: result.data.user.username,
+          email: result.data.user.email,
+          role: result.data.user.role,
           loginTime: new Date().toISOString()
         });
       } else {
-        setError('Invalid credentials');
+        setError(result.message || 'Login failed');
       }
     } catch (err) {
       setError('An error occurred during login');
@@ -65,10 +55,8 @@ const LoginPage = ({ onLogin }) => {
   };
 
   const demoAccounts = [
-    { username: 'admin', password: 'password123', role: 'Administrator' },
     { username: 'GhulamMohayudin', password: 'gm1234', role: 'Security Admin' },
-    { username: 'Ali', password: 'ali123', role: 'Security Analyst' },
-    { username: 'Zuhaib', password: 'zuhaib123', role: 'Security Analyst' }
+    { username: 'Ali', password: 'ali123', role: 'Security Analyst' }
   ];
 
   const fillDemoAccount = (account) => {
@@ -86,10 +74,10 @@ const LoginPage = ({ onLogin }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '1rem'
+      padding: '1.5rem'
     }}>
       <div style={{
-        maxWidth: '28rem',
+        maxWidth: '36rem',
         width: '100%'
       }}>
         {/* Logo/Title */}
@@ -101,23 +89,23 @@ const LoginPage = ({ onLogin }) => {
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '3.5rem',
-            height: '3.5rem',
+            width: '4rem',
+            height: '4rem',
             background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
-            borderRadius: '1rem',
-            marginBottom: '1rem',
-            boxShadow: '0 15px 35px -12px rgba(16, 185, 129, 0.3)'
+            borderRadius: '0.75rem',
+            marginBottom: '0.75rem',
+            boxShadow: '0 10px 25px -8px rgba(16, 185, 129, 0.3)'
           }}>
             <svg style={{
-              width: '1.75rem',
-              height: '1.75rem',
+              width: '2.5rem',
+              height: '2.5rem',
               color: 'white'
             }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
           </div>
           <h1 style={{
-            fontSize: '1.875rem',
+            fontSize: '2.5rem',
             fontWeight: 'bold',
             color: 'white',
             marginBottom: '0.5rem',
@@ -128,7 +116,7 @@ const LoginPage = ({ onLogin }) => {
           }}>USOD</h1>
           <p style={{
             color: '#d1d5db',
-            fontSize: '0.875rem'
+            fontSize: '1rem'
           }}>Unified Security Operations Dashboard</p>
         </div>
 
@@ -137,12 +125,12 @@ const LoginPage = ({ onLogin }) => {
           background: 'rgba(31, 41, 55, 0.9)',
           backdropFilter: 'blur(24px)',
           borderRadius: '1rem',
-          padding: '1.5rem',
+          padding: '2rem',
           border: '1px solid rgba(75, 85, 99, 0.3)',
           boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.6)'
         }}>
           <h2 style={{
-            fontSize: '1.5rem',
+            fontSize: '1.75rem',
             fontWeight: 'bold',
             color: 'white',
             marginBottom: '1.5rem',
@@ -160,14 +148,14 @@ const LoginPage = ({ onLogin }) => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div>
               <label htmlFor="username" style={{
                 display: 'block',
-                fontSize: '0.75rem',
+                fontSize: '1rem',
                 fontWeight: '600',
                 color: '#e5e7eb',
-                marginBottom: '0.5rem'
+                marginBottom: '0.75rem'
               }}>
                 Username
               </label>
@@ -180,12 +168,12 @@ const LoginPage = ({ onLogin }) => {
                 required
                 style={{
                   width: '100%',
-                  padding: '0.5rem 0.75rem',
+                  padding: '0.875rem 1rem',
                   background: 'rgba(55, 65, 81, 0.5)',
                   border: '1px solid rgba(75, 85, 99, 0.5)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '0.75rem',
                   color: 'white',
-                  fontSize: '0.875rem',
+                  fontSize: '1rem',
                   outline: 'none',
                   transition: 'all 0.2s ease'
                 }}
@@ -205,10 +193,10 @@ const LoginPage = ({ onLogin }) => {
             <div>
               <label htmlFor="password" style={{
                 display: 'block',
-                fontSize: '0.75rem',
+                fontSize: '1rem',
                 fontWeight: '600',
                 color: '#e5e7eb',
-                marginBottom: '0.5rem'
+                marginBottom: '0.75rem'
               }}>
                 Password
               </label>
@@ -221,12 +209,12 @@ const LoginPage = ({ onLogin }) => {
                 required
                 style={{
                   width: '100%',
-                  padding: '0.5rem 0.75rem',
+                  padding: '0.875rem 1rem',
                   background: 'rgba(55, 65, 81, 0.5)',
                   border: '1px solid rgba(75, 85, 99, 0.5)',
-                  borderRadius: '0.5rem',
+                  borderRadius: '0.75rem',
                   color: 'white',
-                  fontSize: '0.875rem',
+                  fontSize: '1rem',
                   outline: 'none',
                   transition: 'all 0.2s ease'
                 }}
@@ -250,15 +238,15 @@ const LoginPage = ({ onLogin }) => {
                 width: '100%',
                 background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
                 color: 'white',
-                padding: '0.75rem 1rem',
-                borderRadius: '0.5rem',
+                padding: '1rem 1.5rem',
+                borderRadius: '0.75rem',
                 fontWeight: '600',
-                fontSize: '0.875rem',
+                fontSize: '1rem',
                 border: 'none',
                 cursor: loading ? 'not-allowed' : 'pointer',
                 opacity: loading ? 0.5 : 1,
                 transition: 'all 0.2s ease',
-                boxShadow: '0 10px 20px -5px rgba(16, 185, 129, 0.3)'
+                boxShadow: '0 15px 30px -8px rgba(16, 185, 129, 0.3)'
               }}
               onMouseEnter={(e) => {
                 if (!loading) {
@@ -288,13 +276,14 @@ const LoginPage = ({ onLogin }) => {
                     animation: 'spin 1s linear infinite',
                     marginRight: '0.5rem'
                   }}></div>
-                  <span style={{ fontSize: '0.875rem' }}>Signing in...</span>
+                  <span style={{ fontSize: '1rem' }}>Signing in...</span>
                 </div>
               ) : (
-                <span style={{ fontSize: '0.875rem' }}>Sign In</span>
+                <span style={{ fontSize: '1rem' }}>Sign In</span>
               )}
             </button>
           </form>
+
 
           {/* Demo Accounts */}
           <div style={{
@@ -303,7 +292,7 @@ const LoginPage = ({ onLogin }) => {
             borderTop: '1px solid rgba(75, 85, 99, 0.3)'
           }}>
             <p style={{
-              fontSize: '0.75rem',
+              fontSize: '1rem',
               fontWeight: '500',
               color: '#d1d5db',
               marginBottom: '0.75rem',
@@ -322,9 +311,9 @@ const LoginPage = ({ onLogin }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '0.5rem',
+                    padding: '0.65rem 1rem',
                     background: 'rgba(55, 65, 81, 0.3)',
-                    borderRadius: '0.375rem',
+                    borderRadius: '0.5rem',
                     border: '1px solid rgba(75, 85, 99, 0.3)',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease'
@@ -340,21 +329,21 @@ const LoginPage = ({ onLogin }) => {
                 >
                   <div style={{ textAlign: 'left' }}>
                     <div style={{
-                      fontSize: '0.75rem',
+                      fontSize: '0.875rem',
                       fontWeight: '500',
                       color: 'white'
                     }}>
                       {account.username}
                     </div>
                     <div style={{
-                      fontSize: '0.625rem',
+                      fontSize: '0.75rem',
                       color: '#9ca3af'
                     }}>
                       {account.role}
                     </div>
                   </div>
                   <div style={{
-                    fontSize: '0.625rem',
+                    fontSize: '0.75rem',
                     color: '#6b7280'
                   }}>
                     Click to fill

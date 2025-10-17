@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/api';
 
 const DashboardPage = () => {
   const [stats, setStats] = useState({
@@ -10,47 +11,62 @@ const DashboardPage = () => {
 
   const [recentThreats, setRecentThreats] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setStats({
-        totalThreats: 24,
-        activeUsers: 8,
-        securityEvents: 156,
-        systemHealth: 98
-      });
+    loadDashboardData();
+  }, []);
 
-      setRecentThreats([
-        {
-          id: 1,
-          type: 'SQL Injection',
-          severity: 'High',
-          timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-          source: '192.168.1.101',
-          status: 'Blocked'
-        },
-        {
-          id: 2,
-          type: 'Brute Force',
-          severity: 'Medium',
-          timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-          source: '203.0.113.42',
-          status: 'Detected'
-        },
-        {
-          id: 3,
-          type: 'XSS Attempt',
-          severity: 'High',
-          timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          source: '198.51.100.25',
-          status: 'Blocked'
-        }
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      // Fetch dashboard stats and security events in parallel
+      const [statsResult, eventsResult] = await Promise.all([
+        apiService.getDashboardStats(),
+        apiService.getSecurityEvents()
       ]);
 
+      if (statsResult.success) {
+        // Map backend data to our frontend format
+        const backendStats = statsResult.data;
+        setStats({
+          totalThreats: backendStats.activeThreats || 0,
+          activeUsers: backendStats.protectedUsers || 0,
+          securityEvents: backendStats.activeThreats || 0, // Using activeThreats as security events count
+          systemHealth: backendStats.securityScore || 0
+        });
+      } else {
+        console.error('Failed to load dashboard stats:', statsResult.message);
+        setError('Failed to load dashboard statistics');
+      }
+
+      if (eventsResult.success) {
+        // Map backend security events to our frontend format
+        const backendEvents = eventsResult.data;
+        const mappedThreats = backendEvents.map((event, index) => ({
+          id: event.id || index + 1,
+          type: event.type || 'Security Event',
+          severity: event.severity || 'Medium',
+          timestamp: event.timestamp || new Date().toISOString(),
+          source: event.source || 'Unknown',
+          status: event.resolved ? 'Resolved' : 'Active'
+        }));
+        setRecentThreats(mappedThreats.slice(0, 10)); // Show only first 10 events
+      } else {
+        console.error('Failed to load security events:', eventsResult.message);
+        // Don't set error for events, just use empty array
+        setRecentThreats([]);
+      }
+
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+      setError('Failed to load dashboard data');
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  };
 
   const getSeverityColor = (severity) => {
     switch (severity) {
@@ -74,15 +90,60 @@ const DashboardPage = () => {
   }
 
   return (
-    <div>
+    <div style={{ padding: '1.5rem' }}>
       {/* Page Header */}
       <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ color: 'white', fontSize: '2rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-          Dashboard Overview
-        </h1>
-        <p style={{ color: '#9ca3af', fontSize: '1rem' }}>
-          Welcome to your security operations dashboard
-        </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <div>
+            <h1 style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600', margin: 0, marginBottom: '0.25rem' }}>
+              Dashboard Overview
+            </h1>
+            <p style={{ color: '#9ca3af', fontSize: '0.875rem', margin: 0 }}>
+              Welcome to your security operations dashboard
+            </p>
+          </div>
+          <button
+            onClick={loadDashboardData}
+            disabled={loading}
+            style={{
+              background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.5rem',
+              padding: '0.5rem 1rem',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.5 : 1,
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) {
+                e.target.style.background = 'linear-gradient(135deg, #059669 0%, #0891b2 100%)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) {
+                e.target.style.background = 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)';
+              }
+            }}
+          >
+            {loading ? 'Refreshing...' : 'Refresh Data'}
+          </button>
+        </div>
+        {error && (
+          <div style={{
+            marginTop: '1rem',
+            padding: '0.75rem 1rem',
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '0.5rem',
+            color: '#fca5a5',
+            fontSize: '0.875rem'
+          }}>
+            {error}
+          </div>
+        )}
       </div>
 
       {/* Stats Grid */}
@@ -96,10 +157,41 @@ const DashboardPage = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Total Threats
+                Security Score
+              </div>
+              <div style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
+                {stats.systemHealth}%
+              </div>
+              <div style={{ color: '#9ca3af', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                Overall security posture
+              </div>
+            </div>
+            <div style={{
+              width: '3rem',
+              height: '3rem',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.5rem'
+            }}>
+              🛡️
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                Active Threats
               </div>
               <div style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
                 {stats.totalThreats}
+              </div>
+              <div style={{ color: '#9ca3af', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                Threats requiring attention
               </div>
             </div>
             <div style={{
@@ -121,35 +213,13 @@ const DashboardPage = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Active Users
+                Protected Users
               </div>
               <div style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
                 {stats.activeUsers}
               </div>
-            </div>
-            <div style={{
-              width: '3rem',
-              height: '3rem',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.5rem'
-            }}>
-              👥
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Security Events
-              </div>
-              <div style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
-                {stats.securityEvents}
+              <div style={{ color: '#9ca3af', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                Users with security policies
               </div>
             </div>
             <div style={{
@@ -162,106 +232,159 @@ const DashboardPage = () => {
               justifyContent: 'center',
               fontSize: '1.5rem'
             }}>
-              📊
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                System Health
-              </div>
-              <div style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
-                {stats.systemHealth}%
-              </div>
-            </div>
-            <div style={{
-              width: '3rem',
-              height: '3rem',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.5rem'
-            }}>
-              ✅
+              👥
             </div>
           </div>
         </div>
       </div>
 
       {/* Recent Threats */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">Recent Security Threats</h2>
-          <button className="btn btn-secondary" style={{ fontSize: '0.875rem' }}>
+      <div style={{ marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 style={{ color: 'white', fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>
+            Recent Threats
+          </h2>
+          <button 
+            style={{ 
+              color: '#60a5fa', 
+              fontSize: '0.875rem', 
+              background: 'none', 
+              border: 'none', 
+              cursor: 'pointer',
+              textDecoration: 'underline'
+            }}
+            onClick={loadDashboardData}
+          >
             View All
           </button>
         </div>
+        
+        {recentThreats && recentThreats.length > 0 ? (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '1rem'
+          }}>
+            {recentThreats.map((threat) => (
+              <div
+                key={threat.id}
+                style={{
+                  background: 'rgba(31, 41, 55, 0.9)',
+                  border: '1px solid rgba(55, 65, 81, 0.3)',
+                  borderRadius: '0.5rem',
+                  padding: '1rem'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'start' }}>
+                  <div style={{ marginRight: '0.75rem' }}>
+                    <div style={{
+                      width: '2.5rem',
+                      height: '2.5rem',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: `linear-gradient(135deg, ${getSeverityColor(threat.severity)} 0%, ${getSeverityColor(threat.severity)}CC 100%)`
+                    }}>
+                      <svg style={{ width: '1.5rem', height: '1.5rem', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <h3 style={{ 
+                        color: getSeverityColor(threat.severity), 
+                        fontSize: '1rem', 
+                        fontWeight: '600', 
+                        margin: 0,
+                        textTransform: 'capitalize'
+                      }}>
+                        {threat.severity} Threat Level
+                      </h3>
+                      <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>
+                        {formatTimestamp(threat.timestamp)}
+                      </span>
+                    </div>
+                    <p style={{ color: '#d1d5db', fontSize: '0.875rem', margin: '0.25rem 0' }}>
+                      {threat.description || threat.type}
+                    </p>
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>
+                      <span style={{ color: '#9ca3af' }}>Source: </span>
+                      <span style={{ color: '#e5e7eb' }}>{threat.source}</span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem' }}>
+                      <span style={{ color: '#9ca3af' }}>Confidence: </span>
+                      <span style={{ color: '#e5e7eb' }}>75%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ color: '#9ca3af' }}>No recent events.</div>
+        )}
+      </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {recentThreats.map((threat) => (
-            <div
-              key={threat.id}
-              style={{
-                background: 'rgba(31, 41, 55, 0.5)',
-                border: '1px solid rgba(55, 65, 81, 0.3)',
-                borderRadius: '0.75rem',
-                padding: '1rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{
-                  width: '2.5rem',
-                  height: '2.5rem',
-                  background: `linear-gradient(135deg, ${getSeverityColor(threat.severity)} 0%, ${getSeverityColor(threat.severity)}CC 100%)`,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.25rem'
-                }}>
-                  🛡️
-                </div>
-                <div>
-                  <div style={{ color: 'white', fontWeight: '500', marginBottom: '0.25rem' }}>
-                    {threat.type}
-                  </div>
-                  <div style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
-                    {threat.source} • {formatTimestamp(threat.timestamp)}
-                  </div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <span style={{
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '9999px',
-                  fontSize: '0.75rem',
-                  fontWeight: '500',
-                  background: `rgba(${getSeverityColor(threat.severity)}20, 0.2)`,
-                  color: getSeverityColor(threat.severity)
-                }}>
-                  {threat.severity}
-                </span>
-                <span style={{
-                  padding: '0.25rem 0.75rem',
-                  borderRadius: '9999px',
-                  fontSize: '0.75rem',
-                  fontWeight: '500',
-                  background: 'rgba(16, 185, 129, 0.2)',
-                  color: '#10b981'
-                }}>
-                  {threat.status}
-                </span>
-              </div>
-            </div>
-          ))}
+      {/* AI Analysis Block */}
+      <div style={{
+        background: 'rgba(31, 41, 55, 0.5)',
+        border: '1px solid rgba(55, 65, 81, 0.3)',
+        borderRadius: '0.5rem'
+      }}>
+        <div style={{
+          padding: '1rem',
+          borderBottom: '1px solid rgba(55, 65, 81, 0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <h3 style={{ color: '#e5e7eb', fontSize: '0.875rem', fontWeight: '500', margin: 0 }}>
+            AI-Powered Threat Analysis
+          </h3>
+          <button style={{ 
+            color: '#60a5fa', 
+            fontSize: '0.75rem', 
+            background: 'none', 
+            border: 'none', 
+            cursor: 'pointer'
+          }}>
+            Run Analysis
+          </button>
+        </div>
+        <div style={{ padding: '1rem' }}>
+          <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+            Analyze text or network traffic for potential security threats using advanced AI detection.
+          </p>
+          <textarea 
+            style={{
+              width: '100%',
+              height: '6rem',
+              padding: '0.75rem',
+              borderRadius: '0.375rem',
+              background: 'rgba(17, 24, 39, 0.8)',
+              color: '#e5e7eb',
+              border: '1px solid rgba(55, 65, 81, 0.3)',
+              fontSize: '0.875rem',
+              resize: 'vertical',
+              outline: 'none'
+            }}
+            placeholder="Enter text to analyze for potential threats..."
+          />
+          <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'flex-end' }}>
+            <button style={{
+              padding: '0.5rem 1rem',
+              background: '#2563eb',
+              color: 'white',
+              borderRadius: '0.375rem',
+              border: 'none',
+              fontSize: '0.875rem',
+              cursor: 'pointer'
+            }}>
+              Analyze
+            </button>
+          </div>
         </div>
       </div>
     </div>

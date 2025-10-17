@@ -20,7 +20,7 @@ function createWindow() {
   });
 
   // Load the React app
-  const startUrl = 'http://localhost:3001';
+  const startUrl = isDev ? 'http://localhost:3001' : `file://${path.join(__dirname, '../build/index.html')}`;
   
   mainWindow.loadURL(startUrl);
 
@@ -70,10 +70,16 @@ function createWindow() {
     `);
   });
 
-  // Open DevTools in development
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
-  }
+  // Open DevTools in development (disabled for cleaner experience)
+  // if (isDev) {
+  //   mainWindow.webContents.openDevTools();
+  // }
+
+  // Handle navigation to external URLs
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    require('electron').shell.openExternal(url);
+    return { action: 'deny' };
+  });
 }
 
 // This method will be called when Electron has finished initialization
