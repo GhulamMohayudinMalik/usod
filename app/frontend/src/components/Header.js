@@ -40,7 +40,7 @@ function Header({ className = '' }) {
   };
   
   return (
-    <header className={`flex items-center justify-between h-16 px-6 bg-gray-800/80 backdrop-blur-xl border-b border-gray-700/50 ${className}`}>
+    <header className={`flex items-center justify-between h-16 p-6 bg-gray-800/80 backdrop-blur-xl border-b border-gray-700/50 ${className}`}>
       <div>
         <h1 className="text-lg font-semibold text-white">Unified Security Operations Dashboard</h1>
       </div>
