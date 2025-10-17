@@ -25,9 +25,28 @@ app.set('trust proxy', true);
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      process.env.FRONTEND_URL || 'http://localhost:3000', // Web app
+      'http://localhost:3001', // Desktop app (Electron)
+      'http://localhost:19006', // Expo development server
+      'exp://localhost:19000', // Expo development
+      'exp://192.168.1.100:19000', // Expo on local network
+      'exp://192.168.100.113:19000', // Expo on your network
+      'exp://192.168.100.113:8081', // Expo alternative port
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'X-API-Key'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'X-API-Key', 'X-Platform'],
   credentials: true,
 };
 
@@ -192,8 +211,11 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   try {
     await connectMongoDB();
-    app.listen(port, () => {
+    app.listen(port, '0.0.0.0', () => {
       console.log(`Server is running on port ${port}`);
+      console.log(`Server accessible at:`);
+      console.log(`  - http://localhost:${port}`);
+      console.log(`  - http://192.168.100.113:${port}`);
       console.log(`CORS enabled for: ${corsOptions.origin}`);
 // Start session cleanup service
 startSessionCleanup();

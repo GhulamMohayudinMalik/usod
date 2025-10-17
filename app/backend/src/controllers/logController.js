@@ -4,13 +4,14 @@ import mongoose from 'mongoose';
 export const logController = {
   getLogs: async (req, res) => {
     try {
-      const { page = 1, limit = 20, action, status, startDate, endDate } = req.query;
+      const { page = 1, limit = 20, action, status, platform, startDate, endDate } = req.query;
       const pageNum = parseInt(page);
       const limitNum = parseInt(limit);
 
       const filter = {};
       if (action) filter.action = action;
       if (status) filter.status = status;
+      if (platform) filter.platform = platform;
       if (startDate || endDate) {
         filter.timestamp = {};
         if (startDate) filter.timestamp.$gte = new Date(startDate);
@@ -89,6 +90,14 @@ export const logController = {
       if (!logData.action || !logData.status) return res.status(400).json({ message: 'Log data must include action and status' });
       if (!logData.timestamp) logData.timestamp = new Date();
       if (req.user?.id) logData.userId = req.user.id;
+      
+      // Set platform from header or default to web
+      logData.platform = req.headers['x-platform'] || 'web';
+      
+      // Set device info if provided
+      if (req.body.deviceInfo) {
+        logData.deviceInfo = req.body.deviceInfo;
+      }
 
       const securityLog = new SecurityLog(logData);
       const savedLog = await securityLog.save();
@@ -96,6 +105,38 @@ export const logController = {
     } catch (error) {
       console.error('Error creating log:', error);
       return res.status(500).json({ message: 'Error creating log', error: error.message });
+    }
+  },
+
+  // Bulk ingestion for platform-specific logs
+  bulkIngest: async (req, res) => {
+    try {
+      const { logs } = req.body;
+      const platform = req.headers['x-platform'] || 'web';
+      
+      if (!Array.isArray(logs) || logs.length === 0) {
+        return res.status(400).json({ message: 'Logs array is required' });
+      }
+
+      // Validate and prepare logs
+      const validLogs = logs.map(log => ({
+        ...log,
+        platform,
+        timestamp: log.timestamp ? new Date(log.timestamp) : new Date(),
+        deviceInfo: log.deviceInfo || {}
+      }));
+
+      // Insert logs in bulk
+      const result = await SecurityLog.insertMany(validLogs, { ordered: false });
+      
+      return res.status(201).json({ 
+        message: 'Logs ingested successfully', 
+        count: result.length,
+        platform 
+      });
+    } catch (error) {
+      console.error('Error bulk ingesting logs:', error);
+      return res.status(500).json({ message: 'Error bulk ingesting logs', error: error.message });
     }
   },
 

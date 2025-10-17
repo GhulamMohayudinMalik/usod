@@ -2,6 +2,12 @@ import mongoose, { Schema } from 'mongoose';
 
 const SecurityLogSchema = new Schema({
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: false },
+    platform: { 
+        type: String, 
+        required: true, 
+        enum: ['web', 'desktop', 'mobile'],
+        default: 'web'
+    },
     action: {
         type: String,
         required: true,
@@ -36,6 +42,10 @@ const SecurityLogSchema = new Schema({
     status: { type: String, required: true, enum: ['success', 'failure', 'detected'] },
     ipAddress: { type: String, required: true },
     userAgent: { type: String, required: true },
+    deviceInfo: { 
+        type: Schema.Types.Mixed, 
+        default: {} 
+    },
     details: { type: Schema.Types.Mixed, default: {} },
     timestamp: { type: Date, default: Date.now }
 });
@@ -43,6 +53,9 @@ const SecurityLogSchema = new Schema({
 SecurityLogSchema.index({ userId: 1 });
 SecurityLogSchema.index({ action: 1 });
 SecurityLogSchema.index({ status: 1 });
+SecurityLogSchema.index({ platform: 1 });
 SecurityLogSchema.index({ timestamp: -1 });
+SecurityLogSchema.index({ platform: 1, timestamp: -1 });
+SecurityLogSchema.index({ userId: 1, platform: 1 });
 
 export const SecurityLog = mongoose.models.SecurityLog || mongoose.model('SecurityLog', SecurityLogSchema);

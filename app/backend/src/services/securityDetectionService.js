@@ -371,15 +371,22 @@ export function detectCSRF(req) {
   const csrfToken = req.headers['x-csrf-token'] || (req.body && req.body._csrf);
   const referer = req.headers.referer;
   const origin = req.headers.origin;
+  const userAgent = req.headers['user-agent'] || '';
+  const platform = req.headers['x-platform'] || '';
 
   // Skip CSRF check for localhost API testing and development
-  if (req.headers['user-agent'] && req.headers['user-agent'].includes('PowerShell')) {
+  if (userAgent.includes('PowerShell')) {
     return false; // Skip for PowerShell/API testing
   }
 
+  // Skip CSRF check for mobile apps (React Native/Expo)
+  if (platform === 'mobile' || userAgent.includes('React Native') || userAgent.includes('Expo')) {
+    return false; // Allow mobile app requests
+  }
+
   // Skip CSRF check for direct API calls without referer/origin
-  if (!referer && !origin && req.ip === '127.0.0.1') {
-    return false; // Allow localhost direct API calls
+  if (!referer && !origin && (req.ip === '127.0.0.1' || req.ip === '192.168.100.113')) {
+    return false; // Allow localhost and network IP direct API calls
   }
 
   // Basic CSRF validation
