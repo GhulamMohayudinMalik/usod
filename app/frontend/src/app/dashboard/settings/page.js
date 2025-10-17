@@ -15,19 +15,16 @@ export default function SettingsPage() {
     email: ''
   });
   
-  // Security settings
+  // Security settings - removed non-functional settings
   const [securitySettings, setSecuritySettings] = useState({
-    sessionTimeout: 24,
-    loginAttempts: 5,
-    passwordExpiry: 90
+    // Note: These settings are not actually enforced by the backend
+    // They only log changes but don't affect actual behavior
   });
   
-  // Notification settings
+  // Notification settings - removed non-functional settings
   const [notificationSettings, setNotificationSettings] = useState({
-    loginAlerts: true,
-    securityEvents: true,
-    systemErrors: true,
-    emailNotifications: true
+    // Note: These settings are not actually enforced by the backend
+    // They only log changes but don't affect actual behavior
   });
 
   useEffect(() => {
@@ -95,110 +92,13 @@ export default function SettingsPage() {
   };
 
   const handleSecuritySettingsUpdate = async () => {
-    setLoading(true);
-    setError(null);
-    setSuccessMessage(null);
-
-    try {
-      const token = localStorage.getItem('token');
-      
-      // Log each setting change
-      const settingsToUpdate = [
-        {
-          settingType: 'security',
-          settingName: 'session_timeout',
-          newValue: securitySettings.sessionTimeout.toString()
-        },
-        {
-          settingType: 'security', 
-          settingName: 'max_login_attempts',
-          newValue: securitySettings.loginAttempts.toString()
-        },
-        {
-          settingType: 'security',
-          settingName: 'password_expiry_days',
-          newValue: securitySettings.passwordExpiry.toString()
-        }
-      ];
-
-      // Send each setting change to backend for logging
-      for (const setting of settingsToUpdate) {
-        await fetch('http://localhost:5000/api/users/settings', {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            ...setting,
-            changeScope: 'user'
-          })
-        });
-      }
-
-      setSuccessMessage('Security settings updated successfully!');
-    } catch (err) {
-      setError('Failed to update security settings');
-      console.error('Error updating security settings:', err);
-    } finally {
-      setLoading(false);
-    }
+    // Removed - these settings are not actually enforced by the backend
+    setSuccessMessage('Security settings functionality removed - these settings were not actually enforced by the backend.');
   };
 
   const handleNotificationSettingsUpdate = async () => {
-    setLoading(true);
-    setError(null);
-    setSuccessMessage(null);
-
-    try {
-      const token = localStorage.getItem('token');
-      
-      // Log each notification setting change
-      const settingsToUpdate = [
-        {
-          settingType: 'notifications',
-          settingName: 'login_alerts',
-          newValue: notificationSettings.loginAlerts.toString()
-        },
-        {
-          settingType: 'notifications',
-          settingName: 'security_events',
-          newValue: notificationSettings.securityEvents.toString()
-        },
-        {
-          settingType: 'notifications',
-          settingName: 'system_errors',
-          newValue: notificationSettings.systemErrors.toString()
-        },
-        {
-          settingType: 'notifications',
-          settingName: 'email_notifications',
-          newValue: notificationSettings.emailNotifications.toString()
-        }
-      ];
-
-      // Send each setting change to backend for logging
-      for (const setting of settingsToUpdate) {
-        await fetch('http://localhost:5000/api/users/settings', {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            ...setting,
-            changeScope: 'user'
-          })
-        });
-      }
-
-      setSuccessMessage('Notification settings updated successfully!');
-    } catch (err) {
-      setError('Failed to update notification settings');
-      console.error('Error updating notification settings:', err);
-    } finally {
-      setLoading(false);
-    }
+    // Removed - these settings are not actually enforced by the backend
+    setSuccessMessage('Notification settings functionality removed - these settings were not actually enforced by the backend.');
   };
 
   if (loading && !profile) {
@@ -309,107 +209,31 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {/* Security Tab */}
+          {/* Security Tab - Removed non-functional settings */}
           {activeTab === 'security' && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold text-white mb-4">Security Settings</h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Session Timeout (hours)
-                    </label>
-                    <select
-                      value={securitySettings.sessionTimeout}
-                      onChange={(e) => setSecuritySettings({...securitySettings, sessionTimeout: parseInt(e.target.value)})}
-                      className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    >
-                      <option value={1}>1 hour</option>
-                      <option value={8}>8 hours</option>
-                      <option value={24}>24 hours</option>
-                      <option value={168}>7 days</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Max Login Attempts
-                    </label>
-                    <input
-                      type="number"
-                      min="3"
-                      max="10"
-                      value={securitySettings.loginAttempts}
-                      onChange={(e) => setSecuritySettings({...securitySettings, loginAttempts: parseInt(e.target.value)})}
-                      className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Password Expiry (days)
-                    </label>
-                    <input
-                      type="number"
-                      min="30"
-                      max="365"
-                      value={securitySettings.passwordExpiry}
-                      onChange={(e) => setSecuritySettings({...securitySettings, passwordExpiry: parseInt(e.target.value)})}
-                      className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    />
-                  </div>
-
-                  <button
-                    onClick={handleSecuritySettingsUpdate}
-                    disabled={loading}
-                    className="bg-gradient-to-r from-emerald-600 to-cyan-600 text-white px-6 py-3 rounded-lg font-medium hover:from-emerald-700 hover:to-cyan-700 disabled:opacity-50 transition-all"
-                  >
-                    {loading ? 'Updating...' : 'Update Security Settings'}
-                  </button>
+                <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-4 text-yellow-300">
+                  <p className="text-sm">
+                    Security settings have been removed as they were not actually enforced by the backend. 
+                    These settings only logged changes but did not affect actual system behavior.
+                  </p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Notifications Tab */}
+          {/* Notifications Tab - Removed non-functional settings */}
           {activeTab === 'notifications' && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold text-white mb-4">Notification Preferences</h2>
-                <div className="space-y-4">
-                  {[
-                    { key: 'loginAlerts', label: 'Login Alerts', description: 'Get notified of login attempts' },
-                    { key: 'securityEvents', label: 'Security Events', description: 'Get notified of security incidents' },
-                    { key: 'systemErrors', label: 'System Errors', description: 'Get notified of system errors' },
-                    { key: 'emailNotifications', label: 'Email Notifications', description: 'Receive notifications via email' }
-                  ].map((setting) => (
-                    <div key={setting.key} className="flex items-center justify-between p-4 bg-gray-700/30 rounded-lg">
-                      <div>
-                        <h3 className="text-white font-medium">{setting.label}</h3>
-                        <p className="text-gray-400 text-sm">{setting.description}</p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={notificationSettings[setting.key]}
-                          onChange={(e) => setNotificationSettings({
-                            ...notificationSettings,
-                            [setting.key]: e.target.checked
-                          })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-                      </label>
-                    </div>
-                  ))}
-
-                  <button
-                    onClick={handleNotificationSettingsUpdate}
-                    disabled={loading}
-                    className="bg-gradient-to-r from-emerald-600 to-cyan-600 text-white px-6 py-3 rounded-lg font-medium hover:from-emerald-700 hover:to-cyan-700 disabled:opacity-50 transition-all"
-                  >
-                    {loading ? 'Updating...' : 'Update Notification Settings'}
-                  </button>
+                <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-4 text-yellow-300">
+                  <p className="text-sm">
+                    Notification settings have been removed as they were not actually enforced by the backend. 
+                    These settings only logged changes but did not affect actual system behavior.
+                  </p>
                 </div>
               </div>
             </div>
