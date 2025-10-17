@@ -36,3 +36,29 @@ export async function postData(path, data) {
   
   return res.json();
 }
+
+export async function updateLogStatus(logId, status) {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const token = localStorage.getItem('token');
+  
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  const res = await fetch(`${baseUrl}/api/logs/${logId}/status`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify({ status }),
+  });
+  
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Request failed ${res.status}: ${text}`);
+  }
+  
+  return res.json();
+}

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ThreatCard } from '@/components/ThreatCard';
-import { getData } from '@/services/api';
+import { getData, updateLogStatus } from '@/services/api';
+import Modal from '@/components/Modal';
 
 
 
@@ -15,6 +16,10 @@ export default function ThreatAnalysis() {
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalEvents, setTotalEvents] = useState([]);
+  
+  // Modal state
+  const [selectedThreat, setSelectedThreat] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Keep a ref to ensure current values in async callbacks
   const itemsPerPageRef = useRef(itemsPerPage);
@@ -40,6 +45,7 @@ export default function ThreatAnalysis() {
         // Get security events from the API
         const events = await getData('/api/data/security-events?count=100');
         console.log('Total events fetched:', events.length);
+        console.log('Sample event structure:', events[0]);
         
         // Sort by timestamp, newest first
         const sortedEvents = events.sort((a, b) => 
@@ -119,6 +125,67 @@ export default function ThreatAnalysis() {
     }
   };
   
+  // Handle threat actions
+  const handleViewThreat = (threat) => {
+    setSelectedThreat(threat);
+    setIsModalOpen(true);
+  };
+  
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedThreat(null);
+  };
+  
+  const handleThreatAction = async (action, threat) => {
+    try {
+      console.log(`Performing action: ${action} on threat:`, threat);
+      console.log('Threat ID:', threat.id);
+      
+      // Map action to status
+      const status = action === 'resolve' ? 'resolved' : 
+                    action === 'escalate' ? 'escalated' : 
+                    action === 'investigate' ? 'investigating' : 'open';
+      
+      console.log('Mapped status:', status);
+      
+      // Make API call to update status in database
+      console.log('Making API call to update status...');
+      const result = await updateLogStatus(threat.id, status);
+      console.log('API call result:', result);
+      
+      // Update the local state to reflect the action
+      const updatedEvents = totalEvents.map(event => {
+        if (event.id === threat.id) {
+          return {
+            ...event,
+            status: status
+          };
+        }
+        return event;
+      });
+      
+      setTotalEvents(updatedEvents);
+      
+      // Update the current page events
+      const currentPage = pageRef.current;
+      const currentItemsPerPage = itemsPerPageRef.current;
+      const startIndex = (currentPage - 1) * currentItemsPerPage;
+      const endIndex = startIndex + currentItemsPerPage;
+      const paginatedEvents = updatedEvents.slice(startIndex, endIndex);
+      setHistoryEvents(paginatedEvents);
+      
+      // Show success message
+      alert(`Action "${action}" performed successfully on threat from ${threat.source}`);
+      
+      // Close modal after action
+      closeModal();
+    } catch (error) {
+      console.error('Error performing threat action:', error);
+      console.error('Error details:', error.message, error.stack);
+      alert(`Failed to perform action: ${error.message}`);
+    }
+  };
+  
   return (
     <div className="space-y-8">
       <div>
@@ -158,6 +225,22 @@ export default function ThreatAnalysis() {
             description={analysisResult.explanation}
             confidence={analysisResult.confidence}
             recommendations={analysisResult.recommendations}
+            onViewDetails={() => handleViewThreat({
+              id: 'analysis-' + Date.now(),
+              severity: analysisResult.threat_level,
+              source: 'Text Analysis',
+              timestamp: new Date().toISOString(),
+              description: analysisResult.explanation,
+              details: analysisResult
+            })}
+            onTakeAction={() => handleThreatAction('investigate', {
+              id: 'analysis-' + Date.now(),
+              severity: analysisResult.threat_level,
+              source: 'Text Analysis',
+              timestamp: new Date().toISOString(),
+              description: analysisResult.explanation,
+              details: analysisResult
+            })}
           />
         </div>
       )}
@@ -195,7 +278,9 @@ export default function ThreatAnalysis() {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Time</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Source</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Description</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Result</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Severity</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Details</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
@@ -210,8 +295,39 @@ export default function ThreatAnalysis() {
                           {event.severity.charAt(0).toUpperCase() + event.severity.slice(1)}
                         </span>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          event.status === 'resolved' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                          event.status === 'escalated' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' :
+                          event.status === 'investigating' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                        }`}>
+                          {event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : 'Open'}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3">View</button>
+                        <button 
+                          onClick={() => handleViewThreat(event)}
+                          className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800 transition-colors duration-200 shadow-sm hover:shadow-md"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => handleThreatAction('escalate', event)}
+                            className="px-3 py-1.5 bg-orange-600 text-white text-xs font-medium rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800 transition-colors duration-200 shadow-sm hover:shadow-md"
+                          >
+                            Escalate
+                          </button>
+                          <button 
+                            onClick={() => handleThreatAction('resolve', event)}
+                            className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800 transition-colors duration-200 shadow-sm hover:shadow-md"
+                          >
+                            Resolve
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -273,6 +389,123 @@ export default function ThreatAnalysis() {
           </div>
         )}
       </div>
+      
+      {/* Threat Details Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        title="Threat Details"
+        size="lg"
+      >
+        {selectedThreat && (
+          <div className="space-y-6">
+            {/* Threat Header */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-center space-x-3">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  selectedThreat.severity === 'critical' ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400' :
+                  selectedThreat.severity === 'high' ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' :
+                  selectedThreat.severity === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400' :
+                  'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400'
+                }`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize">
+                    {selectedThreat.severity} Threat
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Detected at {formatTimestamp(selectedThreat.timestamp)}
+                  </p>
+                </div>
+              </div>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getSeverityClass(selectedThreat.severity)}`}>
+                {selectedThreat.severity.charAt(0).toUpperCase() + selectedThreat.severity.slice(1)}
+              </span>
+            </div>
+            
+            {/* Threat Information */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Source
+                </label>
+                <p className="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                  {selectedThreat.source}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Threat ID
+                </label>
+                <p className="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-2 rounded font-mono">
+                  {selectedThreat.id || 'N/A'}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Current Status
+                </label>
+                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                  selectedThreat.status === 'resolved' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                  selectedThreat.status === 'escalated' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' :
+                  selectedThreat.status === 'investigating' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
+                }`}>
+                  {selectedThreat.status ? selectedThreat.status.charAt(0).toUpperCase() + selectedThreat.status.slice(1) : 'Open'}
+                </span>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Description
+              </label>
+              <p className="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 p-3 rounded">
+                {selectedThreat.description}
+              </p>
+            </div>
+            
+            {/* Additional Details */}
+            {selectedThreat.details && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Additional Details
+                </label>
+                <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded">
+                  <pre className="text-sm text-gray-900 dark:text-white whitespace-pre-wrap overflow-x-auto">
+                    {JSON.stringify(selectedThreat.details, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            )}
+            
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => handleThreatAction('escalate', selectedThreat)}
+                className="px-4 py-2 bg-orange-600 text-white text-sm font-medium rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                Escalate Threat
+              </button>
+              <button
+                onClick={() => handleThreatAction('resolve', selectedThreat)}
+                className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                Mark as Resolved
+              </button>
+              <button
+                onClick={() => handleThreatAction('investigate', selectedThreat)}
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                Start Investigation
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 } 

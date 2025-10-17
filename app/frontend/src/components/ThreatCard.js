@@ -33,7 +33,7 @@ const defaultColors = {
   icon: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
 };
 
-export function ThreatCard({ level, source, timestamp, description, confidence, recommendations }) {
+export function ThreatCard({ level, source, timestamp, description, confidence, recommendations, onViewDetails, onTakeAction }) {
   const colors = levelColors[level] || defaultColors;
   
   return (
@@ -76,10 +76,16 @@ export function ThreatCard({ level, source, timestamp, description, confidence, 
         )}
       </div>
       <div className="flex border-t border-gray-200 dark:border-gray-700 divide-x divide-gray-200 dark:divide-gray-700">
-        <button className="flex-1 py-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+        <button 
+          onClick={onViewDetails}
+          className="flex-1 py-2 text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800 transition-colors duration-200"
+        >
           View Details
         </button>
-        <button className="flex-1 py-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+        <button 
+          onClick={onTakeAction}
+          className="flex-1 py-2 text-xs font-medium bg-green-600 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800 transition-colors duration-200"
+        >
           Take Action
         </button>
       </div>
