@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Dimensions 
 } from 'react-native';
+import apiService from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -17,7 +18,22 @@ const BackupScreen = () => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
+
+  // Auto-clear messages after 5 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
   const [lastBackup, setLastBackup] = useState(null);
   const [backupStats, setBackupStats] = useState({
     totalBackups: 0,
@@ -26,160 +42,77 @@ const BackupScreen = () => {
     nextScheduledBackup: null
   });
 
-  // Dummy backup data
-  const dummyBackups = [
-    {
-      id: 1,
-      name: 'Full System Backup',
-      type: 'full',
-      status: 'completed',
-      size: '2.4 GB',
-      createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-      completedAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(), // 25 minutes ago
-      duration: '5m 23s',
-      description: 'Complete system backup including all data and configurations'
-    },
-    {
-      id: 2,
-      name: 'Security Logs Backup',
-      type: 'incremental',
-      status: 'completed',
-      size: '156 MB',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-      completedAt: new Date(Date.now() - 1000 * 60 * 60 * 2 + 1000 * 60 * 3).toISOString(), // 2 hours ago + 3 minutes
-      duration: '3m 12s',
-      description: 'Incremental backup of security logs and audit trails'
-    },
-    {
-      id: 3,
-      name: 'User Data Backup',
-      type: 'incremental',
-      status: 'completed',
-      size: '89 MB',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(), // 6 hours ago
-      completedAt: new Date(Date.now() - 1000 * 60 * 60 * 6 + 1000 * 60 * 2).toISOString(), // 6 hours ago + 2 minutes
-      duration: '2m 45s',
-      description: 'Incremental backup of user profiles and settings'
-    },
-    {
-      id: 4,
-      name: 'Database Backup',
-      type: 'full',
-      status: 'in_progress',
-      size: '0 MB',
-      createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 minutes ago
-      completedAt: null,
-      duration: null,
-      description: 'Full database backup in progress',
-      progress: 65
-    },
-    {
-      id: 5,
-      name: 'Configuration Backup',
-      type: 'incremental',
-      status: 'failed',
-      size: '0 MB',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(), // 12 hours ago
-      completedAt: null,
-      duration: null,
-      description: 'Configuration backup failed due to insufficient storage space',
-      error: 'Insufficient storage space'
-    }
-  ];
 
   useEffect(() => {
     fetchBackups();
-    calculateBackupStats();
+    fetchBackupStats();
   }, []);
 
   const fetchBackups = async () => {
+    setLoading(true);
+    setError('');
     try {
-      // Simulate API call
-      setTimeout(() => {
-        setBackups(dummyBackups);
-        setLastBackup(dummyBackups.find(b => b.status === 'completed'));
-      }, 1000);
+      const response = await apiService.getBackups();
+      setBackups(response.backups || []);
+      setLastBackup((response.backups || []).find(b => b.status === 'completed'));
     } catch (error) {
       console.error('Error fetching backups:', error);
-    }
-  };
-
-  const calculateBackupStats = () => {
-    const completedBackups = dummyBackups.filter(b => b.status === 'completed');
-    const totalSize = completedBackups.reduce((sum, backup) => {
-      const sizeInMB = parseFloat(backup.size.replace(' MB', '').replace(' GB', ''));
-      return sum + (backup.size.includes('GB') ? sizeInMB * 1024 : sizeInMB);
-    }, 0);
-
-    setBackupStats({
-      totalBackups: completedBackups.length,
-      totalSize: totalSize > 1024 ? `${(totalSize / 1024).toFixed(1)} GB` : `${totalSize.toFixed(1)} MB`,
-      lastBackupTime: lastBackup?.completedAt,
-      nextScheduledBackup: new Date(Date.now() + 1000 * 60 * 60 * 6).toISOString() // 6 hours from now
-    });
-  };
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => {
-      fetchBackups();
-      calculateBackupStats();
-      setRefreshing(false);
-    }, 1500);
-  };
-
-  const createBackup = async (type) => {
-    setLoading(true);
-    setError(null);
-    setSuccessMessage('');
-    
-    try {
-      // Simulate backup creation
-      setTimeout(() => {
-        const newBackup = {
-          id: Date.now(),
-          name: `${type === 'full' ? 'Full System' : 'Incremental'} Backup`,
-          type,
-          status: 'in_progress',
-          size: '0 MB',
-          createdAt: new Date().toISOString(),
-          completedAt: null,
-          duration: null,
-          description: `${type === 'full' ? 'Complete system backup' : 'Incremental backup'} initiated`,
-          progress: 0
-        };
-        
-        setBackups(prev => [newBackup, ...prev]);
-        setSuccessMessage(`${type === 'full' ? 'Full' : 'Incremental'} backup started successfully!`);
-        setLoading(false);
-        
-        // Simulate backup completion after 10 seconds
-        setTimeout(() => {
-          setBackups(prev => prev.map(backup => 
-            backup.id === newBackup.id 
-              ? {
-                  ...backup,
-                  status: 'completed',
-                  size: type === 'full' ? '2.1 GB' : '45 MB',
-                  completedAt: new Date().toISOString(),
-                  duration: '4m 32s',
-                  progress: undefined
-                }
-              : backup
-          ));
-          calculateBackupStats();
-        }, 10000);
-      }, 2000);
-    } catch (error) {
-      setError(`Failed to create backup: ${error.message}`);
+      setError(error.message || 'Failed to load backups. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
 
-  const restoreBackup = async (backupId) => {
+  const fetchBackupStats = async () => {
+    try {
+      const response = await apiService.getBackupStats();
+      const stats = response.stats;
+      setBackupStats({
+        totalBackups: stats.totalBackups || 0,
+        totalSize: stats.totalSizeFormatted || '0 MB',
+        lastBackupTime: stats.newestBackup?.createdAt,
+        nextScheduledBackup: null // Not implemented in backend yet
+      });
+    } catch (error) {
+      console.error('Error fetching backup stats:', error);
+      // Don't set error for stats, just use defaults
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([fetchBackups(), fetchBackupStats()]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const createBackup = async (type) => {
+    setLoading(true);
+    setError('');
+    setSuccessMessage('');
+    
+    try {
+      const response = await apiService.createBackup(type, 'manual');
+      
+      setSuccessMessage(`${type === 'full' ? 'Full' : type === 'security_logs' ? 'Security Logs' : type === 'users' ? 'Users' : 'Incremental'} backup created successfully!`);
+      
+      // Refresh the backups list to show the new backup
+      await fetchBackups();
+      await fetchBackupStats();
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      setError(error.message || `Failed to create backup: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const restoreBackup = async (backup) => {
     Alert.alert(
       'Confirm Restore',
-      'Are you sure you want to restore this backup? This action cannot be undone.',
+      `Are you sure you want to restore "${backup.name}"? This action cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
         { 
@@ -187,17 +120,20 @@ const BackupScreen = () => {
           style: 'destructive',
           onPress: async () => {
             setLoading(true);
-            setError(null);
+            setError('');
             setSuccessMessage('');
             
             try {
-              // Simulate restore process
-              setTimeout(() => {
-                setSuccessMessage('Backup restored successfully!');
-                setLoading(false);
-              }, 3000);
+              await apiService.restoreBackup(backup.name, 'full', 'manual');
+              setSuccessMessage('Backup restored successfully!');
+              
+              // Refresh the backups list
+              await fetchBackups();
+              await fetchBackupStats();
             } catch (error) {
-              setError(`Failed to restore backup: ${error.message}`);
+              console.error('Error restoring backup:', error);
+              setError(error.message || `Failed to restore backup: ${error.message}`);
+            } finally {
               setLoading(false);
             }
           }
@@ -206,22 +142,64 @@ const BackupScreen = () => {
     );
   };
 
-  const deleteBackup = async (backupId) => {
+  const deleteBackup = async (backup) => {
     Alert.alert(
       'Confirm Delete',
-      'Are you sure you want to delete this backup? This action cannot be undone.',
+      `Are you sure you want to delete "${backup.name}"? This action cannot be undone.`,
       [
         { text: 'Cancel', style: 'cancel' },
         { 
           text: 'Delete', 
           style: 'destructive',
           onPress: async () => {
+            setLoading(true);
+            setError('');
+            setSuccessMessage('');
+            
             try {
-              setBackups(prev => prev.filter(backup => backup.id !== backupId));
-              setSuccessMessage('Backup deleted successfully!');
-              calculateBackupStats();
+              // Note: Backend doesn't have individual delete endpoint, using cleanup for now
+              // In a real implementation, you'd need a DELETE /api/backup/:name endpoint
+              setSuccessMessage('Backup deletion feature not yet implemented in backend.');
+              await fetchBackups();
+              await fetchBackupStats();
             } catch (error) {
-              setError(`Failed to delete backup: ${error.message}`);
+              console.error('Error deleting backup:', error);
+              setError(error.message || `Failed to delete backup: ${error.message}`);
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const cleanupBackups = async () => {
+    Alert.alert(
+      'Confirm Cleanup',
+      'Are you sure you want to cleanup old backups? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Cleanup', 
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true);
+            setError('');
+            setSuccessMessage('');
+            
+            try {
+              const response = await apiService.cleanupBackups();
+              setSuccessMessage(`Cleanup completed successfully! ${response.deletedCount || 0} old backups removed.`);
+              
+              // Refresh the backups list
+              await fetchBackups();
+              await fetchBackupStats();
+            } catch (error) {
+              console.error('Error cleaning up backups:', error);
+              setError(error.message || `Failed to cleanup backups: ${error.message}`);
+            } finally {
+              setLoading(false);
             }
           }
         }
@@ -230,6 +208,7 @@ const BackupScreen = () => {
   };
 
   const getStatusColor = (status) => {
+    if (!status) return '#6B7280';
     switch (status) {
       case 'completed': return '#10B981';
       case 'in_progress': return '#3B82F6';
@@ -240,6 +219,7 @@ const BackupScreen = () => {
   };
 
   const getStatusIcon = (status) => {
+    if (!status) return '❓';
     switch (status) {
       case 'completed': return '✅';
       case 'in_progress': return '⏳';
@@ -250,10 +230,13 @@ const BackupScreen = () => {
   };
 
   const getTypeIcon = (type) => {
+    if (!type) return '📁';
     switch (type) {
       case 'full': return '💾';
       case 'incremental': return '📈';
       case 'differential': return '📊';
+      case 'security_logs': return '🔒';
+      case 'users': return '👥';
       default: return '📁';
     }
   };
@@ -287,6 +270,13 @@ const BackupScreen = () => {
         {error ? (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
+        {/* Loading State */}
+        {loading && backups.length === 0 ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading backups...</Text>
           </View>
         ) : null}
 
@@ -343,32 +333,32 @@ const BackupScreen = () => {
             
             <TouchableOpacity
               style={[styles.actionButton, styles.incrementalBackupButton]}
-              onPress={() => createBackup('incremental')}
+              onPress={() => createBackup('security_logs')}
               disabled={loading}
             >
               <Text style={styles.actionIcon}>📈</Text>
-              <Text style={styles.actionTitle}>Incremental</Text>
-              <Text style={styles.actionDescription}>Backup changes only</Text>
+              <Text style={styles.actionTitle}>Security Logs</Text>
+              <Text style={styles.actionDescription}>Backup security logs</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
               style={[styles.actionButton, styles.scheduleButton]}
-              onPress={() => Alert.alert('Schedule Backup', 'Backup scheduling feature coming soon!')}
+              onPress={() => createBackup('users')}
               disabled={loading}
             >
-              <Text style={styles.actionIcon}>📅</Text>
-              <Text style={styles.actionTitle}>Schedule</Text>
-              <Text style={styles.actionDescription}>Set up automatic backups</Text>
+              <Text style={styles.actionIcon}>👥</Text>
+              <Text style={styles.actionTitle}>Users Backup</Text>
+              <Text style={styles.actionDescription}>Backup user data</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
               style={[styles.actionButton, styles.settingsButton]}
-              onPress={() => Alert.alert('Backup Settings', 'Backup settings feature coming soon!')}
+              onPress={cleanupBackups}
               disabled={loading}
             >
-              <Text style={styles.actionIcon}>⚙️</Text>
-              <Text style={styles.actionTitle}>Settings</Text>
-              <Text style={styles.actionDescription}>Configure backup options</Text>
+              <Text style={styles.actionIcon}>🧹</Text>
+              <Text style={styles.actionTitle}>Cleanup</Text>
+              <Text style={styles.actionDescription}>Remove old backups</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -388,79 +378,64 @@ const BackupScreen = () => {
                 <Text style={styles.emptyText}>No backups found. Create your first backup to get started!</Text>
               </View>
             ) : (
-              backups.map((backup) => (
-                <View key={backup.id} style={styles.backupCard}>
+              backups.map((backup, index) => (
+                <View key={backup.id || backup.name || `backup-${index}`} style={styles.backupCard}>
                   <View style={styles.backupHeader}>
                     <View style={styles.backupInfo}>
                       <View style={styles.backupTitleRow}>
                         <Text style={styles.backupIcon}>{getTypeIcon(backup.type)}</Text>
-                        <Text style={styles.backupName}>{backup.name}</Text>
-                        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(backup.status) }]}>
+                        <Text style={styles.backupName}>{backup.name || 'Unnamed Backup'}</Text>
+                        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(backup.status || 'completed') }]}>
                           <Text style={styles.statusText}>
-                            {getStatusIcon(backup.status)} {backup.status.toUpperCase()}
+                            {getStatusIcon(backup.status || 'completed')} {(backup.status || 'completed').toUpperCase()}
                           </Text>
                         </View>
                       </View>
-                      <Text style={styles.backupDescription}>{backup.description}</Text>
+                      <Text style={styles.backupDescription}>
+                        {backup.description || `${backup.type || 'Unknown'} backup with ${backup.recordCount || 0} records`}
+                      </Text>
                     </View>
                   </View>
                   
                   <View style={styles.backupDetails}>
                     <View style={styles.backupDetailRow}>
                       <Text style={styles.backupDetailLabel}>Size:</Text>
-                      <Text style={styles.backupDetailValue}>{backup.size}</Text>
+                      <Text style={styles.backupDetailValue}>{backup.size || 'Unknown'}</Text>
+                    </View>
+                    <View style={styles.backupDetailRow}>
+                      <Text style={styles.backupDetailLabel}>Type:</Text>
+                      <Text style={styles.backupDetailValue}>{backup.type || 'Unknown'}</Text>
+                    </View>
+                    <View style={styles.backupDetailRow}>
+                      <Text style={styles.backupDetailLabel}>Records:</Text>
+                      <Text style={styles.backupDetailValue}>{backup.recordCount || 0}</Text>
                     </View>
                     <View style={styles.backupDetailRow}>
                       <Text style={styles.backupDetailLabel}>Created:</Text>
                       <Text style={styles.backupDetailValue}>{formatDate(backup.createdAt)}</Text>
                     </View>
-                    {backup.completedAt && (
+                    {backup.recordCounts && Object.keys(backup.recordCounts).length > 0 && (
                       <View style={styles.backupDetailRow}>
-                        <Text style={styles.backupDetailLabel}>Completed:</Text>
-                        <Text style={styles.backupDetailValue}>{formatDate(backup.completedAt)}</Text>
-                      </View>
-                    )}
-                    {backup.duration && (
-                      <View style={styles.backupDetailRow}>
-                        <Text style={styles.backupDetailLabel}>Duration:</Text>
-                        <Text style={styles.backupDetailValue}>{backup.duration}</Text>
-                      </View>
-                    )}
-                    {backup.error && (
-                      <View style={styles.backupDetailRow}>
-                        <Text style={styles.backupDetailLabel}>Error:</Text>
-                        <Text style={[styles.backupDetailValue, { color: '#EF4444' }]}>{backup.error}</Text>
+                        <Text style={styles.backupDetailLabel}>Details:</Text>
+                        <Text style={styles.backupDetailValue}>
+                          {Object.entries(backup.recordCounts).map(([key, count]) => `${key}: ${count}`).join(', ')}
+                        </Text>
                       </View>
                     )}
                   </View>
 
-                  {backup.status === 'in_progress' && backup.progress !== undefined && (
-                    <View style={styles.progressSection}>
-                      <View style={styles.progressBar}>
-                        <View 
-                          style={[
-                            styles.progressFill, 
-                            { width: `${backup.progress}%` }
-                          ]} 
-                        />
-                      </View>
-                      <Text style={styles.progressText}>{backup.progress}% Complete</Text>
-                    </View>
-                  )}
 
                   <View style={styles.backupActions}>
-                    {backup.status === 'completed' && (
-                      <TouchableOpacity
-                        style={styles.restoreButton}
-                        onPress={() => restoreBackup(backup.id)}
-                        disabled={loading}
-                      >
-                        <Text style={styles.restoreButtonText}>🔄 Restore</Text>
-                      </TouchableOpacity>
-                    )}
+                    <TouchableOpacity
+                      style={styles.restoreButton}
+                      onPress={() => restoreBackup(backup)}
+                      disabled={loading}
+                    >
+                      <Text style={styles.restoreButtonText}>🔄 Restore</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.deleteButton}
-                      onPress={() => deleteBackup(backup.id)}
+                      onPress={() => deleteBackup(backup)}
                       disabled={loading}
                     >
                       <Text style={styles.deleteButtonText}>🗑️ Delete</Text>
@@ -750,6 +725,15 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     fontSize: 12,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
 });
 

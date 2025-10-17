@@ -10,6 +10,7 @@ import {
   RefreshControl,
   Dimensions 
 } from 'react-native';
+import apiService from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -17,116 +18,217 @@ const SecurityLabScreen = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [backendError, setBackendError] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
   const [activeTest, setActiveTest] = useState(null);
   const [testInput, setTestInput] = useState('');
   const [testResults, setTestResults] = useState([]);
 
-  // Dummy security logs
-  const dummyLogs = [
-    {
-      id: 1,
-      timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-      action: 'sql_injection_attempt',
-      status: 'detected',
-      ipAddress: '192.168.1.100',
-      details: { description: 'SQL injection pattern detected in login form' }
-    },
-    {
-      id: 2,
-      timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-      action: 'brute_force_detected',
-      status: 'detected',
-      ipAddress: '10.0.0.50',
-      details: { description: 'Multiple failed login attempts detected' }
-    },
-    {
-      id: 3,
-      timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      action: 'xss_attempt',
-      status: 'detected',
-      ipAddress: '172.16.0.25',
-      details: { description: 'XSS payload detected in user input' }
-    },
-    {
-      id: 4,
-      timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-      action: 'suspicious_activity',
-      status: 'detected',
-      ipAddress: '203.0.113.1',
-      details: { description: 'Suspicious file upload attempt' }
-    },
-    {
-      id: 5,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-      action: 'csrf_attempt',
-      status: 'detected',
-      ipAddress: '198.51.100.5',
-      details: { description: 'CSRF token validation failed' }
-    }
-  ];
 
   useEffect(() => {
     fetchSecurityLogs();
+    const interval = setInterval(fetchSecurityLogs, 2000); // Refresh every 2 seconds
+    return () => clearInterval(interval);
   }, []);
 
   const fetchSecurityLogs = async () => {
     try {
-      // Simulate API call
-      setTimeout(() => {
-        setLogs(dummyLogs);
-      }, 1000);
+      setBackendError(false);
+      // Get all logs and filter for security-related ones on the frontend
+      const response = await apiService.getLogs({ limit: 100 });
+      const securityLogs = (response.logs || []).filter(log => 
+        log.action.includes('sql_injection') ||
+        log.action.includes('xss') ||
+        log.action.includes('csrf') ||
+        log.action.includes('brute_force') ||
+        log.action.includes('suspicious') ||
+        log.action.includes('ldap_injection') ||
+        log.action.includes('nosql_injection') ||
+        log.action.includes('command_injection') ||
+        log.action.includes('path_traversal') ||
+        log.action.includes('ssrf') ||
+        log.action.includes('xxe') ||
+        log.action.includes('information_disclosure') ||
+        log.action.includes('ip_blocked') ||
+        log.action.includes('ip_unblocked') ||
+        log.action.includes('security_event')
+      );
+      setLogs(securityLogs);
     } catch (error) {
       console.error('Error fetching security logs:', error);
+      setBackendError(true);
+      setLogs([]); // Set empty array on error
     }
   };
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      fetchSecurityLogs();
+    try {
+      await fetchSecurityLogs();
+    } finally {
       setRefreshing(false);
-    }, 1500);
+    }
   };
 
   const executeAttack = async (attackType, payload) => {
     setLoading(true);
-    setError(null);
+    setError('');
     setSuccessMessage('');
     
     const timestamp = new Date();
     
     try {
-      // Simulate attack execution
-      setTimeout(() => {
-        const result = {
+      let response;
+      
+      switch (attackType) {
+        case 'sql_injection':
+          response = await apiService.login(payload, 'test');
+          break;
+          
+        case 'xss':
+          response = await apiService.register({
+            username: payload,
+            email: 'test@test.com',
+            password: 'test123'
+          });
+          break;
+          
+        case 'brute_force':
+          for (let i = 0; i < 5; i++) {
+            try {
+              await apiService.login(payload, 'wrongpassword');
+            } catch (error) {
+              // Expected to fail
+            }
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+          break;
+          
+        case 'suspicious_activity':
+          response = await apiService.register({
+            username: payload,
+            email: 'test@test.com',
+            password: 'test123'
+          });
+          break;
+          
+        case 'csrf':
+          // Simulate CSRF by sending request without proper headers
+          response = await fetch(`${apiService.baseURL}/api/auth/login`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              username: payload,
+              password: 'test'
+            })
+          });
+          break;
+          
+        case 'ldap_injection':
+          response = await apiService.login(payload, 'test');
+          break;
+          
+        case 'nosql_injection':
+          response = await apiService.register({
+            username: payload,
+            email: 'test@test.com',
+            password: 'test123'
+          });
+          break;
+          
+        case 'command_injection':
+          response = await apiService.login(payload, 'test');
+          break;
+          
+        case 'path_traversal':
+          response = await apiService.register({
+            username: payload,
+            email: 'test@test.com',
+            password: 'test123'
+          });
+          break;
+          
+        case 'ssrf':
+          response = await apiService.register({
+            username: payload,
+            email: 'test@test.com',
+            password: 'test123'
+          });
+          break;
+          
+        case 'xxe':
+          response = await apiService.register({
+            username: payload,
+            email: 'test@test.com',
+            password: 'test123'
+          });
+          break;
+          
+        case 'information_disclosure':
+          response = await apiService.login(payload, 'test');
+          break;
+      }
+      
+      setTestResults(prev => [...prev, {
+        id: Date.now(),
+        attackType,
+        payload,
+        timestamp,
+        status: 'executed',
+        response: response?.status || 'blocked'
+      }]);
+      
+      setSuccessMessage(`Attack executed! Check the logs below to see if it was detected.`);
+      
+    } catch (error) {
+      // Check if this is a security detection (which is good!)
+      const isSecurityDetection = error.message && (
+        error.message.includes('Malicious input detected') ||
+        error.message.includes('security') ||
+        error.message.includes('blocked')
+      );
+      
+      if (isSecurityDetection) {
+        // Security detection is actually a success!
+        setSuccessMessage(`Security system detected and blocked the attack!`);
+        setTestResults(prev => [...prev, {
           id: Date.now(),
           attackType,
           payload,
           timestamp,
-          status: Math.random() > 0.3 ? 'blocked' : 'executed',
-          response: Math.random() > 0.3 ? 'blocked' : 'success'
-        };
-        
-        setTestResults(prev => [result, ...prev.slice(0, 4)]);
-        setSuccessMessage(`Attack executed! Check the logs below to see if it was detected.`);
-        setLoading(false);
-        fetchSecurityLogs(); // Refresh logs
-      }, 2000);
-    } catch (error) {
-      setError(`Attack was blocked: ${error.message}`);
-      setLoading(false);
+          status: 'blocked',
+          response: 'Security system working correctly'
+        }]);
+      } else {
+        // This is a real error
+        setError(`Attack failed: ${error.message}`);
+        setTestResults(prev => [...prev, {
+          id: Date.now(),
+          attackType,
+          payload,
+          timestamp,
+          status: 'error',
+          error: error.message
+        }]);
+      }
     }
+    
+    setLoading(false);
+    fetchSecurityLogs(); // Refresh logs
   };
 
   const clearLogs = async () => {
     try {
+      await apiService.clearLogs();
       setLogs([]);
       setTestResults([]);
       setSuccessMessage('Logs cleared successfully');
     } catch (error) {
       console.error('Error clearing logs:', error);
+      setError('Failed to clear logs');
     }
   };
 
@@ -342,6 +444,16 @@ const SecurityLabScreen = () => {
           </View>
         </View>
 
+        {/* Backend Error Message */}
+        {backendError && (
+          <View style={styles.backendErrorContainer}>
+            <Text style={styles.backendErrorTitle}>Backend Server Not Available</Text>
+            <Text style={styles.backendErrorText}>
+              Please make sure the backend server is running on port 5000.
+            </Text>
+          </View>
+        )}
+
         {/* Messages */}
         {successMessage ? (
           <View style={styles.successContainer}>
@@ -452,7 +564,7 @@ const SecurityLabScreen = () => {
           <View style={styles.testResultsSection}>
             <Text style={styles.sectionTitle}>Recent Test Results</Text>
             <View style={styles.testResultsList}>
-              {testResults.map((result) => (
+              {testResults.map((result, index) => (
                 <View key={result.id} style={styles.testResultCard}>
                   <View style={styles.testResultHeader}>
                     <View style={styles.testResultInfo}>
@@ -473,6 +585,11 @@ const SecurityLabScreen = () => {
                   <View style={styles.testResultPayload}>
                     <Text style={styles.testResultPayloadText}>{result.payload}</Text>
                   </View>
+                  {result.error && (
+                    <Text style={styles.testResultError}>
+                      Error: {result.error}
+                    </Text>
+                  )}
                 </View>
               ))}
             </View>
@@ -490,8 +607,8 @@ const SecurityLabScreen = () => {
                 <Text style={styles.emptyText}>No security logs found. Run some tests to see them here!</Text>
               </View>
             ) : (
-              logs.map((log) => (
-                <View key={log.id} style={[styles.logCard, { backgroundColor: getLogTypeBgColor(log.action) }]}>
+              logs.map((log, index) => (
+                <View key={log.id || log._id || `log-${index}`} style={[styles.logCard, { backgroundColor: getLogTypeBgColor(log.action) }]}>
                   <View style={styles.logHeader}>
                     <View style={styles.logInfo}>
                       <Text style={styles.logTime}>{new Date(log.timestamp).toLocaleString()}</Text>
@@ -576,6 +693,24 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     fontSize: 14,
     fontWeight: '600',
+  },
+  backendErrorContainer: {
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  backendErrorTitle: {
+    color: '#F59E0B',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  backendErrorText: {
+    color: '#F59E0B',
+    fontSize: 12,
   },
   successContainer: {
     backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -779,6 +914,11 @@ const styles = StyleSheet.create({
     color: '#D1D5DB',
     fontSize: 12,
     fontFamily: 'monospace',
+  },
+  testResultError: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 8,
   },
   logsSection: {
     marginBottom: 24,

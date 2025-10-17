@@ -10,6 +10,7 @@ import {
   RefreshControl,
   Dimensions 
 } from 'react-native';
+import apiService from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -23,52 +24,53 @@ const SecurityScreen = () => {
   const [blockedIPs, setBlockedIPs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [newIP, setNewIP] = useState('');
   const [blockReason, setBlockReason] = useState('manual_block');
 
-  // Dummy security data
-  const dummyBlockedIPs = [
-    { ip: '203.0.113.1', reason: 'brute_force_attack', timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
-    { ip: '198.51.100.5', reason: 'sql_injection_attempt', timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString() },
-    { ip: '192.0.2.10', reason: 'suspicious_activity', timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString() },
-    { ip: '172.16.0.25', reason: 'xss_attempt', timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString() },
-    { ip: '10.0.0.50', reason: 'malicious_behavior', timestamp: new Date(Date.now() - 1000 * 60 * 150).toISOString() }
-  ];
-
-  const dummyStats = {
-    blockedIPs: 5,
-    suspiciousIPs: 12,
-    totalAttempts: 247,
-    activeThreats: 3
-  };
 
   useEffect(() => {
     loadData();
   }, []);
 
+  // Clear messages after 5 seconds
+  useEffect(() => {
+    if (successMessage || error) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+        setError('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, error]);
+
   const loadData = async () => {
     setLoading(true);
+    setError('');
     try {
-      // Simulate API calls
-      setTimeout(() => {
-        setSecurityStats(dummyStats);
-        setBlockedIPs(dummyBlockedIPs);
-        setLoading(false);
-      }, 1000);
+      const [statsResponse, blockedIPsResponse] = await Promise.all([
+        apiService.getSecurityStats(),
+        apiService.getBlockedIPs()
+      ]);
+      
+      setSecurityStats(statsResponse.stats);
+      setBlockedIPs(blockedIPsResponse.blockedIPs || []);
     } catch (error) {
-      setError('Failed to load security data');
+      console.error('Error loading security data:', error);
+      setError('Failed to load security data. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      loadData();
+    try {
+      await loadData();
+    } finally {
       setRefreshing(false);
-    }, 1500);
+    }
   };
 
   const handleBlockIP = async () => {
@@ -77,71 +79,47 @@ const SecurityScreen = () => {
       return;
     }
 
+    setLoading(true);
+    setError('');
+    setSuccessMessage('');
+
     try {
-      // Simulate API call
-      setTimeout(() => {
-        const newBlockedIP = {
-          ip: newIP.trim(),
-          reason: blockReason,
-          timestamp: new Date().toISOString()
-        };
-        
-        setBlockedIPs([newBlockedIP, ...blockedIPs]);
-        setSecurityStats(prev => ({
-          ...prev,
-          blockedIPs: prev.blockedIPs + 1
-        }));
-        setSuccessMessage(`IP ${newIP} has been blocked successfully`);
-        setNewIP('');
-        setError(null);
-      }, 1000);
+      await apiService.blockIP(newIP.trim(), blockReason);
+      
+      setSuccessMessage(`IP ${newIP} has been blocked successfully`);
+      setNewIP('');
+      
+      // Refresh data to get updated stats and blocked IPs
+      await loadData();
     } catch (error) {
-      setError('Failed to block IP address');
+      console.error('Error blocking IP:', error);
+      setError(error.message || 'Failed to block IP address');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleUnblockIP = async (ip) => {
+    setLoading(true);
+    setError('');
+    setSuccessMessage('');
+
     try {
-      // Simulate API call
-      setTimeout(() => {
-        setBlockedIPs(blockedIPs.filter(blockedIP => blockedIP.ip !== ip));
-        setSecurityStats(prev => ({
-          ...prev,
-          blockedIPs: prev.blockedIPs - 1
-        }));
-        setSuccessMessage(`IP ${ip} has been unblocked successfully`);
-        setError(null);
-      }, 1000);
+      await apiService.unblockIP(ip);
+      
+      setSuccessMessage(`IP ${ip} has been unblocked successfully`);
+      
+      // Refresh data to get updated stats and blocked IPs
+      await loadData();
     } catch (error) {
-      setError('Failed to unblock IP address');
+      console.error('Error unblocking IP:', error);
+      setError(error.message || 'Failed to unblock IP address');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const formatTimestamp = (timestamp) => {
-    return new Date(timestamp).toLocaleString();
-  };
 
-  const getReasonColor = (reason) => {
-    switch (reason) {
-      case 'brute_force_attack': return '#EF4444';
-      case 'sql_injection_attempt': return '#F59E0B';
-      case 'xss_attempt': return '#8B5CF6';
-      case 'suspicious_activity': return '#3B82F6';
-      case 'malicious_behavior': return '#DC2626';
-      default: return '#6B7280';
-    }
-  };
-
-  const getReasonBgColor = (reason) => {
-    switch (reason) {
-      case 'brute_force_attack': return 'rgba(239, 68, 68, 0.1)';
-      case 'sql_injection_attempt': return 'rgba(245, 158, 11, 0.1)';
-      case 'xss_attempt': return 'rgba(139, 92, 246, 0.1)';
-      case 'suspicious_activity': return 'rgba(59, 130, 246, 0.1)';
-      case 'malicious_behavior': return 'rgba(220, 38, 38, 0.1)';
-      default: return 'rgba(107, 114, 128, 0.1)';
-    }
-  };
 
   if (loading) {
     return (
@@ -286,30 +264,20 @@ const SecurityScreen = () => {
               </View>
             ) : (
               <View style={styles.blockedIPsList}>
-                {blockedIPs.map((blockedIP, index) => (
-                  <View key={index} style={[styles.blockedIPItem, { backgroundColor: getReasonBgColor(blockedIP.reason) }]}>
+                {blockedIPs.map((ip, index) => (
+                  <View key={index} style={styles.blockedIPItem}>
                     <View style={styles.blockedIPHeader}>
                       <View style={styles.blockedIPInfo}>
-                        <Text style={styles.blockedIPAddress}>{blockedIP.ip}</Text>
-                        <Text style={styles.blockedIPReason}>
-                          {blockedIP.reason.replace(/_/g, ' ').toUpperCase()}
-                        </Text>
+                        <View style={styles.ipIndicator} />
+                        <Text style={styles.blockedIPAddress}>{ip}</Text>
                       </View>
-                      <View style={[styles.reasonBadge, { backgroundColor: getReasonColor(blockedIP.reason) }]}>
-                        <Text style={styles.reasonBadgeText}>
-                          {blockedIP.reason.replace(/_/g, ' ').toUpperCase()}
-                        </Text>
-                      </View>
+                      <TouchableOpacity
+                        style={styles.unblockButton}
+                        onPress={() => handleUnblockIP(ip)}
+                      >
+                        <Text style={styles.unblockButtonText}>Unblock</Text>
+                      </TouchableOpacity>
                     </View>
-                    <Text style={styles.blockedIPTimestamp}>
-                      Blocked: {formatTimestamp(blockedIP.timestamp)}
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.unblockButton}
-                      onPress={() => handleUnblockIP(blockedIP.ip)}
-                    >
-                      <Text style={styles.unblockButtonText}>Unblock</Text>
-                    </TouchableOpacity>
                   </View>
                 ))}
               </View>
@@ -577,52 +545,38 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   blockedIPItem: {
-    backgroundColor: '#1F2937',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 65, 81, 0.5)',
+    backgroundColor: '#374151',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
   },
   blockedIPHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    alignItems: 'center',
   },
   blockedIPInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
   },
+  ipIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    marginRight: 12,
+  },
   blockedIPAddress: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontFamily: 'monospace',
     color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  blockedIPReason: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  reasonBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  reasonBadgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  blockedIPTimestamp: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginBottom: 12,
   },
   unblockButton: {
     backgroundColor: '#10B981',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    alignSelf: 'flex-start',
   },
   unblockButtonText: {
     color: '#FFFFFF',

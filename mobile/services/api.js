@@ -90,6 +90,21 @@ class ApiService {
     }
   }
 
+  async register(userData) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/auth/register`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(userData)
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  }
+
   async logout() {
     try {
       if (this.token) {
@@ -168,9 +183,10 @@ class ApiService {
     }
   }
 
-  async getSecurityEvents() {
+  async getSecurityEvents(params = {}) {
     try {
-      const response = await fetch(`${this.baseURL}/api/data/security-events`, {
+      const queryParams = new URLSearchParams(params);
+      const response = await fetch(`${this.baseURL}/api/data/security-events?${queryParams}`, {
         method: 'GET',
         headers: this.getHeaders()
       });
@@ -182,9 +198,10 @@ class ApiService {
     }
   }
 
-  async getLoginAttempts() {
+  async getLoginAttempts(params = {}) {
     try {
-      const response = await fetch(`${this.baseURL}/api/data/login-attempts`, {
+      const queryParams = new URLSearchParams(params);
+      const response = await fetch(`${this.baseURL}/api/data/login-attempts?${queryParams}`, {
         method: 'GET',
         headers: this.getHeaders()
       });
@@ -252,7 +269,7 @@ class ApiService {
   // User management methods
   async getUsers() {
     try {
-      const response = await fetch(`${this.baseURL}/api/users`, {
+      const response = await fetch(`${this.baseURL}/api/users/users`, {
         method: 'GET',
         headers: this.getHeaders()
       });
@@ -266,7 +283,7 @@ class ApiService {
 
   async createUser(userData) {
     try {
-      const response = await fetch(`${this.baseURL}/api/users`, {
+      const response = await fetch(`${this.baseURL}/api/users/create`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(userData)
@@ -281,7 +298,7 @@ class ApiService {
 
   async updateUser(userId, userData) {
     try {
-      const response = await fetch(`${this.baseURL}/api/users/${userId}`, {
+      const response = await fetch(`${this.baseURL}/api/users/users/${userId}`, {
         method: 'PUT',
         headers: this.getHeaders(),
         body: JSON.stringify(userData)
@@ -294,11 +311,27 @@ class ApiService {
     }
   }
 
-  async deleteUser(userId) {
+  async changeUserRole(userId, newRole, reason = 'manual_change') {
     try {
-      const response = await fetch(`${this.baseURL}/api/users/${userId}`, {
+      const response = await fetch(`${this.baseURL}/api/users/users/${userId}/role`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ newRole, reason })
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error changing user role:', error);
+      throw error;
+    }
+  }
+
+  async deleteUser(userId, reason = 'manual_deletion') {
+    try {
+      const response = await fetch(`${this.baseURL}/api/users/users/${userId}`, {
         method: 'DELETE',
-        headers: this.getHeaders()
+        headers: this.getHeaders(),
+        body: JSON.stringify({ reason })
       });
 
       return await this.handleResponse(response);
@@ -308,21 +341,81 @@ class ApiService {
     }
   }
 
-  // Backup methods
-  async createBackup() {
+  // Security management methods
+  async getSecurityStats() {
     try {
-      const response = await fetch(`${this.baseURL}/api/backup/create`, {
-        method: 'POST',
+      const response = await fetch(`${this.baseURL}/api/auth/security/stats`, {
+        method: 'GET',
         headers: this.getHeaders()
       });
 
       return await this.handleResponse(response);
     } catch (error) {
-      console.error('Error creating backup:', error);
+      console.error('Error fetching security stats:', error);
       throw error;
     }
   }
 
+  async getBlockedIPs() {
+    try {
+      const response = await fetch(`${this.baseURL}/api/auth/security/blocked-ips`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching blocked IPs:', error);
+      throw error;
+    }
+  }
+
+  async blockIP(ip, reason = 'manual_block') {
+    try {
+      const response = await fetch(`${this.baseURL}/api/auth/security/block-ip`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ ip, reason })
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error blocking IP:', error);
+      throw error;
+    }
+  }
+
+  async unblockIP(ip, reason = 'manual_unblock') {
+    try {
+      const response = await fetch(`${this.baseURL}/api/auth/security/unblock-ip`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ ip, reason })
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error unblocking IP:', error);
+      throw error;
+    }
+  }
+
+  async clearLogs() {
+    try {
+      const response = await fetch(`${this.baseURL}/api/logs/clear`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({})
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error clearing logs:', error);
+      throw error;
+    }
+  }
+
+  // Backup management methods
   async getBackups() {
     try {
       const response = await fetch(`${this.baseURL}/api/backup/list`, {
@@ -337,11 +430,45 @@ class ApiService {
     }
   }
 
-  async restoreBackup(backupId) {
+  async getBackupStats() {
     try {
-      const response = await fetch(`${this.baseURL}/api/backup/restore/${backupId}`, {
-        method: 'POST',
+      const response = await fetch(`${this.baseURL}/api/backup/stats`, {
+        method: 'GET',
         headers: this.getHeaders()
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching backup stats:', error);
+      throw error;
+    }
+  }
+
+  async createBackup(type = 'full', reason = 'manual') {
+    try {
+      const endpoint = type === 'full' ? '/api/backup/full' : 
+                      type === 'security_logs' ? '/api/backup/security-logs' :
+                      type === 'users' ? '/api/backup/users' : '/api/backup/full';
+      
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ reason })
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      throw error;
+    }
+  }
+
+  async restoreBackup(backupName, restoreScope = 'full', reason = 'manual') {
+    try {
+      const response = await fetch(`${this.baseURL}/api/backup/restore/${backupName}`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ reason, restoreScope })
       });
 
       return await this.handleResponse(response);
@@ -350,6 +477,69 @@ class ApiService {
       throw error;
     }
   }
+
+  async cleanupBackups() {
+    try {
+      const response = await fetch(`${this.baseURL}/api/backup/cleanup`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({})
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error cleaning up backups:', error);
+      throw error;
+    }
+  }
+
+  // Change password method
+  async changePassword(currentPassword, newPassword) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/users/change-password`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error changing password:', error);
+      throw error;
+    }
+  }
+
+  // Settings management methods
+  async updateProfile(profileData) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/users/profile`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(profileData)
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+  }
+
+  async updateSettings(settingData) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/users/settings`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(settingData)
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      throw error;
+    }
+  }
+
 
   // Check if user is authenticated
   isAuthenticated() {

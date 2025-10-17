@@ -11,6 +11,7 @@ import {
   Modal,
   Dimensions 
 } from 'react-native';
+import apiService from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -33,54 +34,6 @@ const UsersScreen = () => {
   const [newRole, setNewRole] = useState('');
   const [deleteReason, setDeleteReason] = useState('');
 
-  // Dummy users data
-  const dummyUsers = [
-    {
-      _id: 1,
-      username: 'admin',
-      email: 'admin@usod.com',
-      role: 'admin',
-      status: 'active',
-      lastLogin: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString()
-    },
-    {
-      _id: 2,
-      username: 'user1',
-      email: 'user1@usod.com',
-      role: 'user',
-      status: 'active',
-      lastLogin: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString()
-    },
-    {
-      _id: 3,
-      username: 'user2',
-      email: 'user2@usod.com',
-      role: 'user',
-      status: 'active',
-      lastLogin: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString()
-    },
-    {
-      _id: 4,
-      username: 'user3',
-      email: 'user3@usod.com',
-      role: 'user',
-      status: 'active',
-      lastLogin: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString()
-    },
-    {
-      _id: 5,
-      username: 'moderator',
-      email: 'moderator@usod.com',
-      role: 'admin',
-      status: 'active',
-      lastLogin: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20).toISOString()
-    }
-  ];
 
   useEffect(() => {
     fetchUsers();
@@ -88,24 +41,23 @@ const UsersScreen = () => {
 
   const fetchUsers = async () => {
     setLoading(true);
+    setError('');
     try {
-      // Simulate API call
-      setTimeout(() => {
-        setUsers(dummyUsers);
-        setLoading(false);
-      }, 1000);
+      const response = await apiService.getUsers();
+      setUsers(response.users || []);
     } catch (err) {
-      setError('Failed to load users');
+      console.error('Error fetching users:', err);
+      setError('Failed to load users. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
 
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => {
-      fetchUsers();
+    fetchUsers().finally(() => {
       setRefreshing(false);
-    }, 1500);
+    });
   };
 
   const handleCreateUser = async () => {
@@ -119,26 +71,23 @@ const UsersScreen = () => {
     setSuccessMessage('');
 
     try {
-      // Simulate API call
-      setTimeout(() => {
-        const newUser = {
-          _id: Date.now(),
-          username: createForm.username,
-          email: createForm.email,
-          role: createForm.role,
-          status: 'active',
-          lastLogin: null,
-          createdAt: new Date().toISOString()
-        };
-        
-        setUsers([newUser, ...users]);
-        setCreateForm({ username: '', email: '', password: '', role: 'user' });
-        setShowCreateForm(false);
-        setSuccessMessage('User created successfully!');
-        setLoading(false);
-      }, 1000);
+      const response = await apiService.createUser({
+        username: createForm.username,
+        email: createForm.email,
+        password: createForm.password,
+        role: createForm.role
+      });
+      
+      // Refresh the users list to get the updated data
+      await fetchUsers();
+      
+      setCreateForm({ username: '', email: '', password: '', role: 'user' });
+      setShowCreateForm(false);
+      setSuccessMessage('User created successfully!');
     } catch (err) {
-      setError('Network error. Please try again.');
+      console.error('Error creating user:', err);
+      setError(err.message || 'Failed to create user. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -151,17 +100,19 @@ const UsersScreen = () => {
     setSuccessMessage('');
 
     try {
-      // Simulate API call
-      setTimeout(() => {
-        setUsers(users.filter(user => user._id !== selectedUser._id));
-        setShowDeleteModal(false);
-        setSelectedUser(null);
-        setDeleteReason('');
-        setSuccessMessage('User deleted successfully!');
-        setLoading(false);
-      }, 1000);
+      await apiService.deleteUser(selectedUser._id, { reason: deleteReason });
+      
+      // Refresh the users list to get the updated data
+      await fetchUsers();
+      
+      setShowDeleteModal(false);
+      setSelectedUser(null);
+      setDeleteReason('');
+      setSuccessMessage('User deleted successfully!');
     } catch (err) {
-      setError('Network error. Please try again.');
+      console.error('Error deleting user:', err);
+      setError(err.message || 'Failed to delete user. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -174,21 +125,19 @@ const UsersScreen = () => {
     setSuccessMessage('');
 
     try {
-      // Simulate API call
-      setTimeout(() => {
-        setUsers(users.map(user => 
-          user._id === selectedUser._id
-            ? { ...user, role: newRole }
-            : user
-        ));
-        setShowRoleModal(false);
-        setSelectedUser(null);
-        setNewRole('');
-        setSuccessMessage(`User role changed to ${newRole} successfully!`);
-        setLoading(false);
-      }, 1000);
+      await apiService.changeUserRole(selectedUser._id, newRole);
+      
+      // Refresh the users list to get the updated data
+      await fetchUsers();
+      
+      setShowRoleModal(false);
+      setSelectedUser(null);
+      setNewRole('');
+      setSuccessMessage(`User role changed to ${newRole} successfully!`);
     } catch (err) {
-      setError('Network error. Please try again.');
+      console.error('Error changing user role:', err);
+      setError(err.message || 'Failed to change user role. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -273,7 +222,12 @@ const UsersScreen = () => {
             <Text style={styles.userCount}>Total users: {users.length}</Text>
           </View>
           
-          {users.map((user) => (
+          {users.length === 0 && !loading ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No users found</Text>
+            </View>
+          ) : (
+            users.map((user) => (
             <View key={user._id} style={[styles.userCard, { backgroundColor: getRoleBgColor(user.role) }]}>
               <View style={styles.userHeader}>
                 <View style={styles.userInfo}>
@@ -288,7 +242,9 @@ const UsersScreen = () => {
               <View style={styles.userDetails}>
                 <View style={styles.userDetailItem}>
                   <Text style={styles.userDetailLabel}>Status:</Text>
-                  <Text style={[styles.userDetailValue, { color: '#10B981' }]}>Active</Text>
+                  <Text style={[styles.userDetailValue, { color: '#10B981' }]}>
+                    {user.isActive !== false ? 'Active' : 'Inactive'}
+                  </Text>
                 </View>
                 <View style={styles.userDetailItem}>
                   <Text style={styles.userDetailLabel}>Last Login:</Text>
@@ -315,7 +271,8 @@ const UsersScreen = () => {
                 </TouchableOpacity>
               </View>
             </View>
-          ))}
+            ))
+          )}
         </View>
       </View>
 
@@ -816,6 +773,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+  emptyContainer: {
+    backgroundColor: '#1F2937',
+    padding: 32,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(55, 65, 81, 0.5)',
+  },
+  emptyText: {
+    color: '#9CA3AF',
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
 

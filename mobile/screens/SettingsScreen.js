@@ -5,198 +5,175 @@ import {
   StyleSheet, 
   ScrollView, 
   TouchableOpacity, 
-  Switch,
+  TextInput,
   Alert,
   RefreshControl,
   Dimensions 
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import apiService from '../services/api';
 
 const { width } = Dimensions.get('window');
 
 const SettingsScreen = () => {
-  const [settings, setSettings] = useState({
-    // General Settings
-    theme: 'dark',
-    language: 'en',
-    timezone: 'UTC',
-    dateFormat: 'MM/DD/YYYY',
-    timeFormat: '12h',
-    
-    // Security Settings
-    twoFactorAuth: false,
-    sessionTimeout: 30,
-    passwordExpiry: 90,
-    loginNotifications: true,
-    securityAlerts: true,
-    ipWhitelist: false,
-    
-    // Notification Settings
-    emailNotifications: true,
-    pushNotifications: true,
-    smsNotifications: false,
-    threatAlerts: true,
-    systemUpdates: true,
-    maintenanceAlerts: true,
-    
-    // Privacy Settings
-    dataCollection: true,
-    analytics: true,
-    crashReporting: true,
-    personalizedAds: false,
-    
-    // System Settings
-    autoUpdates: true,
-    backupFrequency: 'daily',
-    logRetention: 30,
-    debugMode: false,
-    performanceMode: false
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [activeTab, setActiveTab] = useState('profile');
+  
+  // Profile settings
+  const [profileForm, setProfileForm] = useState({
+    username: '',
+    email: ''
+  });
+  
+  // Security settings - removed non-functional settings
+  const [securitySettings, setSecuritySettings] = useState({
+    // Note: These settings are not actually enforced by the backend
+    // They only log changes but don't affect actual behavior
+  });
+  
+  // Notification settings - removed non-functional settings
+  const [notificationSettings, setNotificationSettings] = useState({
+    // Note: These settings are not actually enforced by the backend
+    // They only log changes but don't affect actual behavior
   });
 
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [error, setError] = useState(null);
+  // Auto-clear messages after 5 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
   useEffect(() => {
-    loadSettings();
+    if (error) {
+      const timer = setTimeout(() => setError(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    fetchUserProfile();
   }, []);
 
-  const loadSettings = async () => {
-    try {
-      // Simulate loading settings from API
-      setTimeout(() => {
-        // Settings are already initialized with default values
-        setLoading(false);
-      }, 1000);
-    } catch (error) {
-      console.error('Error loading settings:', error);
-      setError('Failed to load settings');
-    }
-  };
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => {
-      loadSettings();
-      setRefreshing(false);
-    }, 1500);
-  };
-
-  const updateSetting = (key, value) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
-    setSuccessMessage(`Setting updated: ${key}`);
-    setTimeout(() => setSuccessMessage(''), 3000);
-  };
-
-  const saveSettings = async () => {
+  const fetchUserProfile = async () => {
     setLoading(true);
+    setError('');
+    
     try {
-      // Simulate API call
-      setTimeout(() => {
-        setLoading(false);
-        setSuccessMessage('All settings saved successfully!');
-        setTimeout(() => setSuccessMessage(''), 3000);
-      }, 2000);
-    } catch (error) {
+      const userData = await AsyncStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        setProfile(user);
+        setProfileForm({
+          username: user.username,
+          email: user.email
+        });
+      } else {
+        throw new Error('No user data found');
+      }
+    } catch (err) {
+      console.error('Error fetching user profile:', err);
+      setError('Failed to load user profile');
+    } finally {
       setLoading(false);
-      setError('Failed to save settings');
     }
   };
 
-  const resetToDefaults = () => {
-    Alert.alert(
-      'Reset Settings',
-      'Are you sure you want to reset all settings to their default values?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Reset', 
-          style: 'destructive',
-          onPress: () => {
-            setSettings({
-              theme: 'dark',
-              language: 'en',
-              timezone: 'UTC',
-              dateFormat: 'MM/DD/YYYY',
-              timeFormat: '12h',
-              twoFactorAuth: false,
-              sessionTimeout: 30,
-              passwordExpiry: 90,
-              loginNotifications: true,
-              securityAlerts: true,
-              ipWhitelist: false,
-              emailNotifications: true,
-              pushNotifications: true,
-              smsNotifications: false,
-              threatAlerts: true,
-              systemUpdates: true,
-              maintenanceAlerts: true,
-              dataCollection: true,
-              analytics: true,
-              crashReporting: true,
-              personalizedAds: false,
-              autoUpdates: true,
-              backupFrequency: 'daily',
-              logRetention: 30,
-              debugMode: false,
-              performanceMode: false
-            });
-            setSuccessMessage('Settings reset to defaults!');
-            setTimeout(() => setSuccessMessage(''), 3000);
-          }
-        }
-      ]
-    );
+  const handleProfileUpdate = async () => {
+    setLoading(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      const response = await apiService.updateProfile(profileForm);
+      
+      setSuccessMessage('Profile updated successfully!');
+      
+      // Update AsyncStorage with new user data
+      const updatedUser = { ...profile, ...response.user };
+      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+      setProfile(updatedUser);
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      setError(err.message || 'Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const SettingItem = ({ title, description, value, onValueChange, type = 'switch' }) => (
-    <View style={styles.settingItem}>
-      <View style={styles.settingContent}>
-        <Text style={styles.settingTitle}>{title}</Text>
-        {description && <Text style={styles.settingDescription}>{description}</Text>}
-      </View>
-      <View style={styles.settingControl}>
-        {type === 'switch' ? (
-          <Switch
-            value={value}
-            onValueChange={onValueChange}
-            trackColor={{ false: '#374151', true: '#3B82F6' }}
-            thumbColor={value ? '#FFFFFF' : '#9CA3AF'}
-          />
-        ) : (
-          <TouchableOpacity style={styles.valueButton} onPress={onValueChange}>
-            <Text style={styles.valueButtonText}>{value}</Text>
-            <Text style={styles.valueButtonArrow}>→</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
+  const handleSecuritySettingsUpdate = async () => {
+    // Removed - these settings are not actually enforced by the backend
+    setSuccessMessage('Security settings functionality removed - these settings were not actually enforced by the backend.');
+  };
+
+  const handleNotificationSettingsUpdate = async () => {
+    // Removed - these settings are not actually enforced by the backend
+    setSuccessMessage('Notification settings functionality removed - these settings were not actually enforced by the backend.');
+  };
+
+  const onRefresh = async () => {
+    await fetchUserProfile();
+  };
+
+  const TabButton = ({ id, name, icon, isActive, onPress }) => (
+    <TouchableOpacity
+      style={[
+        styles.tabButton,
+        isActive && styles.activeTabButton
+      ]}
+      onPress={onPress}
+    >
+      <Text style={[
+        styles.tabButtonText,
+        isActive && styles.activeTabButtonText
+      ]}>
+        {icon} {name}
+      </Text>
+    </TouchableOpacity>
   );
 
-  const SettingSection = ({ title, children }) => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.sectionContent}>
-        {children}
-      </View>
-    </View>
+  const ToggleSwitch = ({ value, onValueChange }) => (
+    <TouchableOpacity
+      style={[
+        styles.toggleSwitch,
+        value && styles.toggleSwitchActive
+      ]}
+      onPress={() => onValueChange(!value)}
+    >
+      <View style={[
+        styles.toggleThumb,
+        value && styles.toggleThumbActive
+      ]} />
+    </TouchableOpacity>
   );
+
+  if (loading && !profile) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading settings...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView 
       style={styles.container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        <RefreshControl refreshing={loading} onRefresh={onRefresh} />
       }
     >
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>⚙️ Settings</Text>
-          <Text style={styles.subtitle}>Customize your application preferences</Text>
+          <Text style={styles.subtitle}>Manage your account settings and preferences</Text>
         </View>
 
-        {/* Messages */}
+        {/* Success/Error Messages */}
         {successMessage ? (
           <View style={styles.successContainer}>
             <Text style={styles.successText}>{successMessage}</Text>
@@ -209,235 +186,160 @@ const SettingsScreen = () => {
           </View>
         ) : null}
 
-        {/* General Settings */}
-        <SettingSection title="🌐 General">
-          <SettingItem
-            title="Theme"
-            description="Choose your preferred color theme"
-            value={settings.theme}
-            type="button"
-            onValueChange={() => Alert.alert('Theme', 'Theme selection feature coming soon!')}
-          />
-          <SettingItem
-            title="Language"
-            description="Select your preferred language"
-            value={settings.language}
-            type="button"
-            onValueChange={() => Alert.alert('Language', 'Language selection feature coming soon!')}
-          />
-          <SettingItem
-            title="Timezone"
-            description="Set your local timezone"
-            value={settings.timezone}
-            type="button"
-            onValueChange={() => Alert.alert('Timezone', 'Timezone selection feature coming soon!')}
-          />
-          <SettingItem
-            title="Date Format"
-            description="Choose how dates are displayed"
-            value={settings.dateFormat}
-            type="button"
-            onValueChange={() => Alert.alert('Date Format', 'Date format selection feature coming soon!')}
-          />
-          <SettingItem
-            title="Time Format"
-            description="Choose 12-hour or 24-hour time format"
-            value={settings.timeFormat}
-            type="button"
-            onValueChange={() => Alert.alert('Time Format', 'Time format selection feature coming soon!')}
-          />
-        </SettingSection>
-
-        {/* Security Settings */}
-        <SettingSection title="🔒 Security">
-          <SettingItem
-            title="Two-Factor Authentication"
-            description="Add an extra layer of security to your account"
-            value={settings.twoFactorAuth}
-            onValueChange={(value) => updateSetting('twoFactorAuth', value)}
-          />
-          <SettingItem
-            title="Login Notifications"
-            description="Get notified when someone logs into your account"
-            value={settings.loginNotifications}
-            onValueChange={(value) => updateSetting('loginNotifications', value)}
-          />
-          <SettingItem
-            title="Security Alerts"
-            description="Receive alerts for security-related events"
-            value={settings.securityAlerts}
-            onValueChange={(value) => updateSetting('securityAlerts', value)}
-          />
-          <SettingItem
-            title="IP Whitelist"
-            description="Restrict access to specific IP addresses"
-            value={settings.ipWhitelist}
-            onValueChange={(value) => updateSetting('ipWhitelist', value)}
-          />
-          <SettingItem
-            title="Session Timeout"
-            description="Automatically log out after inactivity"
-            value={`${settings.sessionTimeout} minutes`}
-            type="button"
-            onValueChange={() => Alert.alert('Session Timeout', 'Session timeout configuration coming soon!')}
-          />
-          <SettingItem
-            title="Password Expiry"
-            description="Require password changes periodically"
-            value={`${settings.passwordExpiry} days`}
-            type="button"
-            onValueChange={() => Alert.alert('Password Expiry', 'Password expiry configuration coming soon!')}
-          />
-        </SettingSection>
-
-        {/* Notification Settings */}
-        <SettingSection title="🔔 Notifications">
-          <SettingItem
-            title="Email Notifications"
-            description="Receive notifications via email"
-            value={settings.emailNotifications}
-            onValueChange={(value) => updateSetting('emailNotifications', value)}
-          />
-          <SettingItem
-            title="Push Notifications"
-            description="Receive push notifications on your device"
-            value={settings.pushNotifications}
-            onValueChange={(value) => updateSetting('pushNotifications', value)}
-          />
-          <SettingItem
-            title="SMS Notifications"
-            description="Receive notifications via SMS"
-            value={settings.smsNotifications}
-            onValueChange={(value) => updateSetting('smsNotifications', value)}
-          />
-          <SettingItem
-            title="Threat Alerts"
-            description="Get notified about security threats"
-            value={settings.threatAlerts}
-            onValueChange={(value) => updateSetting('threatAlerts', value)}
-          />
-          <SettingItem
-            title="System Updates"
-            description="Notifications about system updates"
-            value={settings.systemUpdates}
-            onValueChange={(value) => updateSetting('systemUpdates', value)}
-          />
-          <SettingItem
-            title="Maintenance Alerts"
-            description="Notifications about scheduled maintenance"
-            value={settings.maintenanceAlerts}
-            onValueChange={(value) => updateSetting('maintenanceAlerts', value)}
-          />
-        </SettingSection>
-
-        {/* Privacy Settings */}
-        <SettingSection title="🔐 Privacy">
-          <SettingItem
-            title="Data Collection"
-            description="Allow collection of usage data to improve the service"
-            value={settings.dataCollection}
-            onValueChange={(value) => updateSetting('dataCollection', value)}
-          />
-          <SettingItem
-            title="Analytics"
-            description="Help improve the app by sharing anonymous usage statistics"
-            value={settings.analytics}
-            onValueChange={(value) => updateSetting('analytics', value)}
-          />
-          <SettingItem
-            title="Crash Reporting"
-            description="Automatically send crash reports to help fix bugs"
-            value={settings.crashReporting}
-            onValueChange={(value) => updateSetting('crashReporting', value)}
-          />
-          <SettingItem
-            title="Personalized Ads"
-            description="Show personalized advertisements based on your interests"
-            value={settings.personalizedAds}
-            onValueChange={(value) => updateSetting('personalizedAds', value)}
-          />
-        </SettingSection>
-
-        {/* System Settings */}
-        <SettingSection title="⚙️ System">
-          <SettingItem
-            title="Auto Updates"
-            description="Automatically download and install updates"
-            value={settings.autoUpdates}
-            onValueChange={(value) => updateSetting('autoUpdates', value)}
-          />
-          <SettingItem
-            title="Backup Frequency"
-            description="How often to create automatic backups"
-            value={settings.backupFrequency}
-            type="button"
-            onValueChange={() => Alert.alert('Backup Frequency', 'Backup frequency configuration coming soon!')}
-          />
-          <SettingItem
-            title="Log Retention"
-            description="How long to keep system logs"
-            value={`${settings.logRetention} days`}
-            type="button"
-            onValueChange={() => Alert.alert('Log Retention', 'Log retention configuration coming soon!')}
-          />
-          <SettingItem
-            title="Debug Mode"
-            description="Enable detailed logging for troubleshooting"
-            value={settings.debugMode}
-            onValueChange={(value) => updateSetting('debugMode', value)}
-          />
-          <SettingItem
-            title="Performance Mode"
-            description="Optimize for better performance (may reduce features)"
-            value={settings.performanceMode}
-            onValueChange={(value) => updateSetting('performanceMode', value)}
-          />
-        </SettingSection>
-
-        {/* Action Buttons */}
-        <View style={styles.actionsSection}>
-          <TouchableOpacity
-            style={styles.saveButton}
-            onPress={saveSettings}
-            disabled={loading}
-          >
-            <Text style={styles.saveButtonText}>
-              {loading ? 'Saving...' : '💾 Save All Settings'}
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.resetButton}
-            onPress={resetToDefaults}
-            disabled={loading}
-          >
-            <Text style={styles.resetButtonText}>🔄 Reset to Defaults</Text>
-          </TouchableOpacity>
+        {/* Tab Navigation */}
+        <View style={styles.tabContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.tabRow}>
+              <TabButton
+                id="profile"
+                name="Profile"
+                icon="👤"
+                isActive={activeTab === 'profile'}
+                onPress={() => setActiveTab('profile')}
+              />
+              <TabButton
+                id="security"
+                name="Security"
+                icon="🔒"
+                isActive={activeTab === 'security'}
+                onPress={() => setActiveTab('security')}
+              />
+              <TabButton
+                id="notifications"
+                name="Notifications"
+                icon="🔔"
+                isActive={activeTab === 'notifications'}
+                onPress={() => setActiveTab('notifications')}
+              />
+              <TabButton
+                id="system"
+                name="System"
+                icon="⚙️"
+                isActive={activeTab === 'system'}
+                onPress={() => setActiveTab('system')}
+              />
+            </View>
+          </ScrollView>
         </View>
 
-        {/* App Information */}
-        <View style={styles.appInfoSection}>
-          <Text style={styles.appInfoTitle}>📱 App Information</Text>
-          <View style={styles.appInfoContent}>
-            <View style={styles.appInfoRow}>
-              <Text style={styles.appInfoLabel}>Version:</Text>
-              <Text style={styles.appInfoValue}>1.0.0</Text>
+        {/* Tab Content */}
+        <View style={styles.tabContent}>
+          {/* Profile Tab */}
+          {activeTab === 'profile' && (
+            <View style={styles.tabSection}>
+              <Text style={styles.sectionTitle}>Profile Information</Text>
+              
+              <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>Username</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={profileForm.username}
+                  onChangeText={(value) => setProfileForm({...profileForm, username: value})}
+                  placeholder="Enter username"
+                  placeholderTextColor="#6B7280"
+                />
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.inputLabel}>Email</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={profileForm.email}
+                  onChangeText={(value) => setProfileForm({...profileForm, email: value})}
+                  placeholder="Enter email"
+                  placeholderTextColor="#6B7280"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+              
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Role:</Text>
+                <Text style={styles.infoValue}>{profile?.role}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>User ID:</Text>
+                <Text style={styles.infoValue}>{profile?.id}</Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.updateButton}
+                onPress={handleProfileUpdate}
+                disabled={loading}
+              >
+                <Text style={styles.updateButtonText}>
+                  {loading ? 'Updating...' : 'Update Profile'}
+                </Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.appInfoRow}>
-              <Text style={styles.appInfoLabel}>Build:</Text>
-              <Text style={styles.appInfoValue}>2024.01.15</Text>
+          )}
+
+          {/* Security Tab - Removed non-functional settings */}
+          {activeTab === 'security' && (
+            <View style={styles.tabSection}>
+              <Text style={styles.sectionTitle}>Security Settings</Text>
+              
+              <View style={styles.warningContainer}>
+                <Text style={styles.warningText}>
+                  Security settings have been removed as they were not actually enforced by the backend. 
+                  These settings only logged changes but did not affect actual system behavior.
+                </Text>
+              </View>
             </View>
-            <View style={styles.appInfoRow}>
-              <Text style={styles.appInfoLabel}>Platform:</Text>
-              <Text style={styles.appInfoValue}>React Native</Text>
+          )}
+
+          {/* Notifications Tab - Removed non-functional settings */}
+          {activeTab === 'notifications' && (
+            <View style={styles.tabSection}>
+              <Text style={styles.sectionTitle}>Notification Preferences</Text>
+              
+              <View style={styles.warningContainer}>
+                <Text style={styles.warningText}>
+                  Notification settings have been removed as they were not actually enforced by the backend. 
+                  These settings only logged changes but did not affect actual system behavior.
+                </Text>
+              </View>
             </View>
-            <TouchableOpacity 
-              style={styles.aboutButton}
-              onPress={() => Alert.alert('About', 'USOD Security Platform\nVersion 1.0.0\n\nA comprehensive security management solution.')}
-            >
-              <Text style={styles.aboutButtonText}>ℹ️ About</Text>
-            </TouchableOpacity>
-          </View>
+          )}
+
+          {/* System Tab */}
+          {activeTab === 'system' && (
+            <View style={styles.tabSection}>
+              <Text style={styles.sectionTitle}>System Information</Text>
+              
+              <View style={styles.infoCard}>
+                <Text style={styles.infoCardTitle}>Application Info</Text>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Version:</Text>
+                  <Text style={styles.infoValue}>1.0.0</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Environment:</Text>
+                  <Text style={styles.infoValue}>Development</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Last Updated:</Text>
+                  <Text style={styles.infoValue}>{new Date().toLocaleDateString()}</Text>
+                </View>
+              </View>
+              
+              <View style={styles.infoCard}>
+                <Text style={styles.infoCardTitle}>User Statistics</Text>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Account Created:</Text>
+                  <Text style={styles.infoValue}>{new Date().toLocaleDateString()}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Last Login:</Text>
+                  <Text style={styles.infoValue}>{new Date().toLocaleDateString()}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Total Logins:</Text>
+                  <Text style={styles.infoValue}>1</Text>
+                </View>
+              </View>
+            </View>
+          )}
         </View>
       </View>
     </ScrollView>
@@ -452,6 +354,16 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 30,
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#111827',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#FFFFFF',
+    fontSize: 18,
   },
   header: {
     marginBottom: 24,
@@ -490,8 +402,46 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     fontSize: 14,
   },
-  section: {
-    marginBottom: 24,
+  tabContainer: {
+    backgroundColor: '#1F2937',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(55, 65, 81, 0.5)',
+    marginBottom: 16,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  tabButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 4,
+    borderRadius: 8,
+  },
+  activeTabButton: {
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    borderBottomWidth: 2,
+    borderBottomColor: '#10B981',
+  },
+  tabButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#9CA3AF',
+  },
+  activeTabButtonText: {
+    color: '#10B981',
+  },
+  tabContent: {
+    backgroundColor: '#1F2937',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(55, 65, 81, 0.5)',
+    padding: 16,
+  },
+  tabSection: {
+    gap: 16,
   },
   sectionTitle: {
     fontSize: 20,
@@ -499,22 +449,83 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 16,
   },
-  sectionContent: {
-    backgroundColor: '#1F2937',
-    borderRadius: 12,
+  formGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#D1D5DB',
+    marginBottom: 8,
+  },
+  textInput: {
+    backgroundColor: '#374151',
     borderWidth: 1,
     borderColor: 'rgba(55, 65, 81, 0.5)',
-    overflow: 'hidden',
+    borderRadius: 8,
+    padding: 12,
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  selectContainer: {
+    backgroundColor: '#374151',
+    borderWidth: 1,
+    borderColor: 'rgba(55, 65, 81, 0.5)',
+    borderRadius: 8,
+  },
+  selectButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+  },
+  selectButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  selectArrow: {
+    color: '#9CA3AF',
+    fontSize: 12,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    fontWeight: '500',
+  },
+  infoValue: {
+    fontSize: 14,
+    color: '#D1D5DB',
+    fontWeight: '500',
+  },
+  infoCard: {
+    backgroundColor: 'rgba(55, 65, 81, 0.3)',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+  },
+  infoCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 12,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    justifyContent: 'space-between',
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(55, 65, 81, 0.3)',
   },
   settingContent: {
     flex: 1,
+    marginRight: 16,
   },
   settingTitle: {
     fontSize: 16,
@@ -527,97 +538,50 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     lineHeight: 18,
   },
-  settingControl: {
-    marginLeft: 16,
-  },
-  valueButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  toggleSwitch: {
+    width: 44,
+    height: 24,
     backgroundColor: '#374151',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 65, 81, 0.5)',
-  },
-  valueButtonText: {
-    color: '#D1D5DB',
-    fontSize: 14,
-    marginRight: 8,
-  },
-  valueButtonArrow: {
-    color: '#9CA3AF',
-    fontSize: 14,
-  },
-  actionsSection: {
-    marginBottom: 24,
-    gap: 12,
-  },
-  saveButton: {
-    backgroundColor: '#3B82F6',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  resetButton: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-  },
-  resetButtonText: {
-    color: '#EF4444',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  appInfoSection: {
-    backgroundColor: '#1F2937',
-    padding: 16,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 65, 81, 0.5)',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
   },
-  appInfoTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 16,
+  toggleSwitchActive: {
+    backgroundColor: '#10B981',
   },
-  appInfoContent: {
-    gap: 12,
+  toggleThumb: {
+    width: 20,
+    height: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    alignSelf: 'flex-start',
   },
-  appInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  toggleThumbActive: {
+    alignSelf: 'flex-end',
   },
-  appInfoLabel: {
-    fontSize: 14,
-    color: '#9CA3AF',
-  },
-  appInfoValue: {
-    fontSize: 14,
-    color: '#D1D5DB',
-    fontWeight: '500',
-  },
-  aboutButton: {
-    backgroundColor: '#374151',
-    padding: 12,
+  updateButton: {
+    backgroundColor: '#10B981',
+    padding: 16,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 8,
   },
-  aboutButtonText: {
-    color: '#D1D5DB',
-    fontSize: 14,
+  updateButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: '600',
+  },
+  warningContainer: {
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+    borderRadius: 8,
+    padding: 12,
+  },
+  warningText: {
+    color: '#F59E0B',
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
 

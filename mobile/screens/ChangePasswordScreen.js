@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform 
 } from 'react-native';
+import apiService from '../services/api';
 
 const ChangePasswordScreen = () => {
   const [formData, setFormData] = useState({
@@ -18,6 +19,8 @@ const ChangePasswordScreen = () => {
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,
@@ -27,6 +30,21 @@ const ChangePasswordScreen = () => {
     score: 0,
     feedback: []
   });
+
+  // Auto-clear messages after 5 seconds
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -95,33 +113,35 @@ const ChangePasswordScreen = () => {
   };
 
   const validateForm = () => {
+    setError('');
+    
     if (!formData.currentPassword) {
-      Alert.alert('Error', 'Please enter your current password');
+      setError('Please enter your current password');
       return false;
     }
 
     if (!formData.newPassword) {
-      Alert.alert('Error', 'Please enter a new password');
+      setError('Please enter a new password');
       return false;
     }
 
     if (formData.newPassword.length < 8) {
-      Alert.alert('Error', 'New password must be at least 8 characters long');
+      setError('New password must be at least 8 characters long');
       return false;
     }
 
     if (passwordStrength.score < 3) {
-      Alert.alert('Error', 'New password is too weak. Please choose a stronger password');
+      setError('New password is too weak. Please choose a stronger password');
       return false;
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      Alert.alert('Error', 'New password and confirmation do not match');
+      setError('New passwords do not match');
       return false;
     }
 
     if (formData.currentPassword === formData.newPassword) {
-      Alert.alert('Error', 'New password must be different from current password');
+      setError('New password must be different from current password');
       return false;
     }
 
@@ -132,32 +152,24 @@ const ChangePasswordScreen = () => {
     if (!validateForm()) return;
 
     setLoading(true);
+    setError('');
+    setSuccess('');
 
     try {
-      // Simulate API call
-      setTimeout(() => {
-        setLoading(false);
-        Alert.alert(
-          'Success',
-          'Your password has been changed successfully!',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                setFormData({
-                  currentPassword: '',
-                  newPassword: '',
-                  confirmPassword: ''
-                });
-                setPasswordStrength({ score: 0, feedback: [] });
-              }
-            }
-          ]
-        );
-      }, 2000);
+      await apiService.changePassword(formData.currentPassword, formData.newPassword);
+      
+      setSuccess('Password changed successfully!');
+      setFormData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setPasswordStrength({ score: 0, feedback: [] });
     } catch (error) {
+      console.error('Error changing password:', error);
+      setError(error.message || 'Failed to change password. Please try again.');
+    } finally {
       setLoading(false);
-      Alert.alert('Error', 'Failed to change password. Please try again.');
     }
   };
 
@@ -312,17 +324,31 @@ const ChangePasswordScreen = () => {
               )}
             </View>
 
+            {/* Error Message */}
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
+            {/* Success Message */}
+            {success ? (
+              <View style={styles.successContainer}>
+                <Text style={styles.successText}>{success}</Text>
+              </View>
+            ) : null}
+
             {/* Submit Button */}
             <TouchableOpacity
               style={[
                 styles.submitButton,
-                (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword || loading) && styles.submitButtonDisabled
+                (loading || formData.newPassword !== formData.confirmPassword || formData.newPassword.length < 8 || passwordStrength.score < 3) && styles.submitButtonDisabled
               ]}
               onPress={handleSubmit}
-              disabled={!formData.currentPassword || !formData.newPassword || !formData.confirmPassword || loading}
+              disabled={loading || formData.newPassword !== formData.confirmPassword || formData.newPassword.length < 8 || passwordStrength.score < 3}
             >
               <Text style={styles.submitButtonText}>
-                {loading ? 'Changing Password...' : '🔐 Change Password'}
+                {loading ? 'Changing Password...' : 'Change Password'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -555,6 +581,30 @@ const styles = StyleSheet.create({
   securityOptionArrow: {
     fontSize: 18,
     color: '#9CA3AF',
+  },
+  errorContainer: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 14,
+  },
+  successContainer: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  successText: {
+    color: '#10B981',
+    fontSize: 14,
   },
 });
 

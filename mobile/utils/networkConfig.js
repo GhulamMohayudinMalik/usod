@@ -3,8 +3,7 @@ import { Platform } from 'react-native';
 
 export const getApiBaseURL = () => {
   if (__DEV__) {
-    // For development - update this IP to match your computer's IP address
-    // You can find your IP by running: ipconfig (Windows) or ifconfig (Mac/Linux)
+    // For development - use your computer's IP address for mobile testing
     return 'http://192.168.100.113:5000';
   } else {
     // In production, use your actual server URL
