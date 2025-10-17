@@ -7,6 +7,7 @@ export default function AnalyticsPage() {
   const [analytics, setAnalytics] = useState({
     securityEvents: [],
     loginAttempts: [],
+    logs: [],
     stats: null
   });
   const [loading, setLoading] = useState(true);
@@ -17,15 +18,17 @@ export default function AnalyticsPage() {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const [stats, securityEvents, loginAttempts] = await Promise.all([
+      const [stats, securityEvents, loginAttempts, logsResponse] = await Promise.all([
         getData('/api/data/dashboard-stats'),
         getData('/api/data/security-events?count=50'),
-        getData('/api/data/login-attempts?count=50')
+        getData('/api/data/login-attempts?count=50'),
+        getData('/api/logs?limit=20')
       ]);
       
       setAnalytics({
         securityEvents,
         loginAttempts,
+        logs: logsResponse.logs || [],
         stats
       });
       setLastUpdated(new Date());
@@ -44,7 +47,7 @@ export default function AnalyticsPage() {
   
   // Calculate analytics metrics
   const calculateMetrics = () => {
-    const { securityEvents, loginAttempts } = analytics;
+    const { securityEvents = [], loginAttempts = [] } = analytics;
     
     // Security events by type
     const eventsByType = securityEvents.reduce((acc, event) => {
@@ -223,7 +226,7 @@ export default function AnalyticsPage() {
           
           {/* Recent Activity */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Recent Security Events</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Recent Activity</h3>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700">
@@ -235,43 +238,67 @@ export default function AnalyticsPage() {
                       Type
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Severity
+                      Action/Event
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Source
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Description
+                      Details
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {analytics.securityEvents.slice(0, 10).map((event, index) => (
-                    <tr key={event.id || event._id || `event-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {new Date(event.timestamp).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white capitalize">
-                        {event.type?.replace('_', ' ')}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          event.severity === 'critical' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' :
-                          event.severity === 'high' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' :
-                          event.severity === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                          'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                        }`}>
-                          {event.severity?.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {event.source}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-white max-w-xs truncate">
-                        {event.description}
-                      </td>
-                    </tr>
-                  ))}
+                  {(() => {
+                    // Combine security events and logs, sort by timestamp
+                    const combinedActivity = [
+                      ...(analytics.securityEvents || []).slice(0, 5).map(event => ({
+                        ...event,
+                        activityType: 'security_event',
+                        displayType: 'Security Event',
+                        displayAction: event.type?.replace('_', ' ') || 'Security Event',
+                        displaySource: event.source,
+                        displayDetails: event.description,
+                        severity: event.severity
+                      })),
+                      ...(analytics.logs || []).slice(0, 5).map(log => ({
+                        ...log,
+                        activityType: 'log',
+                        displayType: 'System Log',
+                        displayAction: log.action || 'System Action',
+                        displaySource: log.ipAddress || 'Unknown',
+                        displayDetails: log.details?.description || log.action || 'System activity',
+                        severity: log.status === 'failure' ? 'medium' : 'low'
+                      }))
+                    ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                    .slice(0, 10);
+
+                    return combinedActivity.map((item, index) => (
+                      <tr key={`${item.activityType}-${item.id || item._id || index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          {new Date(item.timestamp).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            item.activityType === 'security_event' 
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+                          }`}>
+                            {item.displayType}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white capitalize">
+                          {item.displayAction}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          {item.displaySource}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white max-w-xs truncate">
+                          {item.displayDetails}
+                        </td>
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </table>
             </div>

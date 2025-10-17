@@ -269,6 +269,12 @@ export default function BackupPage() {
         {!error && (
           <div className="flex space-x-3">
             <button
+              onClick={fetchBackups}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-all"
+            >
+              Refresh
+            </button>
+            <button
               onClick={handleCleanup}
               disabled={loading}
               className="bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-lg font-medium hover:from-orange-700 hover:to-red-700 disabled:opacity-50 transition-all transform hover:scale-[1.02] shadow-lg shadow-orange-500/25"

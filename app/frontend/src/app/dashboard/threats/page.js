@@ -16,6 +16,7 @@ export default function ThreatAnalysis() {
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalEvents, setTotalEvents] = useState([]);
+  const [lastUpdated, setLastUpdated] = useState(null);
   
   // Modal state
   const [selectedThreat, setSelectedThreat] = useState(null);
@@ -64,6 +65,7 @@ export default function ThreatAnalysis() {
         const paginatedEvents = sortedEvents.slice(startIndex, endIndex);
         console.log('Events for current page:', paginatedEvents.length, 'from', startIndex, 'to', endIndex);
         setHistoryEvents(paginatedEvents);
+        setLastUpdated(new Date());
       } catch (error) {
         console.error('Error fetching security events:', error);
       } finally {
@@ -78,6 +80,33 @@ export default function ThreatAnalysis() {
   
   const handlePageChange = (newPage) => {
     setPage(newPage);
+  };
+
+  // Refresh function
+  const refreshEvents = async () => {
+    setLoading(true);
+    try {
+      const events = await getData('/api/data/security-events?count=100');
+      const sortedEvents = events.sort((a, b) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+      
+      setTotalEvents(sortedEvents);
+      
+      const currentPage = pageRef.current;
+      const currentItemsPerPage = itemsPerPageRef.current;
+      
+      const startIndex = (currentPage - 1) * currentItemsPerPage;
+      const endIndex = startIndex + currentItemsPerPage;
+      
+      const paginatedEvents = sortedEvents.slice(startIndex, endIndex);
+      setHistoryEvents(paginatedEvents);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Error refreshing security events:', error);
+    } finally {
+      setLoading(false);
+    }
   };
   
   const handleAnalyze = async () => {
@@ -188,9 +217,25 @@ export default function ThreatAnalysis() {
   
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Threat Analysis</h1>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Analyze text for potential security threats</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Threat Analysis</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Analyze text for potential security threats</p>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          {lastUpdated && (
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </div>
+          )}
+          <button 
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            onClick={refreshEvents}
+          >
+            Refresh
+          </button>
+        </div>
       </div>
       
       {/* Input Section */}

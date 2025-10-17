@@ -211,12 +211,20 @@ export default function UsersPage() {
           </p>
         </div>
         {!error && (
-          <button
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            className="bg-gradient-to-r from-emerald-600 to-cyan-600 text-white px-6 py-3 rounded-lg font-medium hover:from-emerald-700 hover:to-cyan-700 transition-all transform hover:scale-[1.02] shadow-lg shadow-emerald-500/25"
-          >
-            {showCreateForm ? 'Cancel' : 'Create User'}
-          </button>
+          <div className="flex space-x-3">
+            <button
+              onClick={fetchUsers}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-all"
+            >
+              Refresh
+            </button>
+            <button
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="bg-gradient-to-r from-emerald-600 to-cyan-600 text-white px-6 py-3 rounded-lg font-medium hover:from-emerald-700 hover:to-cyan-700 transition-all transform hover:scale-[1.02] shadow-lg shadow-emerald-500/25"
+            >
+              {showCreateForm ? 'Cancel' : 'Create User'}
+            </button>
+          </div>
         )}
       </div>
 
@@ -383,7 +391,7 @@ export default function UsersPage() {
                           className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors"
                           title="Change Role"
                         >
-                          Role
+                          Change Role
                         </button>
                         <button
                           onClick={() => openDeleteModal(user)}
