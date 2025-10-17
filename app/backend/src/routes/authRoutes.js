@@ -14,6 +14,7 @@ import {
   unlockAccount,
   isAccountLocked
 } from '../services/sessionService.js';
+import { logSecurityEvent } from '../services/loggingService.js';
 import { 
   performSecurityCheck, 
   trackFailedLogin, 
@@ -50,47 +51,10 @@ function getRealIP(req) {
   return ip;
 }
 
-// Helper function to detect browser from user agent
-function detectBrowser(userAgent) {
-  if (!userAgent) return 'unknown';
-  
-  if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
-    return 'Chrome';
-  } else if (userAgent.includes('Firefox')) {
-    return 'Firefox';
-  } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
-    return 'Safari';
-  } else if (userAgent.includes('Edg')) {
-    return 'Edge';
-  } else if (userAgent.includes('Opera')) {
-    return 'Opera';
-  } else {
-    return 'Other';
-  }
-}
-
-// Helper function to detect OS from user agent
-function detectOS(userAgent) {
-  if (!userAgent) return 'unknown';
-  
-  if (userAgent.includes('Windows NT 10.0')) return 'Windows 10';
-  if (userAgent.includes('Windows NT 6.3')) return 'Windows 8.1';
-  if (userAgent.includes('Windows NT 6.1')) return 'Windows 7';
-  if (userAgent.includes('Windows')) return 'Windows';
-  if (userAgent.includes('Mac OS X')) return 'macOS';
-  if (userAgent.includes('Linux')) return 'Linux';
-  if (userAgent.includes('Android')) return 'Android';
-  if (userAgent.includes('iOS')) return 'iOS';
-  return 'Other';
-}
 
 // Helper function to log login attempt
 async function logLoginAttempt(userId, status, req, details = {}) {
   try {
-    const userAgent = req.get('user-agent') || 'unknown';
-    const browser = detectBrowser(userAgent);
-    const os = detectOS(userAgent);
-    
     // For failed logins with non-existent users, we need to create a temporary user or handle differently
     let actualUserId = userId;
     if (!userId && status === 'failure') {
@@ -118,24 +82,11 @@ async function logLoginAttempt(userId, status, req, details = {}) {
       }
     }
     
-    const logEntry = await SecurityLog.create({
-      userId: actualUserId,
-      action: 'login',
-      status,
-      ipAddress: getRealIP(req),
-      userAgent,
-      details: {
-        ...details,
-        timestamp: new Date(),
-        browser,
-        os,
-        username: details.attemptedUsername || 'unknown'
-      },
-      timestamp: new Date()
+    // Use the centralized logging service
+    return await logSecurityEvent(actualUserId, 'login', status, req, {
+      ...details,
+      attemptedUsername: details.attemptedUsername || 'unknown'
     });
-    
-    eventBus.emit('log.created', logEntry);
-    return logEntry;
   } catch (error) {
     console.error('Failed to log login attempt:', error);
   }
@@ -144,41 +95,8 @@ async function logLoginAttempt(userId, status, req, details = {}) {
 // Helper function to log logout event
 async function logLogoutEvent(userId, req, details = {}) {
   try {
-    const userAgent = req.get('user-agent') || 'unknown';
-    const browser = detectBrowser(userAgent);
-    const os = detectOS(userAgent);
-    
-    // Get username for the logout log
-    let username = 'unknown';
-    if (userId) {
-      try {
-        const user = await User.findById(userId);
-        if (user) {
-          username = user.username;
-        }
-      } catch (error) {
-        console.error('Error fetching user for logout log:', error);
-      }
-    }
-    
-    const logEntry = await SecurityLog.create({
-      userId,
-      action: 'logout',
-      status: 'success',
-      ipAddress: getRealIP(req),
-      userAgent,
-      details: {
-        ...details,
-        timestamp: new Date(),
-        browser,
-        os,
-        username
-      },
-      timestamp: new Date()
-    });
-    
-    eventBus.emit('log.created', logEntry);
-    return logEntry;
+    // Use the centralized logging service
+    return await logSecurityEvent(userId, 'logout', 'success', req, details);
   } catch (error) {
     console.error('Failed to log logout event:', error);
   }

@@ -978,22 +978,6 @@ export function getSecurityStats() {
   };
 }
 
-// Cleanup old attempt data
-export function cleanupOldAttempts() {
-  const now = Date.now();
-  const cutoff = now - SECURITY_CONFIG.BRUTE_FORCE_WINDOW;
-  
-  for (const [key, attempts] of ipAttempts.entries()) {
-    const recentAttempts = attempts.filter(time => time > cutoff);
-    if (recentAttempts.length === 0) {
-      ipAttempts.delete(key);
-    } else {
-      ipAttempts.set(key, recentAttempts);
-    }
-  }
-  
-  console.log(`🧹 Cleaned up old security attempt data`);
-}
 
 // Clear all suspicious IPs
 export function clearSuspiciousIPs() {
@@ -1008,8 +992,3 @@ export function clearIPAttempts() {
 }
 
 
-// Start periodic cleanup
-export function startSecurityCleanup() {
-  setInterval(cleanupOldAttempts, 5 * 60 * 1000); // Every 5 minutes
-  console.log('🛡️ Security cleanup service started');
-}

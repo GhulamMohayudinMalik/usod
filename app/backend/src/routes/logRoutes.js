@@ -9,6 +9,7 @@ router.get('/', logController.getLogs);
 router.get('/statistics', logController.getLogStatistics);
 router.post('/', performSecurityCheck, logController.createLog);
 router.post('/clear', performSecurityCheck, logController.clearLogs);
+router.put('/:id/status', performSecurityCheck, logController.updateLogStatus);
 
 // Platform-specific ingestion routes
 router.post('/desktop/ingest', performSecurityCheck, logController.bulkIngest);

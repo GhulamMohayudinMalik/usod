@@ -119,7 +119,8 @@ router.get('/security-events', async (req, res) => {
         if (!requestingAll && count <= 100) { query.limit(count); }
         const securityEventLogs = await query.exec();
         const securityEvents = securityEventLogs.map((log) => ({ 
-            id: log.details?.id || log._id.toString(), 
+            id: log._id.toString(), // Use actual MongoDB _id for updates
+            eventId: log.details?.id || log._id.toString(), // Keep original event ID for display
             type: log.details?.type || 'suspicious_activity', 
             severity: log.details?.severity || 'medium', 
             source: log.details?.source || log.ipAddress, 
@@ -129,7 +130,8 @@ router.get('/security-events', async (req, res) => {
             resolved: log.details?.resolved || false, 
             resolvedAt: log.details?.resolvedAt, 
             assignedTo: log.details?.assignedTo, 
-            relatedEvents: log.details?.relatedEvents || [] 
+            relatedEvents: log.details?.relatedEvents || [],
+            status: log.details?.status || 'open' // Include status field
         }));
         res.json(securityEvents);
     } catch (error) { 

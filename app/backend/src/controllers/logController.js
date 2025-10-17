@@ -151,5 +151,42 @@ export const logController = {
       console.error('Error clearing logs:', error);
       return res.status(500).json({ message: 'Error clearing logs', error: error.message });
     }
+  },
+
+  updateLogStatus: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      if (!status || !['resolved', 'escalated', 'investigating', 'open'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid status. Must be one of: resolved, escalated, investigating, open' });
+      }
+
+      const log = await SecurityLog.findByIdAndUpdate(
+        id,
+        { 
+          'details.status': status,
+          'details.statusUpdatedAt': new Date(),
+          'details.statusUpdatedBy': req.user?.id || 'system'
+        },
+        { new: true }
+      );
+
+      if (!log) {
+        return res.status(404).json({ message: 'Log not found' });
+      }
+
+      return res.json({ 
+        message: 'Log status updated successfully', 
+        log: {
+          id: log._id,
+          status: status,
+          updatedAt: new Date()
+        }
+      });
+    } catch (error) {
+      console.error('Error updating log status:', error);
+      return res.status(500).json({ message: 'Error updating log status', error: error.message });
+    }
   }
 };
