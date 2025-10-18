@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/api';
 
 const AnalyticsPage = () => {
   const [analytics, setAnalytics] = useState({
     securityEvents: [],
     loginAttempts: [],
+    logs: [],
     stats: null
   });
   const [loading, setLoading] = useState(true);
@@ -14,39 +16,18 @@ const AnalyticsPage = () => {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      // Mock analytics data
-      const mockStats = {
-        totalEvents: 1247,
-        criticalEvents: 23,
-        resolvedEvents: 1189,
-        avgResponseTime: 2.3,
-        securityScore: 87,
-        uptime: 99.9
-      };
-
-      const mockSecurityEvents = [
-        { date: '2024-01-01', count: 45, severity: 'high' },
-        { date: '2024-01-02', count: 32, severity: 'medium' },
-        { date: '2024-01-03', count: 67, severity: 'high' },
-        { date: '2024-01-04', count: 28, severity: 'low' },
-        { date: '2024-01-05', count: 89, severity: 'critical' },
-        { date: '2024-01-06', count: 54, severity: 'high' },
-        { date: '2024-01-07', count: 41, severity: 'medium' }
-      ];
-
-      const mockLoginAttempts = [
-        { hour: '00:00', attempts: 12, successful: 8 },
-        { hour: '04:00', attempts: 8, successful: 6 },
-        { hour: '08:00', attempts: 45, successful: 42 },
-        { hour: '12:00', attempts: 67, successful: 61 },
-        { hour: '16:00', attempts: 89, successful: 82 },
-        { hour: '20:00', attempts: 34, successful: 31 }
-      ];
+      const [statsResult, securityEventsResult, loginAttemptsResult, logsResult] = await Promise.all([
+        apiService.getDashboardStats(),
+        apiService.getThreats(50),
+        apiService.getLoginAttempts(50),
+        apiService.getLogs({ limit: 20 })
+      ]);
       
       setAnalytics({
-        securityEvents: mockSecurityEvents,
-        loginAttempts: mockLoginAttempts,
-        stats: mockStats
+        securityEvents: securityEventsResult.success ? securityEventsResult.data : [],
+        loginAttempts: loginAttemptsResult.success ? loginAttemptsResult.data : [],
+        logs: logsResult.success ? logsResult.data.logs || [] : [],
+        stats: statsResult.success ? statsResult.data : null
       });
       setLastUpdated(new Date());
       setLoading(false);
@@ -64,430 +45,559 @@ const AnalyticsPage = () => {
   
   // Calculate analytics metrics
   const calculateMetrics = () => {
-    if (!analytics.stats) return null;
+    const { securityEvents = [], loginAttempts = [] } = analytics;
     
-    const { stats } = analytics;
+    // Security events by type
+    const eventsByType = securityEvents.reduce((acc, event) => {
+      acc[event.type] = (acc[event.type] || 0) + 1;
+      return acc;
+    }, {});
+    
+    // Security events by severity
+    const eventsBySeverity = securityEvents.reduce((acc, event) => {
+      acc[event.severity] = (acc[event.severity] || 0) + 1;
+      return acc;
+    }, {});
+    
+    // Login attempts success rate
+    const successfulLogins = loginAttempts.filter(attempt => attempt.successful).length;
+    const loginSuccessRate = loginAttempts.length > 0 ? (successfulLogins / loginAttempts.length) * 100 : 0;
+    
+    // Recent activity (last 24 hours)
+    const now = new Date();
+    const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    
+    const recentEvents = securityEvents.filter(event => 
+      new Date(event.timestamp) > last24Hours
+    ).length;
+    
+    const recentLogins = loginAttempts.filter(attempt => 
+      new Date(attempt.timestamp) > last24Hours
+    ).length;
+    
     return {
-      threatTrend: ((stats.criticalEvents / stats.totalEvents) * 100).toFixed(1),
-      resolutionRate: ((stats.resolvedEvents / stats.totalEvents) * 100).toFixed(1),
-      avgThreatsPerDay: (stats.totalEvents / 30).toFixed(1),
-      systemHealth: stats.uptime
+      eventsByType,
+      eventsBySeverity,
+      loginSuccessRate,
+      recentEvents,
+      recentLogins,
+      totalEvents: securityEvents.length,
+      totalLogins: loginAttempts.length
     };
   };
 
   const metrics = calculateMetrics();
   
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <div style={{ color: 'white', fontSize: '1.2rem' }}>Loading analytics...</div>
-      </div>
-    );
-  }
-  
   if (error) {
     return (
+      <div style={{ padding: '1.5rem' }}>
       <div style={{
         background: 'rgba(239, 68, 68, 0.2)',
         border: '1px solid rgba(239, 68, 68, 0.5)',
         borderRadius: '0.5rem',
         padding: '1rem',
-        color: '#ef4444',
-        marginBottom: '1rem'
-      }}>
-        <p>{error}</p>
-        <button 
-          style={{
-            marginTop: '0.5rem',
-            background: 'rgba(239, 68, 68, 0.2)',
-            border: '1px solid rgba(239, 68, 68, 0.5)',
-            borderRadius: '0.375rem',
-            padding: '0.5rem 1rem',
-            color: '#ef4444',
-            cursor: 'pointer'
-          }}
-          onClick={fetchAnalytics}
-        >
-          Retry
-        </button>
+          color: '#ef4444'
+        }}>
+          {error}
+        </div>
       </div>
     );
   }
   
   return (
-    <div style={{ padding: '2rem', color: 'white' }}>
+    <div style={{ padding: '1.5rem', color: 'white' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
       <div>
         <h1 style={{ 
-          fontSize: '2rem', 
+            fontSize: '1.5rem', 
           fontWeight: '600', 
-          marginBottom: '0.5rem',
-          background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text'
-        }}>
-          Security Analytics
+            marginBottom: '0.25rem',
+            color: 'white'
+          }}>
+            Analytics Dashboard
         </h1>
-        <p style={{ color: '#9ca3af', fontSize: '1rem', marginBottom: '2rem' }}>
-          Comprehensive security metrics, trends, and performance analytics
+          <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
+            Security insights and performance metrics
         </p>
       </div>
-
-      {/* Header with refresh */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        marginBottom: '2rem'
-      }}>
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {lastUpdated && (
             <div style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
               Last updated: {lastUpdated.toLocaleTimeString()}
             </div>
           )}
-        </div>
         <button 
           style={{
-            padding: '0.75rem 1.5rem',
-            background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
+              padding: '0.5rem 1rem',
+              background: '#2563eb',
             color: 'white',
             border: 'none',
-            borderRadius: '0.5rem',
+              borderRadius: '0.375rem',
+              fontSize: '0.875rem',
             fontWeight: '500',
             cursor: 'pointer',
             transition: 'all 0.2s ease'
           }}
           onClick={fetchAnalytics}
         >
-          Refresh Data
+            Refresh
         </button>
+        </div>
       </div>
       
-      {/* Key Metrics */}
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '16rem' }}>
+          <div style={{
+            width: '3rem',
+            height: '3rem',
+            border: '3px solid #374151',
+            borderTop: '3px solid #2563eb',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }}></div>
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      ) : (
+        <>
+          {/* Overview Stats */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
         gap: '1.5rem',
-        marginBottom: '2rem'
+            marginBottom: '1.5rem'
       }}>
         <div style={{
           background: 'rgba(31, 41, 55, 0.8)',
-          backdropFilter: 'blur(12px)',
-          borderRadius: '1rem',
           padding: '1.5rem',
-          border: '1px solid rgba(75, 85, 99, 0.3)',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+              borderRadius: '0.5rem',
+              border: '1px solid rgba(75, 85, 99, 0.3)'
+            }}>
+              <h3 style={{ 
+                fontSize: '1.125rem', 
+                fontWeight: '500', 
+                color: 'white', 
+                marginBottom: '0.5rem' 
+              }}>
                 Total Security Events
-              </div>
-              <div style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
-                {analytics.stats?.totalEvents.toLocaleString()}
-              </div>
+              </h3>
+              <p style={{ 
+                fontSize: '1.875rem', 
+                fontWeight: 'bold', 
+                color: '#2563eb', 
+                margin: 0 
+              }}>
+                {metrics.totalEvents}
+              </p>
+              <p style={{ 
+                fontSize: '0.875rem', 
+                color: '#9ca3af', 
+                margin: 0 
+              }}>
+                Last 24h: {metrics.recentEvents}
+              </p>
             </div>
+            
             <div style={{
-              width: '3rem',
-              height: '3rem',
-              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.5rem'
+              background: 'rgba(31, 41, 55, 0.8)',
+              padding: '1.5rem',
+              borderRadius: '0.5rem',
+              border: '1px solid rgba(75, 85, 99, 0.3)'
             }}>
-              🚨
-            </div>
-          </div>
+              <h3 style={{ 
+                fontSize: '1.125rem', 
+                fontWeight: '500', 
+                color: 'white', 
+                marginBottom: '0.5rem' 
+              }}>
+                Login Attempts
+              </h3>
+              <p style={{ 
+                fontSize: '1.875rem', 
+                fontWeight: 'bold', 
+                color: '#10b981', 
+                margin: 0 
+              }}>
+                {metrics.totalLogins}
+              </p>
+              <p style={{ 
+                fontSize: '0.875rem', 
+                color: '#9ca3af', 
+                margin: 0 
+              }}>
+                Last 24h: {metrics.recentLogins}
+              </p>
         </div>
 
         <div style={{
           background: 'rgba(31, 41, 55, 0.8)',
-          backdropFilter: 'blur(12px)',
-          borderRadius: '1rem',
           padding: '1.5rem',
-          border: '1px solid rgba(75, 85, 99, 0.3)',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Critical Events
-              </div>
-              <div style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
-                {analytics.stats?.criticalEvents}
-              </div>
-            </div>
-            <div style={{
-              width: '3rem',
-              height: '3rem',
-              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.5rem'
+              borderRadius: '0.5rem',
+              border: '1px solid rgba(75, 85, 99, 0.3)'
             }}>
-              ⚠️
-            </div>
-          </div>
+              <h3 style={{ 
+                fontSize: '1.125rem', 
+                fontWeight: '500', 
+                color: 'white', 
+                marginBottom: '0.5rem' 
+              }}>
+                Login Success Rate
+              </h3>
+              <p style={{ 
+                fontSize: '1.875rem', 
+                fontWeight: 'bold', 
+                color: '#8b5cf6', 
+                margin: 0 
+              }}>
+                {metrics.loginSuccessRate.toFixed(1)}%
+              </p>
+              <p style={{ 
+                fontSize: '0.875rem', 
+                color: '#9ca3af', 
+                margin: 0 
+              }}>
+                Successful logins
+              </p>
         </div>
 
         <div style={{
           background: 'rgba(31, 41, 55, 0.8)',
-          backdropFilter: 'blur(12px)',
-          borderRadius: '1rem',
           padding: '1.5rem',
-          border: '1px solid rgba(75, 85, 99, 0.3)',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Resolution Rate
-              </div>
-              <div style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
-                {metrics?.resolutionRate}%
-              </div>
-            </div>
-            <div style={{
-              width: '3rem',
-              height: '3rem',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.5rem'
+              borderRadius: '0.5rem',
+              border: '1px solid rgba(75, 85, 99, 0.3)'
             }}>
-              ✅
-            </div>
-          </div>
-        </div>
-
-        <div style={{
-          background: 'rgba(31, 41, 55, 0.8)',
-          backdropFilter: 'blur(12px)',
-          borderRadius: '1rem',
-          padding: '1.5rem',
-          border: '1px solid rgba(75, 85, 99, 0.3)',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                System Uptime
-              </div>
-              <div style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
-                {analytics.stats?.uptime}%
-              </div>
-            </div>
-            <div style={{
-              width: '3rem',
-              height: '3rem',
-              background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.5rem'
-            }}>
-              📊
-            </div>
-          </div>
+              <h3 style={{ 
+                fontSize: '1.125rem', 
+                fontWeight: '500', 
+                color: 'white', 
+                marginBottom: '0.5rem' 
+              }}>
+                Security Score
+              </h3>
+              <p style={{ 
+                fontSize: '1.875rem', 
+                fontWeight: 'bold', 
+                color: '#f97316', 
+                margin: 0 
+              }}>
+                {analytics.stats?.securityScore || 0}%
+              </p>
+              <p style={{ 
+                fontSize: '0.875rem', 
+                color: '#9ca3af', 
+                margin: 0 
+              }}>
+                Overall security posture
+              </p>
         </div>
       </div>
+
 
       {/* Charts Section */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
         gap: '1.5rem',
-        marginBottom: '2rem'
+            marginBottom: '1.5rem'
       }}>
-        {/* Security Events Chart */}
+            {/* Security Events by Type */}
         <div style={{
           background: 'rgba(31, 41, 55, 0.8)',
-          backdropFilter: 'blur(12px)',
-          borderRadius: '1rem',
           padding: '1.5rem',
-          border: '1px solid rgba(75, 85, 99, 0.3)',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
+              borderRadius: '0.5rem',
+              border: '1px solid rgba(75, 85, 99, 0.3)'
         }}>
           <h3 style={{ 
-            fontSize: '1.25rem', 
-            fontWeight: '600', 
+                fontSize: '1.125rem', 
+                fontWeight: '500', 
             marginBottom: '1rem',
             color: 'white'
           }}>
-            Security Events Trend (7 Days)
+                Security Events by Type
           </h3>
-          <div style={{ height: '200px', display: 'flex', alignItems: 'end', gap: '0.5rem', padding: '1rem 0' }}>
-            {analytics.securityEvents.map((event, index) => (
-              <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {Object.entries(metrics.eventsByType).map(([type, count]) => (
+                  <div key={type} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ 
+                      fontSize: '0.875rem', 
+                      fontWeight: '500', 
+                      color: '#d1d5db',
+                      textTransform: 'capitalize'
+                    }}>
+                      {type.replace('_', ' ')}
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ 
+                        width: '8rem', 
+                        background: 'rgba(55, 65, 81, 0.3)', 
+                        borderRadius: '9999px', 
+                        height: '0.5rem' 
+                      }}>
                 <div 
                   style={{
-                    width: '100%',
-                    height: `${(event.count / 100) * 150}px`,
-                    background: event.severity === 'critical' ? '#ef4444' : 
-                               event.severity === 'high' ? '#f59e0b' : 
-                               event.severity === 'medium' ? '#06b6d4' : '#10b981',
-                    borderRadius: '0.25rem 0.25rem 0 0',
-                    marginBottom: '0.5rem',
-                    minHeight: '20px'
+                            background: '#2563eb', 
+                            height: '0.5rem', 
+                            borderRadius: '9999px',
+                            width: `${(count / metrics.totalEvents) * 100}%` 
                   }}
                 ></div>
-                <div style={{ fontSize: '0.75rem', color: '#9ca3af', textAlign: 'center' }}>
-                  {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'white', fontWeight: '500' }}>
-                  {event.count}
+                      <span style={{ 
+                        fontSize: '0.875rem', 
+                        fontWeight: '500', 
+                        color: 'white', 
+                        width: '2rem', 
+                        textAlign: 'right' 
+                      }}>
+                        {count}
+                      </span>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Login Attempts Chart */}
+            {/* Security Events by Severity */}
         <div style={{
           background: 'rgba(31, 41, 55, 0.8)',
-          backdropFilter: 'blur(12px)',
-          borderRadius: '1rem',
           padding: '1.5rem',
-          border: '1px solid rgba(75, 85, 99, 0.3)',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
+              borderRadius: '0.5rem',
+              border: '1px solid rgba(75, 85, 99, 0.3)'
         }}>
           <h3 style={{ 
-            fontSize: '1.25rem', 
-            fontWeight: '600', 
+                fontSize: '1.125rem', 
+                fontWeight: '500', 
             marginBottom: '1rem',
             color: 'white'
           }}>
-            Login Attempts (24 Hours)
+                Events by Severity
           </h3>
-          <div style={{ height: '200px', display: 'flex', alignItems: 'end', gap: '0.5rem', padding: '1rem 0' }}>
-            {analytics.loginAttempts.map((attempt, index) => (
-              <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', height: '150px', justifyContent: 'end', gap: '2px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {Object.entries(metrics.eventsBySeverity).map(([severity, count]) => {
+                  const colors = {
+                    low: '#10b981',
+                    medium: '#f59e0b',
+                    high: '#f97316',
+                    critical: '#ef4444'
+                  };
+                  
+                  return (
+                    <div key={severity} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ 
+                        fontSize: '0.875rem', 
+                        fontWeight: '500', 
+                        color: '#d1d5db',
+                        textTransform: 'capitalize'
+                      }}>
+                        {severity}
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ 
+                          width: '8rem', 
+                          background: 'rgba(55, 65, 81, 0.3)', 
+                          borderRadius: '9999px', 
+                          height: '0.5rem' 
+                        }}>
                   <div 
                     style={{
-                      width: '100%',
-                      height: `${(attempt.successful / 100) * 100}px`,
-                      background: '#10b981',
-                      borderRadius: '0.25rem 0.25rem 0 0',
-                      minHeight: '10px'
-                    }}
-                  ></div>
-                  <div 
-                    style={{
-                      width: '100%',
-                      height: `${((attempt.attempts - attempt.successful) / 100) * 100}px`,
-                      background: '#ef4444',
-                      borderRadius: '0 0 0.25rem 0.25rem',
-                      minHeight: '5px'
+                              background: colors[severity] || '#6b7280', 
+                              height: '0.5rem', 
+                              borderRadius: '9999px',
+                              width: `${(count / metrics.totalEvents) * 100}%` 
                     }}
                   ></div>
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#9ca3af', textAlign: 'center', marginTop: '0.5rem' }}>
-                  {attempt.hour}
+                        <span style={{ 
+                          fontSize: '0.875rem', 
+                          fontWeight: '500', 
+                          color: 'white', 
+                          width: '2rem', 
+                          textAlign: 'right' 
+                        }}>
+                          {count}
+                        </span>
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'white', fontWeight: '500' }}>
-                  {attempt.attempts}
                 </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '12px', height: '12px', background: '#10b981', borderRadius: '0.25rem' }}></div>
-              <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Successful</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '12px', height: '12px', background: '#ef4444', borderRadius: '0.25rem' }}></div>
-              <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Failed</span>
-            </div>
+                  );
+                })}
           </div>
         </div>
       </div>
 
-      {/* Performance Metrics */}
+          {/* Recent Activity */}
       <div style={{
         background: 'rgba(31, 41, 55, 0.8)',
-        backdropFilter: 'blur(12px)',
-        borderRadius: '1rem',
         padding: '1.5rem',
-        border: '1px solid rgba(75, 85, 99, 0.3)',
-        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
+            borderRadius: '0.5rem',
+            border: '1px solid rgba(75, 85, 99, 0.3)'
       }}>
         <h3 style={{ 
-          fontSize: '1.25rem', 
-          fontWeight: '600', 
+              fontSize: '1.125rem', 
+              fontWeight: '500', 
           marginBottom: '1rem',
           color: 'white'
         }}>
-          Performance Metrics
+              Recent Activity
         </h3>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '1rem'
-        }}>
-          <div style={{
-            padding: '1rem',
-            background: 'rgba(55, 65, 81, 0.3)',
-            borderRadius: '0.5rem',
-            textAlign: 'center'
-          }}>
-            <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-              Avg Response Time
-            </div>
-            <div style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600' }}>
-              {analytics.stats?.avgResponseTime}s
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ minWidth: '100%', borderCollapse: 'collapse' }}>
+                <thead style={{ background: 'rgba(55, 65, 81, 0.3)' }}>
+                  <tr>
+                    <th style={{ 
+                      padding: '0.75rem 1.5rem', 
+                      textAlign: 'left', 
+                      fontSize: '0.75rem', 
+                      fontWeight: '500', 
+                      color: '#9ca3af', 
+                      textTransform: 'uppercase', 
+                      letterSpacing: '0.05em' 
+                    }}>
+                      Time
+                    </th>
+                    <th style={{ 
+                      padding: '0.75rem 1.5rem', 
+                      textAlign: 'left', 
+                      fontSize: '0.75rem', 
+                      fontWeight: '500', 
+                      color: '#9ca3af', 
+                      textTransform: 'uppercase', 
+                      letterSpacing: '0.05em' 
+                    }}>
+                      Type
+                    </th>
+                    <th style={{ 
+                      padding: '0.75rem 1.5rem', 
+                      textAlign: 'left', 
+                      fontSize: '0.75rem', 
+                      fontWeight: '500', 
+                      color: '#9ca3af', 
+                      textTransform: 'uppercase', 
+                      letterSpacing: '0.05em' 
+                    }}>
+                      Action/Event
+                    </th>
+                    <th style={{ 
+                      padding: '0.75rem 1.5rem', 
+                      textAlign: 'left', 
+                      fontSize: '0.75rem', 
+                      fontWeight: '500', 
+                      color: '#9ca3af', 
+                      textTransform: 'uppercase', 
+                      letterSpacing: '0.05em' 
+                    }}>
+                      Source
+                    </th>
+                    <th style={{ 
+                      padding: '0.75rem 1.5rem', 
+                      textAlign: 'left', 
+                      fontSize: '0.75rem', 
+                      fontWeight: '500', 
+                      color: '#9ca3af', 
+                      textTransform: 'uppercase', 
+                      letterSpacing: '0.05em' 
+                    }}>
+                      Details
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    // Combine security events and logs, sort by timestamp
+                    const combinedActivity = [
+                      ...(analytics.securityEvents || []).slice(0, 5).map(event => ({
+                        ...event,
+                        activityType: 'security_event',
+                        displayType: 'Security Event',
+                        displayAction: event.type?.replace('_', ' ') || 'Security Event',
+                        displaySource: event.source,
+                        displayDetails: event.description,
+                        severity: event.severity
+                      })),
+                      ...(analytics.logs || []).slice(0, 5).map(log => ({
+                        ...log,
+                        activityType: 'log',
+                        displayType: 'System Log',
+                        displayAction: log.action || 'System Action',
+                        displaySource: log.ipAddress || 'Unknown',
+                        displayDetails: log.details?.description || log.action || 'System activity',
+                        severity: log.status === 'failure' ? 'medium' : 'low'
+                      }))
+                    ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                    .slice(0, 10);
+
+                    return combinedActivity.map((item, index) => (
+                      <tr key={`${item.activityType}-${item.id || item._id || index}`} style={{ 
+                        borderBottom: '1px solid rgba(55, 65, 81, 0.3)',
+                        transition: 'background-color 0.2s'
+                      }}>
+                        <td style={{ 
+                          padding: '1rem 1.5rem', 
+                          whiteSpace: 'nowrap', 
+                          fontSize: '0.875rem', 
+                          color: 'white' 
+                        }}>
+                          {new Date(item.timestamp).toLocaleString()}
+                        </td>
+                        <td style={{ 
+                          padding: '1rem 1.5rem', 
+                          whiteSpace: 'nowrap', 
+                          fontSize: '0.875rem' 
+                        }}>
+                          <span style={{
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '9999px',
+                            fontSize: '0.75rem',
+                            background: item.activityType === 'security_event' 
+                              ? 'rgba(59, 130, 246, 0.1)' 
+                              : 'rgba(55, 65, 81, 0.3)',
+                            color: item.activityType === 'security_event' 
+                              ? '#60a5fa' 
+                              : '#9ca3af'
+                          }}>
+                            {item.displayType}
+                          </span>
+                        </td>
+                        <td style={{ 
+                          padding: '1rem 1.5rem', 
+                          whiteSpace: 'nowrap', 
+                          fontSize: '0.875rem', 
+                          color: 'white',
+                          textTransform: 'capitalize'
+                        }}>
+                          {item.displayAction}
+                        </td>
+                        <td style={{ 
+                          padding: '1rem 1.5rem', 
+                          whiteSpace: 'nowrap', 
+                          fontSize: '0.875rem', 
+                          color: 'white' 
+                        }}>
+                          {item.displaySource}
+                        </td>
+                        <td style={{ 
+                          padding: '1rem 1.5rem', 
+                          fontSize: '0.875rem', 
+                          color: 'white', 
+                          maxWidth: '12rem', 
+                          overflow: 'hidden', 
+                          textOverflow: 'ellipsis' 
+                        }}>
+                          {item.displayDetails}
+                        </td>
+                      </tr>
+                    ));
+                  })()}
+                </tbody>
+              </table>
             </div>
           </div>
-          <div style={{
-            padding: '1rem',
-            background: 'rgba(55, 65, 81, 0.3)',
-            borderRadius: '0.5rem',
-            textAlign: 'center'
-          }}>
-            <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-              Security Score
-            </div>
-            <div style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600' }}>
-              {analytics.stats?.securityScore}%
-            </div>
-          </div>
-          <div style={{
-            padding: '1rem',
-            background: 'rgba(55, 65, 81, 0.3)',
-            borderRadius: '0.5rem',
-            textAlign: 'center'
-          }}>
-            <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-              Threats/Day
-            </div>
-            <div style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600' }}>
-              {metrics?.avgThreatsPerDay}
-            </div>
-          </div>
-          <div style={{
-            padding: '1rem',
-            background: 'rgba(55, 65, 81, 0.3)',
-            borderRadius: '0.5rem',
-            textAlign: 'center'
-          }}>
-            <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-              Threat Trend
-            </div>
-            <div style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600' }}>
-              {metrics?.threatTrend}%
-            </div>
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

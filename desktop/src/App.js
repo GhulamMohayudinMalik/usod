@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import DashboardPage from './pages/DashboardPage';
 import LogsPage from './pages/LogsPage';
@@ -13,11 +13,33 @@ import SecurityPage from './pages/SecurityPage';
 import SecurityLabPage from './pages/SecurityLabPage';
 import LoginPage from './pages/LoginPage';
 import Layout from './components/Layout';
+import apiService from './services/api';
 import './App.css';
 
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check for existing authentication on app start
+  useEffect(() => {
+    const checkAuth = () => {
+      if (apiService.isAuthenticated()) {
+        // User has a token, assume they're authenticated
+        // In a real app, you might want to validate the token with the backend
+        setUser({
+          username: 'User',
+          email: 'user@example.com',
+          role: 'Security Admin',
+          loginTime: new Date().toISOString()
+        });
+        setIsAuthenticated(true);
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
+  }, []);
 
   const handleLogin = (userData) => {
     setUser(userData);
@@ -28,6 +50,39 @@ function AppContent() {
     setUser(null);
     setIsAuthenticated(false);
   };
+
+  // Show loading screen while checking authentication
+  if (isLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #111827 0%, #1f2937 50%, #000000 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '3rem',
+            height: '3rem',
+            border: '3px solid #374151',
+            borderTop: '3px solid #10b981',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 1rem'
+          }}></div>
+          <p>Loading...</p>
+        </div>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="App">

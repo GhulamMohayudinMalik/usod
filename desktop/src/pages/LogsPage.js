@@ -1,130 +1,111 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/api';
 
 const LogsPage = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [filters, setFilters] = useState({
     action: '',
     startDate: '',
     endDate: ''
   });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [logsPerPage] = useState(10);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 20,
+    totalPages: 0
+  });
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-  // Static log data for demonstration
-  const staticLogs = [
-    {
-      id: 1,
-      timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-      action: 'login',
-      userId: { username: 'GhulamMohayudin' },
-      ipAddress: '192.168.1.100',
-      status: 'success',
-      details: { browser: 'Chrome', os: 'Windows 10', location: 'New York' }
-    },
-    {
-      id: 2,
-      timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-      action: 'security_event',
-      userId: { username: 'admin' },
-      ipAddress: '192.168.1.50',
-      status: 'detected',
-      details: { eventType: 'malware', severity: 'high', description: 'Suspicious file detected' }
-    },
-    {
-      id: 3,
-      timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-      action: 'sql_injection_attempt',
-      userId: null,
-      ipAddress: '10.0.0.15',
-      status: 'detected',
-      details: { pattern: 'UNION SELECT', endpoint: '/api/auth/login' }
-    },
-    {
-      id: 4,
-      timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-      action: 'password_change',
-      userId: { username: 'Ali' },
-      ipAddress: '192.168.1.75',
-      status: 'success',
-      details: { passwordStrength: 'strong', changedBy: 'Ali' }
-    },
-    {
-      id: 5,
-      timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-      action: 'brute_force_detected',
-      userId: null,
-      ipAddress: '203.0.113.42',
-      status: 'detected',
-      details: { attempts: 8, timeWindow: '5 minutes', blocked: true }
-    },
-    {
-      id: 6,
-      timestamp: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
-      action: 'logout',
-      userId: { username: 'Zuhaib' },
-      ipAddress: '192.168.1.200',
-      status: 'success',
-      details: { reason: 'user_logout', sessionDuration: '2h 15m' }
-    },
-    {
-      id: 7,
-      timestamp: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
-      action: 'xss_attempt',
-      userId: null,
-      ipAddress: '198.51.100.25',
-      status: 'detected',
-      details: { pattern: '<script>', endpoint: '/api/users/profile' }
-    },
-    {
-      id: 8,
-      timestamp: new Date(Date.now() - 150 * 60 * 1000).toISOString(),
-      action: 'backup_created',
-      userId: { username: 'admin' },
-      ipAddress: '192.168.1.1',
-      status: 'success',
-      details: { backupType: 'full', size: '2.5GB', reason: 'scheduled' }
-    },
-    {
-      id: 9,
-      timestamp: new Date(Date.now() - 180 * 60 * 1000).toISOString(),
-      action: 'access_denied',
-      userId: { username: 'user1234' },
-      ipAddress: '192.168.1.150',
-      status: 'failure',
-      details: { resource: '/api/users', requiredRole: 'admin', userRole: 'user' }
-    },
-    {
-      id: 10,
-      timestamp: new Date(Date.now() - 210 * 60 * 1000).toISOString(),
-      action: 'session_created',
-      userId: { username: 'AliSami' },
-      ipAddress: '192.168.1.88',
-      status: 'success',
-      details: { sessionId: 'sess_abc123', expiresAt: '2024-01-15T10:30:00Z' }
-    }
-  ];
-
-  useEffect(() => {
-    // Simulate loading logs
-    setTimeout(() => {
-      setLogs(staticLogs);
+  // Fetch logs from backend
+  const fetchLogs = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit
+        // Remove platform filter for now to show all logs
+      };
+      
+      if (filters.action) {
+        params.action = filters.action;
+      }
+      
+      if (filters.startDate) {
+        params.startDate = filters.startDate;
+      }
+      
+      if (filters.endDate) {
+        params.endDate = filters.endDate;
+      }
+      
+      const result = await apiService.getLogs(params);
+      
+      if (result.success) {
+        const logs = result.data.logs || [];
+        console.log('Fetched logs:', logs.length, 'logs');
+        
+        setLogs(logs);
+        setPagination(result.data.pagination || {
+          total: 0,
+          page: 1,
+          limit: 20,
+          totalPages: 0
+        });
+        setLastUpdated(new Date());
+      } else {
+        console.error('Failed to fetch logs:', result.message);
+        if (result.message && result.message.includes('unauthorized')) {
+          // Handle unauthorized access - redirect to login
+          window.location.href = '/login';
+        } else {
+          setError(result.message || 'Failed to load logs');
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching logs:', err);
+      if (err.message && err.message.includes('unauthorized')) {
+        // Handle unauthorized access - redirect to login
+        window.location.href = '/login';
+      } else {
+        setError('Failed to load logs. Please try again later.');
+      }
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  };
+
+
+  // Initial fetch
+  useEffect(() => {
+    fetchLogs();
+  }, [pagination.page, pagination.limit]);
 
   const formatTimestamp = (timestamp) => {
     return new Date(timestamp).toLocaleString();
   };
 
-  const getStatusBadgeClass = (status) => {
-    switch (status) {
-      case 'success': return { background: 'rgba(16, 185, 129, 0.2)', color: '#10b981' };
-      case 'failure': return { background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' };
-      case 'detected': return { background: 'rgba(139, 92, 246, 0.2)', color: '#8b5cf6' };
-      default: return { background: 'rgba(107, 114, 128, 0.2)', color: '#6b7280' };
+  const toTitleCase = (str) => {
+    if (!str) return 'Unknown';
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+  };
+
+  const getPlatformBadgeStyle = (platform) => {
+    const normalizedPlatform = platform?.toLowerCase();
+    
+    if (normalizedPlatform === 'mobile') {
+      return { background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' };
+    } else if (normalizedPlatform === 'desktop') {
+      return { background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7' };
+    } else if (normalizedPlatform === 'web') {
+      return { background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' };
+    } else {
+      return { background: 'rgba(107, 114, 128, 0.1)', color: '#6b7280' };
     }
   };
+
 
   const showLogDetails = (log) => {
     const details = JSON.stringify(log.details || {}, null, 2);
@@ -132,40 +113,18 @@ const LogsPage = () => {
   };
 
   const applyFilters = () => {
-    let filteredLogs = staticLogs;
-
-    if (filters.action) {
-      filteredLogs = filteredLogs.filter(log => log.action === filters.action);
-    }
-
-    if (filters.startDate) {
-      const startDate = new Date(filters.startDate);
-      filteredLogs = filteredLogs.filter(log => new Date(log.timestamp) >= startDate);
-    }
-
-    if (filters.endDate) {
-      const endDate = new Date(filters.endDate);
-      filteredLogs = filteredLogs.filter(log => new Date(log.timestamp) <= endDate);
-    }
-
-    setLogs(filteredLogs);
-    setCurrentPage(1);
+    setPagination(prev => ({ ...prev, page: 1 }));
+    fetchLogs();
   };
 
   const resetFilters = () => {
     setFilters({ action: '', startDate: '', endDate: '' });
-    setLogs(staticLogs);
-    setCurrentPage(1);
+    setPagination(prev => ({ ...prev, page: 1 }));
+    fetchLogs();
   };
 
-  // Pagination
-  const indexOfLastLog = currentPage * logsPerPage;
-  const indexOfFirstLog = indexOfLastLog - logsPerPage;
-  const currentLogs = logs.slice(indexOfFirstLog, indexOfLastLog);
-  const totalPages = Math.ceil(logs.length / logsPerPage);
-
   const goToPage = (pageNumber) => {
-    setCurrentPage(pageNumber);
+    setPagination(prev => ({ ...prev, page: pageNumber }));
   };
 
   if (loading) {
@@ -176,33 +135,106 @@ const LogsPage = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div style={{ padding: '1.5rem' }}>
+        <div style={{
+          background: 'rgba(254, 242, 242, 0.1)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          color: '#fca5a5',
+          padding: '1rem',
+          borderRadius: '0.5rem'
+        }}>
+          {error}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      {/* Page Header */}
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ color: 'white', fontSize: '2rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+    <div style={{ padding: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h1 style={{ 
+          fontSize: '1.5rem', 
+          fontWeight: '600', 
+          color: 'white',
+          margin: 0
+        }}>
           Security Logs
         </h1>
-        <p style={{ color: '#9ca3af', fontSize: '1rem' }}>
-          Monitor and analyze security events and activities
-        </p>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {lastUpdated && (
+            <div style={{ 
+              fontSize: '0.875rem', 
+              color: '#9ca3af'
+            }}>
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </div>
+          )}
+          <button 
+            style={{
+              padding: '0.5rem 1rem',
+              background: '#2563eb',
+              color: 'white',
+              borderRadius: '0.375rem',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => e.target.style.background = '#1d4ed8'}
+            onMouseLeave={(e) => e.target.style.background = '#2563eb'}
+            onClick={fetchLogs}
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Filter Section */}
-      <div className="card" style={{ marginBottom: '2rem' }}>
-        <h3 style={{ color: 'white', fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
+      <div style={{
+        marginBottom: '1.5rem',
+        background: 'rgba(31, 41, 55, 0.8)',
+        padding: '1rem',
+        borderRadius: '0.5rem',
+        border: '1px solid rgba(55, 65, 81, 0.3)'
+      }}>
+        <h3 style={{ 
+          fontSize: '1.125rem', 
+          fontWeight: '600', 
+          marginBottom: '1rem',
+          color: 'white'
+        }}>
           Filters
         </h3>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '1rem',
           marginBottom: '1rem'
         }}>
-          <div className="form-group">
-            <label className="form-label">Action</label>
-            <select
-              className="form-input"
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#d1d5db',
+              marginBottom: '0.25rem'
+            }}>
+              Action
+            </label>
+            <select 
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                border: '1px solid rgba(75, 85, 99, 0.5)',
+                borderRadius: '0.375rem',
+                background: 'rgba(55, 65, 81, 0.5)',
+                color: 'white',
+                fontSize: '0.875rem'
+              }}
               value={filters.action}
               onChange={(e) => setFilters({...filters, action: e.target.value})}
             >
@@ -211,112 +243,305 @@ const LogsPage = () => {
               <option value="logout">Logout</option>
               <option value="security_event">Security Event</option>
               <option value="password_change">Password Change</option>
+              <option value="profile_update">Profile Update</option>
               <option value="access_denied">Access Denied</option>
+              <option value="system_error">System Error</option>
+              <option value="session_created">Session Created</option>
+              <option value="session_expired">Session Expired</option>
+              <option value="token_refresh">Token Refresh</option>
+              <option value="account_locked">Account Locked</option>
+              <option value="account_unlocked">Account Unlocked</option>
+              <option value="user_created">User Created</option>
+              <option value="user_deleted">User Deleted</option>
+              <option value="role_changed">Role Changed</option>
+              <option value="settings_changed">Settings Changed</option>
+              <option value="backup_created">Backup Created</option>
+              <option value="backup_restored">Backup Restored</option>
+              <option value="suspicious_activity">Suspicious Activity</option>
+              <option value="brute_force_detected">Brute Force Detected</option>
               <option value="sql_injection_attempt">SQL Injection Attempt</option>
               <option value="xss_attempt">XSS Attempt</option>
-              <option value="brute_force_detected">Brute Force Detected</option>
-              <option value="backup_created">Backup Created</option>
-              <option value="session_created">Session Created</option>
+              <option value="csrf_attempt">CSRF Attempt</option>
+              <option value="ip_blocked">IP Blocked</option>
+              <option value="ip_unblocked">IP Unblocked</option>
             </select>
           </div>
-          <div className="form-group">
-            <label className="form-label">Start Date</label>
-            <input
-              type="date"
-              className="form-input"
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#d1d5db',
+              marginBottom: '0.25rem'
+            }}>
+              Start Date
+            </label>
+            <input 
+              type="date" 
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                border: '1px solid rgba(75, 85, 99, 0.5)',
+                borderRadius: '0.375rem',
+                background: 'rgba(55, 65, 81, 0.5)',
+                color: 'white',
+                fontSize: '0.875rem'
+              }}
               value={filters.startDate}
               onChange={(e) => setFilters({...filters, startDate: e.target.value})}
             />
           </div>
-          <div className="form-group">
-            <label className="form-label">End Date</label>
-            <input
-              type="date"
-              className="form-input"
+          <div>
+            <label style={{
+              display: 'block',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#d1d5db',
+              marginBottom: '0.25rem'
+            }}>
+              End Date
+            </label>
+            <input 
+              type="date" 
+              style={{
+                width: '100%',
+                padding: '0.5rem',
+                border: '1px solid rgba(75, 85, 99, 0.5)',
+                borderRadius: '0.375rem',
+                background: 'rgba(55, 65, 81, 0.5)',
+                color: 'white',
+                fontSize: '0.875rem'
+              }}
               value={filters.endDate}
               onChange={(e) => setFilters({...filters, endDate: e.target.value})}
             />
           </div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-          <button className="btn btn-secondary" onClick={resetFilters}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+          <button 
+            style={{
+              padding: '0.5rem 1rem',
+              background: 'rgba(75, 85, 99, 0.5)',
+              color: '#d1d5db',
+              borderRadius: '0.375rem',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => e.target.style.background = 'rgba(75, 85, 99, 0.7)'}
+            onMouseLeave={(e) => e.target.style.background = 'rgba(75, 85, 99, 0.5)'}
+            onClick={resetFilters}
+          >
             Reset
           </button>
-          <button className="btn btn-primary" onClick={applyFilters}>
+          <button 
+            style={{
+              padding: '0.5rem 1rem',
+              background: '#2563eb',
+              color: 'white',
+              borderRadius: '0.375rem',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => e.target.style.background = '#1d4ed8'}
+            onMouseLeave={(e) => e.target.style.background = '#2563eb'}
+            onClick={applyFilters}
+          >
             Apply Filters
           </button>
         </div>
       </div>
 
       {/* Logs Table */}
-      <div className="card">
+      <div style={{
+        background: 'rgba(31, 41, 55, 0.8)',
+        borderRadius: '0.5rem',
+        border: '1px solid rgba(55, 65, 81, 0.3)',
+        overflow: 'hidden'
+      }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(55, 65, 81, 0.3)' }}>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
+            <thead style={{ background: 'rgba(55, 65, 81, 0.5)' }}>
+              <tr>
+                <th style={{ 
+                  padding: '0.75rem 1.5rem', 
+                  textAlign: 'left', 
+                  color: '#d1d5db', 
+                  fontSize: '0.75rem', 
+                  fontWeight: '500', 
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
                   Timestamp
                 </th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
+                <th style={{ 
+                  padding: '0.75rem 1.5rem', 
+                  textAlign: 'left', 
+                  color: '#d1d5db', 
+                  fontSize: '0.75rem', 
+                  fontWeight: '500', 
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
                   Action
                 </th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
+                <th style={{ 
+                  padding: '0.75rem 1.5rem', 
+                  textAlign: 'left', 
+                  color: '#d1d5db', 
+                  fontSize: '0.75rem', 
+                  fontWeight: '500', 
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
                   User
                 </th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
+                <th style={{ 
+                  padding: '0.75rem 1.5rem', 
+                  textAlign: 'left', 
+                  color: '#d1d5db', 
+                  fontSize: '0.75rem', 
+                  fontWeight: '500', 
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
                   IP Address
                 </th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
+                <th style={{ 
+                  padding: '0.75rem 1.5rem', 
+                  textAlign: 'left', 
+                  color: '#d1d5db', 
+                  fontSize: '0.75rem', 
+                  fontWeight: '500', 
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
                   Status
                 </th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
+                <th style={{ 
+                  padding: '0.75rem 1.5rem', 
+                  textAlign: 'left', 
+                  color: '#d1d5db', 
+                  fontSize: '0.75rem', 
+                  fontWeight: '500', 
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
+                  Platform
+                </th>
+                <th style={{ 
+                  padding: '0.75rem 1.5rem', 
+                  textAlign: 'left', 
+                  color: '#d1d5db', 
+                  fontSize: '0.75rem', 
+                  fontWeight: '500', 
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
                   Details
                 </th>
               </tr>
             </thead>
-            <tbody>
-              {currentLogs.length === 0 ? (
+            <tbody style={{ background: 'rgba(31, 41, 55, 0.8)' }}>
+              {loading ? (
                 <tr>
-                  <td colSpan="6" style={{ padding: '3rem', textAlign: 'center', color: '#9ca3af' }}>
+                  <td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: '#9ca3af' }}>
+                    Loading logs...
+                  </td>
+                </tr>
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: '#9ca3af' }}>
                     No logs found matching the current filters.
                   </td>
                 </tr>
               ) : (
-                currentLogs.map((log) => (
-                  <tr key={log.id} style={{ borderBottom: '1px solid rgba(55, 65, 81, 0.3)' }}>
-                    <td style={{ padding: '1rem', color: 'white', fontSize: '0.875rem' }}>
+                logs.map((log, index) => (
+                  <tr 
+                    key={log.id || log._id || `log-${index}`} 
+                    style={{ 
+                      borderBottom: '1px solid rgba(55, 65, 81, 0.3)'
+                    }}
+                  >
+                    <td style={{ 
+                      padding: '1rem 1.5rem', 
+                      color: 'white', 
+                      fontSize: '0.875rem',
+                      whiteSpace: 'nowrap'
+                    }}>
                       {formatTimestamp(log.timestamp)}
                     </td>
-                    <td style={{ padding: '1rem', color: 'white', fontSize: '0.875rem' }}>
+                    <td style={{ 
+                      padding: '1rem 1.5rem', 
+                      color: 'white', 
+                      fontSize: '0.875rem',
+                      whiteSpace: 'nowrap'
+                    }}>
                       {log.action}
                     </td>
-                    <td style={{ padding: '1rem', color: 'white', fontSize: '0.875rem' }}>
-                      {log.userId?.username || 'Unknown'}
+                    <td style={{ 
+                      padding: '1rem 1.5rem', 
+                      color: 'white', 
+                      fontSize: '0.875rem',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {log.userId?.username || log.details?.username || 'Unknown'}
                     </td>
-                    <td style={{ padding: '1rem', color: 'white', fontSize: '0.875rem' }}>
-                      {log.ipAddress || 'Unknown'}
+                    <td style={{ 
+                      padding: '1rem 1.5rem', 
+                      color: 'white', 
+                      fontSize: '0.875rem',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {log.ipAddress || log.ip_address || 'Unknown'}
                     </td>
-                    <td style={{ padding: '1rem' }}>
+                    <td style={{ padding: '1rem 1.5rem' }}>
+                      {log.status ? (
+                        <span style={{
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.75rem',
+                          fontWeight: '500',
+                          ...(log.status === 'success' 
+                            ? { background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' }
+                            : { background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }
+                          )
+                        }}>
+                          {log.status.charAt(0).toUpperCase() + log.status.slice(1)}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#9ca3af' }}>-</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '1rem 1.5rem' }}>
                       <span style={{
-                        padding: '0.25rem 0.75rem',
+                        padding: '0.25rem 0.5rem',
                         borderRadius: '9999px',
                         fontSize: '0.75rem',
                         fontWeight: '500',
-                        ...getStatusBadgeClass(log.status)
+                        ...(getPlatformBadgeStyle(log.details?.platform))
                       }}>
-                        {log.status}
+                        {toTitleCase(log.details?.platform)}
                       </span>
                     </td>
-                    <td style={{ padding: '1rem' }}>
+                    <td style={{ padding: '1rem 1.5rem' }}>
                       <button
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: '#06b6d4',
+                          color: '#3b82f6',
                           cursor: 'pointer',
                           fontSize: '0.875rem',
-                          textDecoration: 'underline'
+                          textDecoration: 'underline',
+                          transition: 'color 0.2s'
                         }}
+                        onMouseEnter={(e) => e.target.style.color = '#1d4ed8'}
+                        onMouseLeave={(e) => e.target.style.color = '#3b82f6'}
                         onClick={() => showLogDetails(log)}
                       >
                         View Details
@@ -330,32 +555,76 @@ const LogsPage = () => {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {!loading && pagination.totalPages > 0 && (
           <div style={{
-            padding: '1rem',
+            padding: '0.75rem 1.5rem',
             display: 'flex',
-            justifyContent: 'space-between',
             alignItems: 'center',
-            borderTop: '1px solid rgba(55, 65, 81, 0.3)',
-            background: 'rgba(31, 41, 55, 0.5)'
+            justifyContent: 'space-between',
+            borderTop: '1px solid rgba(55, 65, 81, 0.3)'
           }}>
-            <div style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
-              Showing {indexOfFirstLog + 1} to {Math.min(indexOfLastLog, logs.length)} of {logs.length} results
+            <div style={{ 
+              fontSize: '0.875rem', 
+              color: '#d1d5db'
+            }}>
+              Showing <span style={{ fontWeight: '500' }}>{(pagination.page - 1) * pagination.limit + 1}</span> to{' '}
+              <span style={{ fontWeight: '500' }}>
+                {Math.min(pagination.page * pagination.limit, pagination.total)}
+              </span> of{' '}
+              <span style={{ fontWeight: '500' }}>{pagination.total}</span> results
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button
-                className="btn btn-secondary"
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage === 1}
-                style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}
+                style={{
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: '0.375rem',
+                  background: 'rgba(75, 85, 99, 0.5)',
+                  color: '#d1d5db',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  opacity: pagination.page === 1 ? 0.5 : 1,
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (pagination.page !== 1) {
+                    e.target.style.background = 'rgba(75, 85, 99, 0.7)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (pagination.page !== 1) {
+                    e.target.style.background = 'rgba(75, 85, 99, 0.5)';
+                  }
+                }}
+                onClick={() => goToPage(pagination.page - 1)}
+                disabled={pagination.page === 1}
               >
                 Previous
               </button>
               <button
-                className="btn btn-secondary"
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}
+                style={{
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: '0.375rem',
+                  background: 'rgba(75, 85, 99, 0.5)',
+                  color: '#d1d5db',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  opacity: pagination.page === pagination.totalPages ? 0.5 : 1,
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (pagination.page !== pagination.totalPages) {
+                    e.target.style.background = 'rgba(75, 85, 99, 0.7)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (pagination.page !== pagination.totalPages) {
+                    e.target.style.background = 'rgba(75, 85, 99, 0.5)';
+                  }
+                }}
+                onClick={() => goToPage(pagination.page + 1)}
+                disabled={pagination.page === pagination.totalPages}
               >
                 Next
               </button>

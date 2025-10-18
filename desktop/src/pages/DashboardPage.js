@@ -262,65 +262,110 @@ const DashboardPage = () => {
         {recentThreats && recentThreats.length > 0 ? (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gridTemplateColumns: 'repeat(3, 1fr)',
             gap: '1rem'
           }}>
-            {recentThreats.map((threat) => (
-              <div
-                key={threat.id}
-                style={{
-                  background: 'rgba(31, 41, 55, 0.9)',
-                  border: '1px solid rgba(55, 65, 81, 0.3)',
-                  borderRadius: '0.5rem',
-                  padding: '1rem'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'start' }}>
-                  <div style={{ marginRight: '0.75rem' }}>
-                    <div style={{
-                      width: '2.5rem',
-                      height: '2.5rem',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: `linear-gradient(135deg, ${getSeverityColor(threat.severity)} 0%, ${getSeverityColor(threat.severity)}CC 100%)`
-                    }}>
-                      <svg style={{ width: '1.5rem', height: '1.5rem', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <h3 style={{ 
-                        color: getSeverityColor(threat.severity), 
-                        fontSize: '1rem', 
-                        fontWeight: '600', 
-                        margin: 0,
-                        textTransform: 'capitalize'
+            {recentThreats.slice(0, 6).map((threat) => {
+              // Get colors based on severity level (matching web frontend)
+              const getLevelColors = (level) => {
+                switch (level?.toLowerCase()) {
+                  case 'low':
+                    return {
+                      bg: 'rgba(34, 197, 94, 0.1)',
+                      border: 'rgba(34, 197, 94, 0.3)',
+                      text: '#22c55e',
+                      icon: 'rgba(34, 197, 94, 0.2)'
+                    };
+                  case 'medium':
+                    return {
+                      bg: 'rgba(245, 158, 11, 0.1)',
+                      border: 'rgba(245, 158, 11, 0.3)',
+                      text: '#f59e0b',
+                      icon: 'rgba(245, 158, 11, 0.2)'
+                    };
+                  case 'high':
+                    return {
+                      bg: 'rgba(239, 68, 68, 0.1)',
+                      border: 'rgba(239, 68, 68, 0.3)',
+                      text: '#ef4444',
+                      icon: 'rgba(239, 68, 68, 0.2)'
+                    };
+                  case 'critical':
+                    return {
+                      bg: 'rgba(147, 51, 234, 0.1)',
+                      border: 'rgba(147, 51, 234, 0.3)',
+                      text: '#9333ea',
+                      icon: 'rgba(147, 51, 234, 0.2)'
+                    };
+                  default:
+                    return {
+                      bg: 'rgba(55, 65, 81, 0.1)',
+                      border: 'rgba(55, 65, 81, 0.3)',
+                      text: '#6b7280',
+                      icon: 'rgba(55, 65, 81, 0.2)'
+                    };
+                }
+              };
+
+              const colors = getLevelColors(threat.severity);
+
+              return (
+                <div
+                  key={threat.id}
+                  style={{
+                    background: colors.bg,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: '0.5rem',
+                    padding: '1rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'start' }}>
+                    <div style={{ marginRight: '0.75rem' }}>
+                      <div style={{
+                        width: '2.5rem',
+                        height: '2.5rem',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: colors.icon
                       }}>
-                        {threat.severity} Threat Level
-                      </h3>
-                      <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>
-                        {formatTimestamp(threat.timestamp)}
-                      </span>
+                        <svg style={{ width: '1.5rem', height: '1.5rem', color: colors.text }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </div>
                     </div>
-                    <p style={{ color: '#d1d5db', fontSize: '0.875rem', margin: '0.25rem 0' }}>
-                      {threat.description || threat.type}
-                    </p>
-                    <div style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>
-                      <span style={{ color: '#9ca3af' }}>Source: </span>
-                      <span style={{ color: '#e5e7eb' }}>{threat.source}</span>
-                    </div>
-                    <div style={{ fontSize: '0.75rem' }}>
-                      <span style={{ color: '#9ca3af' }}>Confidence: </span>
-                      <span style={{ color: '#e5e7eb' }}>75%</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <h3 style={{ 
+                          color: colors.text, 
+                          fontSize: '1rem', 
+                          fontWeight: '600', 
+                          margin: 0,
+                          textTransform: 'capitalize'
+                        }}>
+                          {threat.severity} Threat Level
+                        </h3>
+                        <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>
+                          {formatTimestamp(threat.timestamp)}
+                        </span>
+                      </div>
+                      <p style={{ color: '#d1d5db', fontSize: '0.875rem', margin: '0.25rem 0' }}>
+                        {threat.description || threat.type}
+                      </p>
+                      <div style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>
+                        <span style={{ color: '#9ca3af' }}>Source: </span>
+                        <span style={{ color: '#e5e7eb' }}>{threat.source}</span>
+                      </div>
+                      <div style={{ fontSize: '0.75rem' }}>
+                        <span style={{ color: '#9ca3af' }}>Confidence: </span>
+                        <span style={{ color: '#e5e7eb' }}>75%</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div style={{ color: '#9ca3af' }}>No recent events.</div>

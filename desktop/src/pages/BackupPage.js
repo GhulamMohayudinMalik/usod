@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/api';
 
 const BackupPage = () => {
   const [backups, setBackups] = useState([]);
@@ -12,247 +13,242 @@ const BackupPage = () => {
   const [restoreScope, setRestoreScope] = useState('full');
   const [stats, setStats] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Mock data for demo
-        const mockBackups = [
-          {
-            id: 'backup_001',
-            name: 'Full System Backup',
-            type: 'full',
-            size: '2.4 GB',
-            createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-            status: 'completed',
-            description: 'Complete system backup including all data and configurations'
-          },
-          {
-            id: 'backup_002',
-            name: 'Database Backup',
-            type: 'database',
-            size: '856 MB',
-            createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-            status: 'completed',
-            description: 'Database backup with user data and logs'
-          },
-          {
-            id: 'backup_003',
-            name: 'Configuration Backup',
-            type: 'config',
-            size: '45 MB',
-            createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-            status: 'completed',
-            description: 'System configuration and settings backup'
-          },
-          {
-            id: 'backup_004',
-            name: 'Security Logs Backup',
-            type: 'logs',
-            size: '128 MB',
-            createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-            status: 'completed',
-            description: 'Security logs and audit trail backup'
-          }
-        ];
-
-        const mockStats = {
-          totalBackups: 4,
-          totalSize: '3.4 GB',
-          lastBackup: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          successRate: 100
-        };
-
-        setBackups(mockBackups);
-        setStats(mockStats);
-      } catch (err) {
-        setError('Failed to load backup data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const handleCreateBackup = async () => {
-    setLoading(true);
+  // Fetch backups
+  const fetchBackups = async () => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const newBackup = {
-        id: `backup_${Date.now()}`,
-        name: `${backupType.charAt(0).toUpperCase() + backupType.slice(1)} Backup`,
-        type: backupType,
-        size: '0 MB',
-        createdAt: new Date().toISOString(),
-        status: 'completed',
-        description: `New ${backupType} backup created successfully`
-      };
-      
-      setBackups([newBackup, ...backups]);
-      setStats(prev => ({
-        ...prev,
-        totalBackups: prev.totalBackups + 1,
-        lastBackup: new Date().toISOString()
-      }));
-      
-      setSuccessMessage('Backup created successfully!');
-      setShowCreateModal(false);
+      const result = await apiService.getBackups();
+      if (result.success) {
+        setBackups(result.data);
+        setError('');
+      } else {
+        setError(result.message || 'Failed to fetch backups');
+        setBackups([]);
+      }
     } catch (err) {
-      setError('Failed to create backup');
+      setError('Failed to load backups');
+      console.error('Error fetching backups:', err);
     } finally {
       setLoading(false);
     }
   };
 
+  // Fetch backup statistics
+  const fetchStats = async () => {
+    try {
+      const result = await apiService.getBackupStats();
+      if (result.success) {
+        setStats(result.data);
+      } else {
+        setStats(null);
+      }
+    } catch (err) {
+      console.error('Error fetching backup stats:', err);
+      setStats(null);
+    }
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([
+        fetchBackups(),
+        fetchStats()
+      ]);
+    };
+
+    loadData();
+  }, []);
+
+  // Clear messages after 5 seconds
+  useEffect(() => {
+    if (successMessage || error) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+        setError('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, error]);
+
+  // Create backup
+  const handleCreateBackup = async () => {
+    setLoading(true);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      const result = await apiService.createBackup(backupType, 'manual');
+      if (result.success) {
+        setSuccessMessage(`${backupType.charAt(0).toUpperCase() + backupType.slice(1)} backup created successfully!`);
+        setShowCreateModal(false);
+        fetchBackups();
+        fetchStats();
+      } else {
+        setError(result.message || 'Failed to create backup');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+      console.error('Error creating backup:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Restore backup
   const handleRestoreBackup = async () => {
     if (!selectedBackup) return;
     
     setLoading(true);
+    setError('');
+    setSuccessMessage('');
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      setSuccessMessage(`Backup "${selectedBackup.name}" restored successfully!`);
-      setShowRestoreModal(false);
-      setSelectedBackup(null);
+      const result = await apiService.restoreBackup(selectedBackup.name, restoreScope, 'manual_restore');
+      if (result.success) {
+        setSuccessMessage(`Backup restored successfully! ${result.data.restoredCount} records restored.`);
+        setShowRestoreModal(false);
+        setSelectedBackup(null);
+        fetchBackups();
+        fetchStats();
+      } else {
+        setError(result.message || 'Failed to restore backup');
+      }
     } catch (err) {
-      setError('Failed to restore backup');
+      setError('Network error. Please try again.');
+      console.error('Error restoring backup:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteBackup = async (backupId) => {
-    if (!window.confirm('Are you sure you want to delete this backup?')) return;
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setBackups(backups.filter(backup => backup.id !== backupId));
-      setStats(prev => ({
-        ...prev,
-        totalBackups: prev.totalBackups - 1
-      }));
-      
-      setSuccessMessage('Backup deleted successfully!');
-    } catch (err) {
-      setError('Failed to delete backup');
-    }
-  };
-
+  // Cleanup old backups
   const handleCleanup = async () => {
-    if (!window.confirm('This will delete backups older than 30 days. Continue?')) return;
-    
     setLoading(true);
+    setError('');
+    setSuccessMessage('');
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const filteredBackups = backups.filter(backup => 
-        new Date(backup.createdAt) > thirtyDaysAgo
-      );
-      
-      setBackups(filteredBackups);
-      setSuccessMessage('Old backups cleaned up successfully!');
+      const result = await apiService.cleanupBackups();
+      if (result.success) {
+        setSuccessMessage(`Cleanup completed! ${result.data.deletedCount} old backup files deleted.`);
+        fetchBackups();
+        fetchStats();
+      } else {
+        setError(result.message || 'Failed to cleanup backups');
+      }
     } catch (err) {
-      setError('Failed to cleanup old backups');
+      setError('Network error. Please try again.');
+      console.error('Error cleaning up backups:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatTimestamp = (timestamp) => {
-    return new Date(timestamp).toLocaleString();
+  // Open restore modal
+  const openRestoreModal = (backup) => {
+    setSelectedBackup(backup);
+    setShowRestoreModal(true);
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'completed': return '#10b981';
-      case 'failed': return '#ef4444';
-      case 'in_progress': return '#f59e0b';
-      default: return '#6b7280';
-    }
-  };
-
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case 'full': return '💾';
-      case 'database': return '🗄️';
-      case 'config': return '⚙️';
-      case 'logs': return '📋';
-      default: return '📦';
-    }
-  };
-
-  if (loading && !stats) {
+  if (loading && backups.length === 0) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <div style={{ color: 'white', fontSize: '1.2rem' }}>Loading backup data...</div>
+      <div style={{ 
+        minHeight: '100vh', 
+        background: 'linear-gradient(135deg, #1f2937 0%, #111827 50%, #000000 100%)',
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <div style={{ color: 'white', fontSize: '1.25rem' }}>Loading backup management...</div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '2rem', color: 'white' }}>
+    <div style={{ padding: '1.5rem', color: 'white' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <div>
           <h1 style={{ 
-            fontSize: '2rem', 
-            fontWeight: '600', 
-            marginBottom: '0.5rem',
-            background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
+            fontSize: '1.875rem', 
+            fontWeight: '700', 
+            color: 'white', 
+            marginBottom: '0.5rem' 
           }}>
             Backup Management
           </h1>
-          <p style={{ color: '#9ca3af', fontSize: '1rem' }}>
-            Create, restore, and manage system backups
+          <p style={{ 
+            color: '#9ca3af', 
+            marginTop: '0.5rem',
+            fontSize: '1rem'
+          }}>
+            {error && error.includes('permission') 
+              ? 'Access restricted to administrators only' 
+              : 'Create, restore, and manage system backups'
+            }
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button
-            onClick={handleCleanup}
-            disabled={loading}
-            style={{
-              padding: '0.75rem 1.5rem',
-              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.5rem',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s ease',
-              opacity: loading ? 0.5 : 1,
-              fontSize: '0.875rem',
-              fontWeight: '500'
-            }}
-          >
-            {loading ? 'Cleaning...' : 'Cleanup Old'}
-          </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            style={{
-              padding: '0.75rem 1.5rem',
-              background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.5rem',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              fontSize: '0.875rem',
-              fontWeight: '500'
-            }}
-          >
-            Create Backup
-          </button>
-        </div>
+        {!error && (
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button
+              onClick={() => {
+                fetchBackups();
+                fetchStats();
+              }}
+              style={{
+                padding: '0.5rem 1rem',
+                background: '#2563eb',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.5rem',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Refresh
+            </button>
+            <button
+              onClick={handleCleanup}
+              disabled={loading}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.5rem',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s ease',
+                opacity: loading ? 0.5 : 1,
+                transform: 'scale(1)',
+                boxShadow: '0 10px 25px -5px rgba(245, 158, 11, 0.25)'
+              }}
+            >
+              {loading ? 'Cleaning...' : 'Cleanup Old'}
+            </button>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.5rem',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                transform: 'scale(1)',
+                boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.25)'
+              }}
+            >
+              Create Backup
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Success/Error Messages */}
@@ -263,7 +259,7 @@ const BackupPage = () => {
           borderRadius: '0.5rem',
           padding: '1rem',
           color: '#10b981',
-          marginBottom: '2rem'
+          marginBottom: '1rem'
         }}>
           {successMessage}
         </div>
@@ -276,17 +272,17 @@ const BackupPage = () => {
           borderRadius: '0.5rem',
           padding: '1rem',
           color: '#ef4444',
-          marginBottom: '2rem'
+          marginBottom: '1rem'
         }}>
           {error}
         </div>
       )}
 
-      {/* Statistics Cards */}
-      {stats && (
+      {/* Statistics Cards - Only show if user has permission */}
+      {stats && !error && (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '1.5rem',
           marginBottom: '2rem'
         }}>
@@ -298,26 +294,19 @@ const BackupPage = () => {
             border: '1px solid rgba(75, 85, 99, 0.3)',
             boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                  Total Backups
-                </div>
-                <div style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
-                  {stats.totalBackups}
-                </div>
-              </div>
-              <div style={{
-                width: '3rem',
-                height: '3rem',
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.5rem'
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ 
+                padding: '0.75rem', 
+                background: 'rgba(59, 130, 246, 0.2)', 
+                borderRadius: '0.5rem' 
               }}>
-                💾
+                <svg style={{ width: '1.5rem', height: '1.5rem', color: '#3b82f6' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                </svg>
+              </div>
+              <div style={{ marginLeft: '1rem' }}>
+                <p style={{ fontSize: '0.875rem', fontWeight: '500', color: '#9ca3af', margin: 0 }}>Total Backups</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: '600', color: 'white', margin: 0 }}>{stats.totalBackups}</p>
               </div>
             </div>
           </div>
@@ -330,26 +319,19 @@ const BackupPage = () => {
             border: '1px solid rgba(75, 85, 99, 0.3)',
             boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                  Total Size
-                </div>
-                <div style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
-                  {stats.totalSize}
-                </div>
-              </div>
-              <div style={{
-                width: '3rem',
-                height: '3rem',
-                background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.5rem'
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ 
+                padding: '0.75rem', 
+                background: 'rgba(16, 185, 129, 0.2)', 
+                borderRadius: '0.5rem' 
               }}>
-                📊
+                <svg style={{ width: '1.5rem', height: '1.5rem', color: '#10b981' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div style={{ marginLeft: '1rem' }}>
+                <p style={{ fontSize: '0.875rem', fontWeight: '500', color: '#9ca3af', margin: 0 }}>Total Size</p>
+                <p style={{ fontSize: '1.5rem', fontWeight: '600', color: 'white', margin: 0 }}>{stats.totalSizeFormatted}</p>
               </div>
             </div>
           </div>
@@ -362,26 +344,21 @@ const BackupPage = () => {
             border: '1px solid rgba(75, 85, 99, 0.3)',
             boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                  Success Rate
-                </div>
-                <div style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
-                  {stats.successRate}%
-                </div>
-              </div>
-              <div style={{
-                width: '3rem',
-                height: '3rem',
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.5rem'
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ 
+                padding: '0.75rem', 
+                background: 'rgba(139, 92, 246, 0.2)', 
+                borderRadius: '0.5rem' 
               }}>
-                ✅
+                <svg style={{ width: '1.5rem', height: '1.5rem', color: '#8b5cf6' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div style={{ marginLeft: '1rem' }}>
+                <p style={{ fontSize: '0.875rem', fontWeight: '500', color: '#9ca3af', margin: 0 }}>Oldest Backup</p>
+                <p style={{ fontSize: '0.875rem', fontWeight: '600', color: 'white', margin: 0 }}>
+                  {stats.oldestBackup ? new Date(stats.oldestBackup.createdAt).toLocaleDateString() : 'N/A'}
+                </p>
               </div>
             </div>
           </div>
@@ -394,190 +371,259 @@ const BackupPage = () => {
             border: '1px solid rgba(75, 85, 99, 0.3)',
             boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                  Last Backup
-                </div>
-                <div style={{ color: 'white', fontSize: '0.875rem', fontWeight: '500' }}>
-                  {formatTimestamp(stats.lastBackup)}
-                </div>
-              </div>
-              <div style={{
-                width: '3rem',
-                height: '3rem',
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.5rem'
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ 
+                padding: '0.75rem', 
+                background: 'rgba(6, 182, 212, 0.2)', 
+                borderRadius: '0.5rem' 
               }}>
-                🕒
+                <svg style={{ width: '1.5rem', height: '1.5rem', color: '#06b6d4' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div style={{ marginLeft: '1rem' }}>
+                <p style={{ fontSize: '0.875rem', fontWeight: '500', color: '#9ca3af', margin: 0 }}>Newest Backup</p>
+                <p style={{ fontSize: '0.875rem', fontWeight: '600', color: 'white', margin: 0 }}>
+                  {stats.newestBackup ? new Date(stats.newestBackup.createdAt).toLocaleDateString() : 'N/A'}
+                </p>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Backups List */}
-      <div style={{
-        background: 'rgba(31, 41, 55, 0.8)',
-        backdropFilter: 'blur(12px)',
-        borderRadius: '1rem',
-        padding: '1.5rem',
-        border: '1px solid rgba(75, 85, 99, 0.3)',
-        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
-      }}>
-        <h2 style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>
-          Available Backups
-        </h2>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(55, 65, 81, 0.3)' }}>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Backup
-                </th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Type
-                </th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Size
-                </th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Created
-                </th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Status
-                </th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {backups.map((backup) => (
-                <tr key={backup.id} style={{ borderBottom: '1px solid rgba(55, 65, 81, 0.3)' }}>
-                  <td style={{ padding: '1rem' }}>
-                    <div>
-                      <div style={{ color: 'white', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.25rem' }}>
-                        {getTypeIcon(backup.type)} {backup.name}
-                      </div>
-                      <div style={{ color: '#9ca3af', fontSize: '0.75rem' }}>
-                        {backup.description}
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '1rem' }}>
-                    <span style={{
-                      padding: '0.25rem 0.75rem',
-                      borderRadius: '9999px',
-                      fontSize: '0.75rem',
-                      fontWeight: '500',
-                      background: 'rgba(59, 130, 246, 0.2)',
-                      color: '#3b82f6',
-                      border: '1px solid rgba(59, 130, 246, 0.3)'
+      {/* Backups Table - Only show if user has permission */}
+      {!error && (
+        <div style={{
+          background: 'rgba(31, 41, 55, 0.8)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: '1rem',
+          border: '1px solid rgba(75, 85, 99, 0.3)',
+          overflow: 'hidden'
+        }}>
+          <div style={{ 
+            padding: '1.5rem', 
+            borderBottom: '1px solid rgba(75, 85, 99, 0.3)' 
+          }}>
+            <h2 style={{ 
+              fontSize: '1.25rem', 
+              fontWeight: '600', 
+              color: 'white',
+              marginBottom: '0.25rem'
+            }}>
+              Available Backups
+            </h2>
+            <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
+              Total backups: {backups.length}
+            </p>
+          </div>
+          
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead style={{ background: 'rgba(55, 65, 81, 0.3)' }}>
+                <tr>
+                  <th style={{ 
+                    padding: '0.75rem 0.5rem', 
+                    textAlign: 'left', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '500', 
+                    color: '#d1d5db', 
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Name
+                  </th>
+                  <th style={{ 
+                    padding: '0.75rem 0.5rem', 
+                    textAlign: 'left', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '500', 
+                    color: '#d1d5db', 
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Type
+                  </th>
+                  <th style={{ 
+                    padding: '0.75rem 0.5rem', 
+                    textAlign: 'left', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '500', 
+                    color: '#d1d5db', 
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Size
+                  </th>
+                  <th style={{ 
+                    padding: '0.75rem 0.5rem', 
+                    textAlign: 'left', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '500', 
+                    color: '#d1d5db', 
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Records
+                  </th>
+                  <th style={{ 
+                    padding: '0.75rem 0.5rem', 
+                    textAlign: 'left', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '500', 
+                    color: '#d1d5db', 
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Created
+                  </th>
+                  <th style={{ 
+                    padding: '0.75rem 0.5rem', 
+                    textAlign: 'left', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '500', 
+                    color: '#d1d5db', 
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody style={{ borderTop: '1px solid rgba(55, 65, 81, 0.3)' }}>
+                {backups.map((backup, index) => (
+                  <tr key={index} style={{ 
+                    borderBottom: '1px solid rgba(55, 65, 81, 0.3)',
+                    transition: 'background-color 0.2s ease'
+                  }}>
+                    <td style={{ 
+                      padding: '0.75rem 0.5rem', 
+                      fontSize: '0.875rem', 
+                      color: 'white', 
+                      fontWeight: '500' 
                     }}>
-                      {backup.type}
-                    </span>
-                  </td>
-                  <td style={{ padding: '1rem', color: 'white', fontSize: '0.875rem', fontWeight: '500' }}>
-                    {backup.size}
-                  </td>
-                  <td style={{ padding: '1rem', color: '#9ca3af', fontSize: '0.875rem' }}>
-                    {formatTimestamp(backup.createdAt)}
-                  </td>
-                  <td style={{ padding: '1rem' }}>
-                    <span style={{
-                      padding: '0.25rem 0.75rem',
-                      borderRadius: '9999px',
-                      fontSize: '0.75rem',
-                      fontWeight: '500',
-                      background: `rgba(${getStatusColor(backup.status).replace('#', '')}, 0.2)`,
-                      color: getStatusColor(backup.status),
-                      border: `1px solid rgba(${getStatusColor(backup.status).replace('#', '')}, 0.3)`
+                      {backup.name}
+                    </td>
+                    <td style={{ padding: '0.75rem 0.5rem' }}>
+                      <span style={{
+                        display: 'inline-flex',
+                        padding: '0.25rem 0.5rem',
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        borderRadius: '9999px',
+                        ...(backup.type === 'full_system' 
+                          ? { 
+                              background: 'rgba(139, 92, 246, 0.2)', 
+                              color: '#a78bfa', 
+                              border: '1px solid rgba(139, 92, 246, 0.3)' 
+                            }
+                          : backup.type === 'security_logs'
+                          ? { 
+                              background: 'rgba(239, 68, 68, 0.2)', 
+                              color: '#fca5a5', 
+                              border: '1px solid rgba(239, 68, 68, 0.3)' 
+                            }
+                          : { 
+                              background: 'rgba(59, 130, 246, 0.2)', 
+                              color: '#60a5fa', 
+                              border: '1px solid rgba(59, 130, 246, 0.3)' 
+                            }
+                        )
+                      }}>
+                        {backup.type.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td style={{ 
+                      padding: '0.75rem 0.5rem', 
+                      fontSize: '0.875rem', 
+                      color: '#d1d5db' 
                     }}>
-                      {backup.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: '1rem' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      {backup.size}
+                    </td>
+                    <td style={{ 
+                      padding: '0.75rem 0.5rem', 
+                      fontSize: '0.875rem', 
+                      color: '#d1d5db' 
+                    }}>
+                      {backup.recordCount || 'N/A'}
+                    </td>
+                    <td style={{ 
+                      padding: '0.75rem 0.5rem', 
+                      fontSize: '0.875rem', 
+                      color: '#d1d5db' 
+                    }}>
+                      {new Date(backup.createdAt).toLocaleString()}
+                    </td>
+                    <td style={{ 
+                      padding: '0.75rem 0.5rem', 
+                      fontSize: '0.875rem', 
+                      color: '#d1d5db' 
+                    }}>
                       <button
-                        onClick={() => {
-                          setSelectedBackup(backup);
-                          setShowRestoreModal(true);
-                        }}
+                        onClick={() => openRestoreModal(backup)}
                         style={{
-                          padding: '0.5rem 1rem',
-                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          background: '#10b981',
                           color: 'white',
                           border: 'none',
-                          borderRadius: '0.375rem',
-                          cursor: 'pointer',
+                          borderRadius: '0.25rem',
+                          padding: '0.25rem 0.5rem',
                           fontSize: '0.75rem',
+                          fontWeight: '500',
+                          cursor: 'pointer',
                           transition: 'all 0.2s ease'
                         }}
+                        title="Restore Backup"
                       >
                         Restore
                       </button>
-                      <button
-                        onClick={() => handleDeleteBackup(backup.id)}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '0.375rem',
-                          cursor: 'pointer',
-                          fontSize: '0.75rem',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Create Backup Modal */}
-      {showCreateModal && (
+      {/* Create Backup Modal - Only show if user has permission */}
+      {showCreateModal && !error && (
         <div style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0, 0, 0, 0.8)',
+          background: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(4px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000
+          zIndex: 50
         }}>
           <div style={{
-            background: 'rgba(31, 41, 55, 0.95)',
+            background: 'rgba(31, 41, 55, 0.9)',
             backdropFilter: 'blur(12px)',
             borderRadius: '1rem',
-            padding: '2rem',
+            padding: '1.5rem',
             border: '1px solid rgba(75, 85, 99, 0.3)',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-            width: '90%',
-            maxWidth: '500px'
+            maxWidth: '28rem',
+            width: '100%',
+            margin: '1rem'
           }}>
-            <h3 style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>
+            <h3 style={{ 
+              fontSize: '1.25rem', 
+              fontWeight: '600', 
+              color: 'white', 
+              marginBottom: '1rem' 
+            }}>
               Create New Backup
             </h3>
-            <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: '1rem' }}>
               <label style={{
                 display: 'block',
                 fontSize: '0.875rem',
                 fontWeight: '500',
-                color: '#e5e7eb',
+                color: '#d1d5db',
                 marginBottom: '0.5rem'
               }}>
                 Backup Type
@@ -587,7 +633,7 @@ const BackupPage = () => {
                 onChange={(e) => setBackupType(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.75rem',
+                  padding: '0.75rem 1rem',
                   background: 'rgba(55, 65, 81, 0.5)',
                   border: '1px solid rgba(75, 85, 99, 0.5)',
                   borderRadius: '0.5rem',
@@ -596,20 +642,21 @@ const BackupPage = () => {
                 }}
               >
                 <option value="full">Full System Backup</option>
-                <option value="database">Database Backup</option>
-                <option value="config">Configuration Backup</option>
-                <option value="logs">Logs Backup</option>
+                <option value="security_logs">Security Logs Only</option>
+                <option value="users">Users Data Only</option>
               </select>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
               <button
                 onClick={() => setShowCreateModal(false)}
                 style={{
                   padding: '0.75rem 1.5rem',
-                  background: 'rgba(55, 65, 81, 0.5)',
-                  color: '#9ca3af',
-                  border: '1px solid rgba(75, 85, 99, 0.5)',
+                  background: '#4b5563',
+                  color: 'white',
+                  border: 'none',
                   borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
@@ -625,7 +672,9 @@ const BackupPage = () => {
                   color: 'white',
                   border: 'none',
                   borderRadius: '0.5rem',
-                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   opacity: loading ? 0.5 : 1
                 }}
@@ -637,47 +686,48 @@ const BackupPage = () => {
         </div>
       )}
 
-      {/* Restore Backup Modal */}
-      {showRestoreModal && selectedBackup && (
+      {/* Restore Backup Modal - Only show if user has permission */}
+      {showRestoreModal && selectedBackup && !error && (
         <div style={{
           position: 'fixed',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0, 0, 0, 0.8)',
+          background: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(4px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000
+          zIndex: 50
         }}>
           <div style={{
-            background: 'rgba(31, 41, 55, 0.95)',
+            background: 'rgba(31, 41, 55, 0.9)',
             backdropFilter: 'blur(12px)',
             borderRadius: '1rem',
-            padding: '2rem',
+            padding: '1.5rem',
             border: '1px solid rgba(75, 85, 99, 0.3)',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-            width: '90%',
-            maxWidth: '500px'
+            maxWidth: '28rem',
+            width: '100%',
+            margin: '1rem'
           }}>
-            <h3 style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>
+            <h3 style={{ 
+              fontSize: '1.25rem', 
+              fontWeight: '600', 
+              color: 'white', 
+              marginBottom: '1rem' 
+            }}>
               Restore Backup
             </h3>
+            <p style={{ color: '#d1d5db', marginBottom: '1rem' }}>
+              Restore backup: <strong>{selectedBackup.name}</strong>
+            </p>
             <div style={{ marginBottom: '1rem' }}>
-              <p style={{ color: '#9ca3af', marginBottom: '0.5rem' }}>
-                Selected Backup: <span style={{ color: 'white', fontWeight: '500' }}>{selectedBackup.name}</span>
-              </p>
-              <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
-                {selectedBackup.description}
-              </p>
-            </div>
-            <div style={{ marginBottom: '1.5rem' }}>
               <label style={{
                 display: 'block',
                 fontSize: '0.875rem',
                 fontWeight: '500',
-                color: '#e5e7eb',
+                color: '#d1d5db',
                 marginBottom: '0.5rem'
               }}>
                 Restore Scope
@@ -687,7 +737,7 @@ const BackupPage = () => {
                 onChange={(e) => setRestoreScope(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.75rem',
+                  padding: '0.75rem 1rem',
                   background: 'rgba(55, 65, 81, 0.5)',
                   border: '1px solid rgba(75, 85, 99, 0.5)',
                   borderRadius: '0.5rem',
@@ -696,11 +746,11 @@ const BackupPage = () => {
                 }}
               >
                 <option value="full">Full Restore</option>
-                <option value="data">Data Only</option>
-                <option value="config">Configuration Only</option>
+                <option value="security_logs">Security Logs Only</option>
+                <option value="users">Users Data Only</option>
               </select>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
               <button
                 onClick={() => {
                   setShowRestoreModal(false);
@@ -708,10 +758,12 @@ const BackupPage = () => {
                 }}
                 style={{
                   padding: '0.75rem 1.5rem',
-                  background: 'rgba(55, 65, 81, 0.5)',
-                  color: '#9ca3af',
-                  border: '1px solid rgba(75, 85, 99, 0.5)',
+                  background: '#4b5563',
+                  color: 'white',
+                  border: 'none',
                   borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
@@ -723,11 +775,13 @@ const BackupPage = () => {
                 disabled={loading}
                 style={{
                   padding: '0.75rem 1.5rem',
-                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  background: '#10b981',
                   color: 'white',
                   border: 'none',
                   borderRadius: '0.5rem',
-                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   opacity: loading ? 0.5 : 1
                 }}

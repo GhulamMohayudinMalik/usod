@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/api';
 
 const SettingsPage = () => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [activeTab, setActiveTab] = useState('profile');
   
   // Profile settings
@@ -12,41 +13,25 @@ const SettingsPage = () => {
     username: '',
     email: ''
   });
-  
-  // Security settings
-  const [securitySettings, setSecuritySettings] = useState({
-    sessionTimeout: 24,
-    loginAttempts: 5,
-    passwordExpiry: 90
-  });
-  
-  // Notification settings
-  const [notificationSettings, setNotificationSettings] = useState({
-    loginAlerts: true,
-    securityEvents: true,
-    systemErrors: true,
-    emailNotifications: true
-  });
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       setLoading(true);
-      setError(null);
+      setError('');
       
       try {
-        // Mock user data for demo
-        const mockUser = {
-          username: 'admin',
-          email: 'admin@usod.com',
-          role: 'Administrator',
-          lastLogin: new Date().toISOString()
-        };
-        
-        setProfile(mockUser);
-        setProfileForm({
-          username: mockUser.username,
-          email: mockUser.email
-        });
+        // Get user data from localStorage (set during login)
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          setProfile(user);
+          setProfileForm({
+            username: user.username,
+            email: user.email
+          });
+        } else {
+          throw new Error('No user data found');
+        }
       } catch (err) {
         console.error('Error fetching user profile:', err);
         setError('Failed to load user profile');
@@ -58,426 +43,367 @@ const SettingsPage = () => {
     fetchUserProfile();
   }, []);
 
+  // Clear messages after 5 seconds
+  useEffect(() => {
+    if (successMessage || error) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+        setError('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, error]);
+
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-    setSuccessMessage(null);
+    setError('');
+    setSuccessMessage('');
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setProfile(prev => ({
-        ...prev,
-        username: profileForm.username,
-        email: profileForm.email
-      }));
-      
-      setSuccessMessage('Profile updated successfully!');
+      const result = await apiService.updateProfile(profileForm);
+      if (result.success) {
+        setSuccessMessage('Profile updated successfully!');
+        // Update localStorage with new user data
+        const updatedUser = { ...profile, ...result.data };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setProfile(updatedUser);
+      } else {
+        setError(result.message || 'Failed to update profile');
+      }
     } catch (err) {
-      setError('Failed to update profile');
+      console.error('Error updating profile:', err);
+      setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSecuritySettingsUpdate = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccessMessage(null);
-
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSuccessMessage('Security settings updated successfully!');
-    } catch (err) {
-      setError('Failed to update security settings');
-    } finally {
-      setLoading(false);
-    }
+  const handleSecuritySettingsUpdate = async () => {
+    // Removed - these settings are not actually enforced by the backend
+    setSuccessMessage('Security settings functionality removed - these settings were not actually enforced by the backend.');
   };
 
-  const handleNotificationSettingsUpdate = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccessMessage(null);
-
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSuccessMessage('Notification settings updated successfully!');
-    } catch (err) {
-      setError('Failed to update notification settings');
-    } finally {
-      setLoading(false);
-    }
+  const handleNotificationSettingsUpdate = async () => {
+    // Removed - these settings are not actually enforced by the backend
+    setSuccessMessage('Notification settings functionality removed - these settings were not actually enforced by the backend.');
   };
 
   if (loading && !profile) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <div style={{ color: 'white', fontSize: '1.2rem' }}>Loading settings...</div>
+      <div style={{ 
+        minHeight: '100vh', 
+        background: 'linear-gradient(135deg, #1f2937 0%, #111827 50%, #000000 100%)',
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <div style={{ color: 'white', fontSize: '1.25rem' }}>Loading settings...</div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '2rem', color: 'white' }}>
-      {/* Header */}
-      <div>
-        <h1 style={{ 
-          fontSize: '2rem', 
-          fontWeight: '600', 
-          marginBottom: '0.5rem',
-          background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text'
-        }}>
-          Settings
-        </h1>
-        <p style={{ color: '#9ca3af', fontSize: '1rem', marginBottom: '2rem' }}>
-          Manage your account settings and preferences
-        </p>
-      </div>
+    <div style={{ padding: '1.5rem', color: 'white' }}>
+      <div style={{ maxWidth: '72rem', margin: '0 auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Header */}
+          <div>
+            <h1 style={{ 
+              fontSize: '1.875rem', 
+              fontWeight: '700', 
+              color: 'white', 
+              marginBottom: '0.5rem' 
+            }}>
+              Settings
+            </h1>
+            <p style={{ 
+              color: '#9ca3af', 
+              marginTop: '0.5rem',
+              fontSize: '1rem'
+            }}>
+              Manage your account settings and preferences
+            </p>
+          </div>
 
-      {/* Success/Error Messages */}
-      {successMessage && (
-        <div style={{
-          background: 'rgba(16, 185, 129, 0.2)',
-          border: '1px solid rgba(16, 185, 129, 0.5)',
-          borderRadius: '0.5rem',
-          padding: '1rem',
-          color: '#10b981',
-          marginBottom: '2rem'
-        }}>
-          {successMessage}
-        </div>
-      )}
-      
-      {error && (
-        <div style={{
-          background: 'rgba(239, 68, 68, 0.2)',
-          border: '1px solid rgba(239, 68, 68, 0.5)',
-          borderRadius: '0.5rem',
-          padding: '1rem',
-          color: '#ef4444',
-          marginBottom: '2rem'
-        }}>
-          {error}
-        </div>
-      )}
-
-      {/* Tab Navigation */}
-      <div style={{
-        background: 'rgba(31, 41, 55, 0.8)',
-        backdropFilter: 'blur(12px)',
-        borderRadius: '1rem',
-        border: '1px solid rgba(75, 85, 99, 0.3)',
-        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)'
-      }}>
-        <div style={{ display: 'flex', borderBottom: '1px solid rgba(75, 85, 99, 0.3)' }}>
-          {[
-            { id: 'profile', label: 'Profile' },
-            { id: 'security', label: 'Security' },
-            { id: 'notifications', label: 'Notifications' }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                padding: '1rem 2rem',
-                background: activeTab === tab.id ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
-                border: 'none',
-                color: activeTab === tab.id ? '#10b981' : '#9ca3af',
-                fontWeight: activeTab === tab.id ? '600' : '400',
-                cursor: 'pointer',
-                borderBottom: activeTab === tab.id ? '2px solid #10b981' : '2px solid transparent',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ padding: '2rem' }}>
-          {/* Profile Tab */}
-          {activeTab === 'profile' && (
-            <div>
-              <h2 style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem' }}>
-                Profile Settings
-              </h2>
-              <form onSubmit={handleProfileUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      color: '#e5e7eb',
-                      marginBottom: '0.5rem'
-                    }}>
-                      Username
-                    </label>
-                    <input
-                      type="text"
-                      value={profileForm.username}
-                      onChange={(e) => setProfileForm({...profileForm, username: e.target.value})}
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        background: 'rgba(55, 65, 81, 0.5)',
-                        border: '1px solid rgba(75, 85, 99, 0.5)',
-                        borderRadius: '0.5rem',
-                        color: 'white',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      color: '#e5e7eb',
-                      marginBottom: '0.5rem'
-                    }}>
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={profileForm.email}
-                      onChange={(e) => setProfileForm({...profileForm, email: e.target.value})}
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        background: 'rgba(55, 65, 81, 0.5)',
-                        border: '1px solid rgba(75, 85, 99, 0.5)',
-                        borderRadius: '0.5rem',
-                        color: 'white',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '0.5rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      opacity: loading ? 0.5 : 1
-                    }}
-                  >
-                    {loading ? 'Updating...' : 'Update Profile'}
-                  </button>
-                </div>
-              </form>
+          {/* Success/Error Messages */}
+          {successMessage && (
+            <div style={{
+              background: 'rgba(16, 185, 129, 0.2)',
+              border: '1px solid rgba(16, 185, 129, 0.5)',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              color: '#6ee7b7'
+            }}>
+              {successMessage}
+            </div>
+          )}
+          
+          {error && (
+            <div style={{
+              background: 'rgba(239, 68, 68, 0.2)',
+              border: '1px solid rgba(239, 68, 68, 0.5)',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              color: '#fca5a5'
+            }}>
+              {error}
             </div>
           )}
 
-          {/* Security Tab */}
-          {activeTab === 'security' && (
-            <div>
-              <h2 style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem' }}>
-                Security Settings
-              </h2>
-              <form onSubmit={handleSecuritySettingsUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      color: '#e5e7eb',
-                      marginBottom: '0.5rem'
-                    }}>
-                      Session Timeout (hours)
-                    </label>
-                    <input
-                      type="number"
-                      value={securitySettings.sessionTimeout}
-                      onChange={(e) => setSecuritySettings({...securitySettings, sessionTimeout: parseInt(e.target.value)})}
-                      min="1"
-                      max="168"
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        background: 'rgba(55, 65, 81, 0.5)',
-                        border: '1px solid rgba(75, 85, 99, 0.5)',
-                        borderRadius: '0.5rem',
-                        color: 'white',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      color: '#e5e7eb',
-                      marginBottom: '0.5rem'
-                    }}>
-                      Max Login Attempts
-                    </label>
-                    <input
-                      type="number"
-                      value={securitySettings.loginAttempts}
-                      onChange={(e) => setSecuritySettings({...securitySettings, loginAttempts: parseInt(e.target.value)})}
-                      min="3"
-                      max="10"
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        background: 'rgba(55, 65, 81, 0.5)',
-                        border: '1px solid rgba(75, 85, 99, 0.5)',
-                        borderRadius: '0.5rem',
-                        color: 'white',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: '500',
-                      color: '#e5e7eb',
-                      marginBottom: '0.5rem'
-                    }}>
-                      Password Expiry (days)
-                    </label>
-                    <input
-                      type="number"
-                      value={securitySettings.passwordExpiry}
-                      onChange={(e) => setSecuritySettings({...securitySettings, passwordExpiry: parseInt(e.target.value)})}
-                      min="30"
-                      max="365"
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        background: 'rgba(55, 65, 81, 0.5)',
-                        border: '1px solid rgba(75, 85, 99, 0.5)',
-                        borderRadius: '0.5rem',
-                        color: 'white',
-                        fontSize: '0.875rem'
-                      }}
-                    />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '0.5rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      opacity: loading ? 0.5 : 1
-                    }}
-                  >
-                    {loading ? 'Updating...' : 'Update Security Settings'}
-                  </button>
-                </div>
-              </form>
+          {/* Tab Navigation */}
+          <div style={{
+            background: 'rgba(31, 41, 55, 0.8)',
+            backdropFilter: 'blur(12px)',
+            borderRadius: '1rem',
+            border: '1px solid rgba(75, 85, 99, 0.3)'
+          }}>
+            <div style={{ display: 'flex', borderBottom: '1px solid rgba(75, 85, 99, 0.3)' }}>
+              {[
+                { id: 'profile', name: 'Profile', icon: '👤' },
+                { id: 'security', name: 'Security', icon: '🔒' },
+                { id: 'notifications', name: 'Notifications', icon: '🔔' },
+                { id: 'system', name: 'System', icon: '⚙️' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    padding: '1rem 1.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    transition: 'all 0.2s ease',
+                    background: activeTab === tab.id ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
+                    color: activeTab === tab.id ? '#6ee7b7' : '#9ca3af',
+                    borderBottom: activeTab === tab.id ? '2px solid #10b981' : '2px solid transparent',
+                    cursor: 'pointer',
+                    border: 'none'
+                  }}
+                >
+                  <span style={{ marginRight: '0.5rem' }}>{tab.icon}</span>
+                  {tab.name}
+                </button>
+              ))}
             </div>
-          )}
 
-          {/* Notifications Tab */}
-          {activeTab === 'notifications' && (
-            <div>
-              <h2 style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem' }}>
-                Notification Settings
-              </h2>
-              <form onSubmit={handleNotificationSettingsUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {[
-                    { key: 'loginAlerts', label: 'Login Alerts', description: 'Notify when users log in' },
-                    { key: 'securityEvents', label: 'Security Events', description: 'Notify about security incidents' },
-                    { key: 'systemErrors', label: 'System Errors', description: 'Notify about system errors' },
-                    { key: 'emailNotifications', label: 'Email Notifications', description: 'Send email notifications' }
-                  ].map((setting) => (
-                    <div key={setting.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(55, 65, 81, 0.3)', borderRadius: '0.5rem' }}>
-                      <div>
-                        <div style={{ color: 'white', fontWeight: '500', marginBottom: '0.25rem' }}>
-                          {setting.label}
+            <div style={{ padding: '1.5rem' }}>
+              {/* Profile Tab */}
+              {activeTab === 'profile' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div>
+                    <h2 style={{ 
+                      fontSize: '1.25rem', 
+                      fontWeight: '600', 
+                      color: 'white', 
+                      marginBottom: '1rem' 
+                    }}>
+                      Profile Information
+                    </h2>
+                    <form onSubmit={handleProfileUpdate} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                        gap: '1rem'
+                      }}>
+                        <div>
+                          <label style={{
+                            display: 'block',
+                            fontSize: '0.875rem',
+                            fontWeight: '500',
+                            color: '#d1d5db',
+                            marginBottom: '0.5rem'
+                          }}>
+                            Username
+                          </label>
+                          <input
+                            type="text"
+                            value={profileForm.username}
+                            onChange={(e) => setProfileForm({...profileForm, username: e.target.value})}
+                            style={{
+                              width: '100%',
+                              padding: '0.75rem 1rem',
+                              background: 'rgba(55, 65, 81, 0.5)',
+                              border: '1px solid rgba(75, 85, 99, 0.5)',
+                              borderRadius: '0.5rem',
+                              color: 'white',
+                              fontSize: '0.875rem',
+                              transition: 'all 0.2s ease'
+                            }}
+                            placeholder="Enter username"
+                          />
                         </div>
-                        <div style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
-                          {setting.description}
+                        <div>
+                          <label style={{
+                            display: 'block',
+                            fontSize: '0.875rem',
+                            fontWeight: '500',
+                            color: '#d1d5db',
+                            marginBottom: '0.5rem'
+                          }}>
+                            Email
+                          </label>
+                          <input
+                            type="email"
+                            value={profileForm.email}
+                            onChange={(e) => setProfileForm({...profileForm, email: e.target.value})}
+                            style={{
+                              width: '100%',
+                              padding: '0.75rem 1rem',
+                              background: 'rgba(55, 65, 81, 0.5)',
+                              border: '1px solid rgba(75, 85, 99, 0.5)',
+                              borderRadius: '0.5rem',
+                              color: 'white',
+                              fontSize: '0.875rem',
+                              transition: 'all 0.2s ease'
+                            }}
+                            placeholder="Enter email"
+                          />
                         </div>
                       </div>
-                      <label style={{ position: 'relative', display: 'inline-block', width: '3rem', height: '1.5rem' }}>
-                        <input
-                          type="checkbox"
-                          checked={notificationSettings[setting.key]}
-                          onChange={(e) => setNotificationSettings({...notificationSettings, [setting.key]: e.target.checked})}
-                          style={{ opacity: 0, width: 0, height: 0 }}
-                        />
-                        <span style={{
-                          position: 'absolute',
-                          cursor: 'pointer',
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          background: notificationSettings[setting.key] ? '#10b981' : '#6b7280',
-                          borderRadius: '1.5rem',
-                          transition: '0.3s'
-                        }}>
-                          <span style={{
-                            position: 'absolute',
-                            content: '""',
-                            height: '1.25rem',
-                            width: '1.25rem',
-                            left: notificationSettings[setting.key] ? '1.5rem' : '0.25rem',
-                            bottom: '0.125rem',
-                            background: 'white',
-                            borderRadius: '50%',
-                            transition: '0.3s'
-                          }}></span>
-                        </span>
-                      </label>
-                    </div>
-                  ))}
+                      
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '1rem', 
+                        fontSize: '0.875rem', 
+                        color: '#9ca3af' 
+                      }}>
+                        <div>
+                          <span style={{ fontWeight: '500' }}>Role:</span> {profile?.role}
+                        </div>
+                        <div>
+                          <span style={{ fontWeight: '500' }}>User ID:</span> {profile?.id}
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        style={{
+                          background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
+                          color: 'white',
+                          padding: '0.75rem 1.5rem',
+                          borderRadius: '0.5rem',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          cursor: loading ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s ease',
+                          opacity: loading ? 0.5 : 1,
+                          border: 'none',
+                          alignSelf: 'flex-start'
+                        }}
+                      >
+                        {loading ? 'Updating...' : 'Update Profile'}
+                      </button>
+                    </form>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
-                      color: 'white',
-                      border: 'none',
+              )}
+
+              {/* Security Tab - Removed non-functional settings */}
+              {activeTab === 'security' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div>
+                    <h2 style={{ 
+                      fontSize: '1.25rem', 
+                      fontWeight: '600', 
+                      color: 'white', 
+                      marginBottom: '1rem' 
+                    }}>
+                      Security Settings
+                    </h2>
+                    <div style={{
+                      background: 'rgba(245, 158, 11, 0.2)',
+                      border: '1px solid rgba(245, 158, 11, 0.5)',
                       borderRadius: '0.5rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      opacity: loading ? 0.5 : 1
-                    }}
-                  >
-                    {loading ? 'Updating...' : 'Update Notification Settings'}
-                  </button>
+                      padding: '1rem',
+                      color: '#fbbf24'
+                    }}>
+                      <p style={{ fontSize: '0.875rem' }}>
+                        Security settings have been removed as they were not actually enforced by the backend. 
+                        These settings only logged changes but did not affect actual system behavior.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </form>
+              )}
+
+              {/* Notifications Tab - Removed non-functional settings */}
+              {activeTab === 'notifications' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div>
+                    <h2 style={{ 
+                      fontSize: '1.25rem', 
+                      fontWeight: '600', 
+                      color: 'white', 
+                      marginBottom: '1rem' 
+                    }}>
+                      Notification Preferences
+                    </h2>
+                    <div style={{
+                      background: 'rgba(245, 158, 11, 0.2)',
+                      border: '1px solid rgba(245, 158, 11, 0.5)',
+                      borderRadius: '0.5rem',
+                      padding: '1rem',
+                      color: '#fbbf24'
+                    }}>
+                      <p style={{ fontSize: '0.875rem' }}>
+                        Notification settings have been removed as they were not actually enforced by the backend. 
+                        These settings only logged changes but did not affect actual system behavior.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* System Tab */}
+              {activeTab === 'system' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div>
+                    <h2 style={{ 
+                      fontSize: '1.25rem', 
+                      fontWeight: '600', 
+                      color: 'white', 
+                      marginBottom: '1rem' 
+                    }}>
+                      System Information
+                    </h2>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                      gap: '1.5rem'
+                    }}>
+                      <div style={{
+                        background: 'rgba(55, 65, 81, 0.3)',
+                        borderRadius: '0.5rem',
+                        padding: '1rem'
+                      }}>
+                        <h3 style={{ color: 'white', fontWeight: '500', marginBottom: '0.75rem' }}>Application Info</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem', color: '#d1d5db' }}>
+                          <div><span style={{ fontWeight: '500' }}>Version:</span> 1.0.0</div>
+                          <div><span style={{ fontWeight: '500' }}>Environment:</span> Development</div>
+                          <div><span style={{ fontWeight: '500' }}>Last Updated:</span> {new Date().toLocaleDateString()}</div>
+                        </div>
+                      </div>
+                      
+                      <div style={{
+                        background: 'rgba(55, 65, 81, 0.3)',
+                        borderRadius: '0.5rem',
+                        padding: '1rem'
+                      }}>
+                        <h3 style={{ color: 'white', fontWeight: '500', marginBottom: '0.75rem' }}>User Statistics</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem', color: '#d1d5db' }}>
+                          <div><span style={{ fontWeight: '500' }}>Account Created:</span> {new Date().toLocaleDateString()}</div>
+                          <div><span style={{ fontWeight: '500' }}>Last Login:</span> {new Date().toLocaleDateString()}</div>
+                          <div><span style={{ fontWeight: '500' }}>Total Logins:</span> 1</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

@@ -1,136 +1,82 @@
 import React, { useState, useEffect } from 'react';
+import apiService from '../services/api';
 
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createForm, setCreateForm] = useState({
     username: '',
     email: '',
     password: '',
-    role: 'Security Analyst'
+    role: 'user'
   });
   const [selectedUser, setSelectedUser] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [newRole, setNewRole] = useState('');
   const [deleteReason, setDeleteReason] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
-  const [error, setError] = useState('');
+
+  // Fetch users
+  const fetchUsers = async () => {
+    try {
+      const result = await apiService.getUsers();
+      if (result.success) {
+        setUsers(result.data);
+        setError('');
+      } else {
+        setError(result.message || 'Failed to fetch users');
+        setUsers([]);
+      }
+    } catch (err) {
+      setError('Failed to load users');
+      console.error('Error fetching users:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setUsers([
-        {
-          id: 1,
-          username: 'admin',
-          email: 'admin@usod.com',
-          role: 'Administrator',
-          status: 'Active',
-          lastLogin: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          loginCount: 156
-        },
-        {
-          id: 2,
-          username: 'GhulamMohayudin',
-          email: 'ghulam@usod.com',
-          role: 'Security Admin',
-          status: 'Active',
-          lastLogin: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          loginCount: 89
-        },
-        {
-          id: 3,
-          username: 'Ali',
-          email: 'ali@usod.com',
-          role: 'Security Analyst',
-          status: 'Active',
-          lastLogin: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-          loginCount: 45
-        },
-        {
-          id: 4,
-          username: 'Zuhaib',
-          email: 'zuhaib@usod.com',
-          role: 'Security Analyst',
-          status: 'Active',
-          lastLogin: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-          loginCount: 67
-        },
-        {
-          id: 5,
-          username: 'AliSami',
-          email: 'alisami@usod.com',
-          role: 'Security Analyst',
-          status: 'Inactive',
-          lastLogin: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          loginCount: 23
-        },
-        {
-          id: 6,
-          username: 'ZuhaibIqbal',
-          email: 'zuhaibiqbal@usod.com',
-          role: 'Security Analyst',
-          status: 'Active',
-          lastLogin: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-          loginCount: 34
-        }
-      ]);
-      setLoading(false);
-    }, 1000);
+    fetchUsers();
   }, []);
 
-  const getRoleColor = (role) => {
-    switch (role) {
-      case 'Administrator': return '#dc2626';
-      case 'Security Admin': return '#f59e0b';
-      case 'Security Analyst': return '#06b6d4';
-      default: return '#6b7280';
+  // Clear messages after 5 seconds
+  useEffect(() => {
+    if (successMessage || error) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+        setError('');
+      }, 5000);
+      return () => clearTimeout(timer);
     }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Active': return '#10b981';
-      case 'Inactive': return '#6b7280';
-      case 'Suspended': return '#ef4444';
-      default: return '#6b7280';
-    }
-  };
+  }, [successMessage, error]);
 
   const formatTimestamp = (timestamp) => {
-    return new Date(timestamp).toLocaleString();
-  };
-
-  const getUserInitials = (username) => {
-    return username.charAt(0).toUpperCase();
+    if (!timestamp) return 'Never';
+    return new Date(timestamp).toLocaleDateString();
   };
 
   // Create user
-  const handleCreateUser = (e) => {
+  const handleCreateUser = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     setSuccessMessage('');
 
     try {
-      const newUser = {
-        id: users.length + 1,
-        username: createForm.username,
-        email: createForm.email,
-        role: createForm.role,
-        status: 'Active',
-        lastLogin: new Date().toISOString(),
-        loginCount: 0
-      };
-
-      setUsers([newUser, ...users]);
-      setCreateForm({ username: '', email: '', password: '', role: 'Security Analyst' });
-      setShowCreateForm(false);
-      setSuccessMessage('User created successfully!');
+      const result = await apiService.createUser(createForm);
+      if (result.success) {
+        setUsers([result.data, ...users]);
+        setCreateForm({ username: '', email: '', password: '', role: 'user' });
+        setShowCreateForm(false);
+        setSuccessMessage('User created successfully!');
+      } else {
+        setError(result.message || 'Failed to create user');
+      }
     } catch (err) {
-      setError('Failed to create user');
+      setError('Network error. Please try again.');
       console.error('Error creating user:', err);
     } finally {
       setLoading(false);
@@ -138,7 +84,7 @@ const UsersPage = () => {
   };
 
   // Delete user
-  const handleDeleteUser = () => {
+  const handleDeleteUser = async () => {
     if (!selectedUser) return;
     
     setLoading(true);
@@ -146,13 +92,19 @@ const UsersPage = () => {
     setSuccessMessage('');
 
     try {
-      setUsers(users.filter(user => user.id !== selectedUser.id));
-      setShowDeleteModal(false);
-      setSelectedUser(null);
-      setDeleteReason('');
-      setSuccessMessage('User deleted successfully!');
+      const userId = selectedUser._id || selectedUser.id;
+      const result = await apiService.deleteUser(userId, deleteReason || 'manual_deletion');
+      if (result.success) {
+        setUsers(users.filter(user => (user._id || user.id) !== userId));
+        setShowDeleteModal(false);
+        setSelectedUser(null);
+        setDeleteReason('');
+        setSuccessMessage('User deleted successfully!');
+      } else {
+        setError(result.message || 'Failed to delete user');
+      }
     } catch (err) {
-      setError('Failed to delete user');
+      setError('Network error. Please try again.');
       console.error('Error deleting user:', err);
     } finally {
       setLoading(false);
@@ -160,7 +112,7 @@ const UsersPage = () => {
   };
 
   // Change user role
-  const handleChangeRole = () => {
+  const handleChangeRole = async () => {
     if (!selectedUser || !newRole) return;
     
     setLoading(true);
@@ -168,17 +120,23 @@ const UsersPage = () => {
     setSuccessMessage('');
 
     try {
-      setUsers(users.map(user => 
-        user.id === selectedUser.id
-          ? { ...user, role: newRole }
-          : user
-      ));
-      setShowRoleModal(false);
-      setSelectedUser(null);
-      setNewRole('');
-      setSuccessMessage(`User role changed to ${newRole} successfully!`);
+      const userId = selectedUser._id || selectedUser.id;
+      const result = await apiService.changeUserRole(userId, newRole, 'manual_change');
+      if (result.success) {
+        setUsers(users.map(user => 
+          (user._id || user.id) === userId
+            ? { ...user, role: newRole }
+            : user
+        ));
+        setShowRoleModal(false);
+        setSelectedUser(null);
+        setNewRole('');
+        setSuccessMessage(`User role changed to ${newRole} successfully!`);
+      } else {
+        setError(result.message || 'Failed to change user role');
+      }
     } catch (err) {
-      setError('Failed to change user role');
+      setError('Network error. Please try again.');
       console.error('Error changing user role:', err);
     } finally {
       setLoading(false);
@@ -198,113 +156,100 @@ const UsersPage = () => {
     setShowRoleModal(true);
   };
 
-  if (loading) {
+  if (loading && users.length === 0) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <div className="loading-spinner"></div>
+      <div style={{ 
+        minHeight: '100vh', 
+        background: 'linear-gradient(135deg, #1f2937 0%, #111827 50%, #000000 100%)',
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <div style={{ color: 'white', fontSize: '1.25rem' }}>Loading users...</div>
       </div>
     );
   }
 
   return (
-    <div>
-      {/* Page Header */}
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ color: 'white', fontSize: '2rem', fontWeight: '600', marginBottom: '0.5rem' }}>
-          User Management
-        </h1>
-        <p style={{ color: '#9ca3af', fontSize: '1rem' }}>
-          Manage users, roles, and permissions
-        </p>
+    <div style={{ padding: '1.5rem', color: 'white' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div>
+          <h1 style={{ 
+            fontSize: '1.875rem', 
+            fontWeight: '700', 
+            color: 'white', 
+            marginBottom: '0.5rem' 
+          }}>
+            User Management
+          </h1>
+          <p style={{ 
+            color: '#9ca3af', 
+            marginTop: '0.5rem',
+            fontSize: '1rem'
+          }}>
+            {error && error.includes('permission') 
+              ? 'Access restricted to administrators only' 
+              : 'Manage system users and their permissions'
+            }
+          </p>
+        </div>
+        {!error && (
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button
+              onClick={fetchUsers}
+              style={{
+                padding: '0.5rem 1rem',
+                background: '#2563eb',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.5rem',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Refresh
+            </button>
+            <button
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '0.5rem',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                transform: 'scale(1)',
+                boxShadow: '0 10px 25px -5px rgba(16, 185, 129, 0.25)'
+              }}
+            >
+              {showCreateForm ? 'Cancel' : 'Create User'}
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* User Summary Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '1.5rem',
-        marginBottom: '2rem'
-      }}>
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Total Users
-              </div>
-              <div style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
-                {users.length}
-              </div>
-            </div>
-            <div style={{
-              width: '3rem',
-              height: '3rem',
-              background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.5rem'
-            }}>
-              👥
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Active Users
-              </div>
-              <div style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
-                {users.filter(u => u.status === 'Active').length}
-              </div>
-            </div>
-            <div style={{
-              width: '3rem',
-              height: '3rem',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.5rem'
-            }}>
-              ✅
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-                Administrators
-              </div>
-              <div style={{ color: 'white', fontSize: '2rem', fontWeight: '600' }}>
-                {users.filter(u => u.role === 'Administrator' || u.role === 'Security Admin').length}
-              </div>
-            </div>
-            <div style={{
-              width: '3rem',
-              height: '3rem',
-              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.5rem'
-            }}>
-              👑
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Create User Form */}
-      {showCreateForm && (
-        <div className="card" style={{ marginBottom: '2rem' }}>
-          <h2 style={{ color: 'white', fontSize: '1.5rem', fontWeight: '600', marginBottom: '1rem' }}>
+      {/* Create User Form - Only show if user has permission */}
+      {showCreateForm && !error && (
+        <div style={{
+          background: 'rgba(31, 41, 55, 0.8)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: '1rem',
+          padding: '1.5rem',
+          border: '1px solid rgba(75, 85, 99, 0.3)',
+          marginBottom: '1.5rem'
+        }}>
+          <h2 style={{ 
+            fontSize: '1.25rem', 
+            fontWeight: '600', 
+            color: 'white', 
+            marginBottom: '1rem' 
+          }}>
             Create New User
           </h2>
           <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -318,7 +263,7 @@ const UsersPage = () => {
                   display: 'block',
                   fontSize: '0.875rem',
                   fontWeight: '500',
-                  color: '#e5e7eb',
+                  color: '#d1d5db',
                   marginBottom: '0.5rem'
                 }}>
                   Username
@@ -330,7 +275,7 @@ const UsersPage = () => {
                   required
                   style={{
                     width: '100%',
-                    padding: '0.75rem',
+                    padding: '0.75rem 1rem',
                     background: 'rgba(55, 65, 81, 0.5)',
                     border: '1px solid rgba(75, 85, 99, 0.5)',
                     borderRadius: '0.5rem',
@@ -345,7 +290,7 @@ const UsersPage = () => {
                   display: 'block',
                   fontSize: '0.875rem',
                   fontWeight: '500',
-                  color: '#e5e7eb',
+                  color: '#d1d5db',
                   marginBottom: '0.5rem'
                 }}>
                   Email
@@ -357,7 +302,7 @@ const UsersPage = () => {
                   required
                   style={{
                     width: '100%',
-                    padding: '0.75rem',
+                    padding: '0.75rem 1rem',
                     background: 'rgba(55, 65, 81, 0.5)',
                     border: '1px solid rgba(75, 85, 99, 0.5)',
                     borderRadius: '0.5rem',
@@ -372,7 +317,7 @@ const UsersPage = () => {
                   display: 'block',
                   fontSize: '0.875rem',
                   fontWeight: '500',
-                  color: '#e5e7eb',
+                  color: '#d1d5db',
                   marginBottom: '0.5rem'
                 }}>
                   Password
@@ -384,7 +329,7 @@ const UsersPage = () => {
                   required
                   style={{
                     width: '100%',
-                    padding: '0.75rem',
+                    padding: '0.75rem 1rem',
                     background: 'rgba(55, 65, 81, 0.5)',
                     border: '1px solid rgba(75, 85, 99, 0.5)',
                     borderRadius: '0.5rem',
@@ -399,7 +344,7 @@ const UsersPage = () => {
                   display: 'block',
                   fontSize: '0.875rem',
                   fontWeight: '500',
-                  color: '#e5e7eb',
+                  color: '#d1d5db',
                   marginBottom: '0.5rem'
                 }}>
                   Role
@@ -409,7 +354,7 @@ const UsersPage = () => {
                   onChange={(e) => setCreateForm({...createForm, role: e.target.value})}
                   style={{
                     width: '100%',
-                    padding: '0.75rem',
+                    padding: '0.75rem 1rem',
                     background: 'rgba(55, 65, 81, 0.5)',
                     border: '1px solid rgba(75, 85, 99, 0.5)',
                     borderRadius: '0.5rem',
@@ -417,9 +362,8 @@ const UsersPage = () => {
                     fontSize: '0.875rem'
                   }}
                 >
-                  <option value="Security Analyst">Security Analyst</option>
-                  <option value="Security Admin">Security Admin</option>
-                  <option value="Administrator">Administrator</option>
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
                 </select>
               </div>
             </div>
@@ -429,10 +373,12 @@ const UsersPage = () => {
                 onClick={() => setShowCreateForm(false)}
                 style={{
                   padding: '0.75rem 1.5rem',
-                  background: 'rgba(75, 85, 99, 0.5)',
-                  color: '#e5e7eb',
+                  background: '#4b5563',
+                  color: 'white',
                   border: 'none',
                   borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
@@ -448,6 +394,8 @@ const UsersPage = () => {
                   color: 'white',
                   border: 'none',
                   borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   opacity: loading ? 0.5 : 1
@@ -487,125 +435,236 @@ const UsersPage = () => {
         </div>
       )}
 
-      {/* Users Table */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">Users</h2>
-          <button 
-            className="btn btn-primary"
-            onClick={() => setShowCreateForm(!showCreateForm)}
-          >
-            {showCreateForm ? 'Cancel' : 'Add User'}
-          </button>
-        </div>
-
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(55, 65, 81, 0.3)' }}>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
-                  User
-                </th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Role
-                </th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Status
-                </th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Last Login
-                </th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Login Count
-                </th>
-                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase' }}>
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id} style={{ borderBottom: '1px solid rgba(55, 65, 81, 0.3)' }}>
-                  <td style={{ padding: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <div style={{
-                        width: '2.5rem',
-                        height: '2.5rem',
-                        borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontWeight: '600',
-                        fontSize: '0.875rem'
-                      }}>
-                        {getUserInitials(user.username)}
-                      </div>
-                      <div>
-                        <div style={{ color: 'white', fontWeight: '500', fontSize: '0.875rem' }}>
-                          {user.username}
-                        </div>
-                        <div style={{ color: '#9ca3af', fontSize: '0.75rem' }}>
-                          {user.email}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ padding: '1rem' }}>
-                    <span style={{
-                      padding: '0.25rem 0.75rem',
-                      borderRadius: '9999px',
-                      fontSize: '0.75rem',
-                      fontWeight: '500',
-                      background: `rgba(${getRoleColor(user.role)}20, 0.2)`,
-                      color: getRoleColor(user.role)
-                    }}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td style={{ padding: '1rem' }}>
-                    <span style={{
-                      padding: '0.25rem 0.75rem',
-                      borderRadius: '9999px',
-                      fontSize: '0.75rem',
-                      fontWeight: '500',
-                      background: `rgba(${getStatusColor(user.status)}20, 0.2)`,
-                      color: getStatusColor(user.status)
-                    }}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: '1rem', color: 'white', fontSize: '0.875rem' }}>
-                    {formatTimestamp(user.lastLogin)}
-                  </td>
-                  <td style={{ padding: '1rem', color: 'white', fontSize: '0.875rem' }}>
-                    {user.loginCount}
-                  </td>
-                  <td style={{ padding: '1rem' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button 
-                        className="btn btn-secondary" 
-                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
-                        onClick={() => openRoleModal(user)}
-                      >
-                        Role
-                      </button>
-                      <button 
-                        className="btn btn-primary" 
-                        style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
-                        onClick={() => openDeleteModal(user)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
+      {/* Users Table - Only show if user has permission */}
+      {!error && (
+        <div style={{
+          background: 'rgba(31, 41, 55, 0.8)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: '1rem',
+          border: '1px solid rgba(75, 85, 99, 0.3)',
+          overflow: 'hidden'
+        }}>
+          <div style={{ 
+            padding: '1.5rem', 
+            borderBottom: '1px solid rgba(75, 85, 99, 0.3)' 
+          }}>
+            <h2 style={{ 
+              fontSize: '1.25rem', 
+              fontWeight: '600', 
+              color: 'white',
+              marginBottom: '0.25rem'
+            }}>
+              All Users
+            </h2>
+            <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>
+              Total users: {users.length}
+            </p>
+          </div>
+          
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead style={{ background: 'rgba(55, 65, 81, 0.3)' }}>
+                <tr>
+                  <th style={{ 
+                    padding: '0.75rem 0.5rem', 
+                    textAlign: 'left', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '500', 
+                    color: '#d1d5db', 
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Username
+                  </th>
+                  <th style={{ 
+                    padding: '0.75rem 0.5rem', 
+                    textAlign: 'left', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '500', 
+                    color: '#d1d5db', 
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Email
+                  </th>
+                  <th style={{ 
+                    padding: '0.75rem 0.5rem', 
+                    textAlign: 'left', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '500', 
+                    color: '#d1d5db', 
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Role
+                  </th>
+                  <th style={{ 
+                    padding: '0.75rem 0.5rem', 
+                    textAlign: 'left', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '500', 
+                    color: '#d1d5db', 
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Status
+                  </th>
+                  <th style={{ 
+                    padding: '0.75rem 0.5rem', 
+                    textAlign: 'left', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '500', 
+                    color: '#d1d5db', 
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Last Login
+                  </th>
+                  <th style={{ 
+                    padding: '0.75rem 0.5rem', 
+                    textAlign: 'left', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '500', 
+                    color: '#d1d5db', 
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Created
+                  </th>
+                  <th style={{ 
+                    padding: '0.75rem 0.5rem', 
+                    textAlign: 'left', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '500', 
+                    color: '#d1d5db', 
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}>
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody style={{ borderTop: '1px solid rgba(55, 65, 81, 0.3)' }}>
+                {users.map((user) => (
+                  <tr key={user._id || user.id} style={{ 
+                    borderBottom: '1px solid rgba(55, 65, 81, 0.3)',
+                    transition: 'background-color 0.2s ease'
+                  }}>
+                    <td style={{ 
+                      padding: '0.75rem 0.5rem', 
+                      fontSize: '0.875rem', 
+                      color: 'white', 
+                      fontWeight: '500' 
+                    }}>
+                      {user.username}
+                    </td>
+                    <td style={{ 
+                      padding: '0.75rem 0.5rem', 
+                      fontSize: '0.875rem', 
+                      color: '#d1d5db' 
+                    }}>
+                      {user.email}
+                    </td>
+                    <td style={{ padding: '0.75rem 0.5rem' }}>
+                      <span style={{
+                        display: 'inline-flex',
+                        padding: '0.25rem 0.5rem',
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        borderRadius: '9999px',
+                        ...(user.role === 'admin' 
+                          ? { 
+                              background: 'rgba(139, 92, 246, 0.2)', 
+                              color: '#a78bfa', 
+                              border: '1px solid rgba(139, 92, 246, 0.3)' 
+                            }
+                          : { 
+                              background: 'rgba(59, 130, 246, 0.2)', 
+                              color: '#60a5fa', 
+                              border: '1px solid rgba(59, 130, 246, 0.3)' 
+                            }
+                        )
+                      }}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.75rem 0.5rem' }}>
+                      <span style={{
+                        display: 'inline-flex',
+                        padding: '0.25rem 0.5rem',
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        borderRadius: '9999px',
+                        background: 'rgba(16, 185, 129, 0.2)',
+                        color: '#34d399',
+                        border: '1px solid rgba(16, 185, 129, 0.3)'
+                      }}>
+                        Active
+                      </span>
+                    </td>
+                    <td style={{ 
+                      padding: '0.75rem 0.5rem', 
+                      fontSize: '0.875rem', 
+                      color: '#d1d5db' 
+                    }}>
+                      {formatTimestamp(user.lastLogin)}
+                    </td>
+                    <td style={{ 
+                      padding: '0.75rem 0.5rem', 
+                      fontSize: '0.875rem', 
+                      color: '#d1d5db' 
+                    }}>
+                      {formatTimestamp(user.createdAt)}
+                    </td>
+                    <td style={{ 
+                      padding: '0.75rem 0.5rem', 
+                      fontSize: '0.875rem', 
+                      color: '#d1d5db' 
+                    }}>
+                      <div style={{ display: 'flex', gap: '0.25rem' }}>
+                        <button
+                          onClick={() => openRoleModal(user)}
+                          style={{
+                            background: '#2563eb',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.25rem',
+                            padding: '0.25rem 0.5rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          title="Change Role"
+                        >
+                          Role
+                        </button>
+                        <button
+                          onClick={() => openDeleteModal(user)}
+                          style={{
+                            background: '#ef4444',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '0.25rem',
+                            padding: '0.25rem 0.5rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          title="Delete User"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Delete User Modal */}
       {showDeleteModal && (
@@ -632,7 +691,12 @@ const UsersPage = () => {
             width: '100%',
             margin: '1rem'
           }}>
-            <h3 style={{ color: 'white', fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
+            <h3 style={{ 
+              fontSize: '1.25rem', 
+              fontWeight: '600', 
+              color: 'white', 
+              marginBottom: '1rem' 
+            }}>
               Delete User
             </h3>
             <p style={{ color: '#d1d5db', marginBottom: '1rem' }}>
@@ -644,7 +708,7 @@ const UsersPage = () => {
                 display: 'block',
                 fontSize: '0.875rem',
                 fontWeight: '500',
-                color: '#e5e7eb',
+                color: '#d1d5db',
                 marginBottom: '0.5rem'
               }}>
                 Reason for deletion (optional)
@@ -655,7 +719,7 @@ const UsersPage = () => {
                 onChange={(e) => setDeleteReason(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.75rem',
+                  padding: '0.75rem 1rem',
                   background: 'rgba(55, 65, 81, 0.5)',
                   border: '1px solid rgba(75, 85, 99, 0.5)',
                   borderRadius: '0.5rem',
@@ -674,10 +738,12 @@ const UsersPage = () => {
                 }}
                 style={{
                   padding: '0.75rem 1.5rem',
-                  background: 'rgba(75, 85, 99, 0.5)',
-                  color: '#e5e7eb',
+                  background: '#4b5563',
+                  color: 'white',
                   border: 'none',
                   borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
@@ -689,10 +755,12 @@ const UsersPage = () => {
                 disabled={loading}
                 style={{
                   padding: '0.75rem 1.5rem',
-                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  background: '#ef4444',
                   color: 'white',
                   border: 'none',
                   borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   opacity: loading ? 0.5 : 1
@@ -730,7 +798,12 @@ const UsersPage = () => {
             width: '100%',
             margin: '1rem'
           }}>
-            <h3 style={{ color: 'white', fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
+            <h3 style={{ 
+              fontSize: '1.25rem', 
+              fontWeight: '600', 
+              color: 'white', 
+              marginBottom: '1rem' 
+            }}>
               Change User Role
             </h3>
             <p style={{ color: '#d1d5db', marginBottom: '1rem' }}>
@@ -741,7 +814,7 @@ const UsersPage = () => {
                 display: 'block',
                 fontSize: '0.875rem',
                 fontWeight: '500',
-                color: '#e5e7eb',
+                color: '#d1d5db',
                 marginBottom: '0.5rem'
               }}>
                 New Role
@@ -751,7 +824,7 @@ const UsersPage = () => {
                 onChange={(e) => setNewRole(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '0.75rem',
+                  padding: '0.75rem 1rem',
                   background: 'rgba(55, 65, 81, 0.5)',
                   border: '1px solid rgba(75, 85, 99, 0.5)',
                   borderRadius: '0.5rem',
@@ -759,9 +832,8 @@ const UsersPage = () => {
                   fontSize: '0.875rem'
                 }}
               >
-                <option value="Security Analyst">Security Analyst</option>
-                <option value="Security Admin">Security Admin</option>
-                <option value="Administrator">Administrator</option>
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
               </select>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
@@ -773,10 +845,12 @@ const UsersPage = () => {
                 }}
                 style={{
                   padding: '0.75rem 1.5rem',
-                  background: 'rgba(75, 85, 99, 0.5)',
-                  color: '#e5e7eb',
+                  background: '#4b5563',
+                  color: 'white',
                   border: 'none',
                   borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
@@ -788,10 +862,12 @@ const UsersPage = () => {
                 disabled={loading || newRole === selectedUser?.role}
                 style={{
                   padding: '0.75rem 1.5rem',
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                  background: '#2563eb',
                   color: 'white',
                   border: 'none',
                   borderRadius: '0.5rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
                   opacity: loading || newRole === selectedUser?.role ? 0.5 : 1
