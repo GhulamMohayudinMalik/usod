@@ -23,17 +23,30 @@ function AppContent() {
 
   // Check for existing authentication on app start
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       if (apiService.isAuthenticated()) {
-        // User has a token, assume they're authenticated
-        // In a real app, you might want to validate the token with the backend
-        setUser({
-          username: 'User',
-          email: 'user@example.com',
-          role: 'Security Admin',
-          loginTime: new Date().toISOString()
-        });
-        setIsAuthenticated(true);
+        try {
+          // Validate the token and get user info from backend
+          const response = await apiService.getSessionStatus();
+          if (response.success) {
+            setUser({
+              username: response.data.user.username,
+              email: response.data.user.email,
+              role: response.data.user.role,
+              loginTime: new Date().toISOString()
+            });
+            setIsAuthenticated(true);
+          } else {
+            // Token is invalid, clear it and redirect to login
+            apiService.logout();
+            setIsAuthenticated(false);
+          }
+        } catch (error) {
+          console.error('Session validation failed:', error);
+          // Clear invalid token and redirect to login
+          apiService.logout();
+          setIsAuthenticated(false);
+        }
       }
       setIsLoading(false);
     };

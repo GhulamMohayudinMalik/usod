@@ -170,6 +170,27 @@ class ApiService {
     return localStorage.getItem('authToken');
   }
 
+  // Get session status and user info
+  async getSessionStatus() {
+    try {
+      console.log('Checking session status...');
+      const response = await this.fetch(`${this.baseURL}/api/auth/session-status`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Session status checked successfully');
+        return { success: true, data };
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Session check failed' }));
+        console.log('❌ Session check failed:', response.status, errorData.message);
+        return { success: false, message: errorData.message };
+      }
+    } catch (error) {
+      console.log('❌ Session check error:', error.message);
+      return { success: false, message: error.message };
+    }
+  }
+
   // Dashboard data functions
   async getDashboardStats() {
     try {
