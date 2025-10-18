@@ -4,37 +4,86 @@ A modern security operations dashboard for monitoring security events, login att
 
 ## Current Versions
 
-### 🌐 **Web Application - V3.1**
-**Enhanced Security & Stability**
+### 🌐 **Web Application - V3.3**
+**Next.js 15 with React 19 - Enhanced Performance**
 
-Complete security implementation across all endpoints with comprehensive attack detection and prevention. Latest update includes critical bug fixes and enhanced error handling for improved reliability.
+Complete security implementation across all endpoints with comprehensive attack detection and prevention. Latest update includes Next.js 15 upgrade with React 19, Turbopack for faster builds, and enhanced performance optimizations. Features non-functional settings removal and improved error handling for better reliability.
 
-### 🖥️ **Desktop Application - V1.0**
-**Electron Desktop App**
+### 🖥️ **Desktop Application - V2.0**
+**Electron Desktop App - MAJOR UPDATE**
 
-Native desktop application built with Electron, featuring the same security-focused design and functionality as the web app. Includes login authentication, dashboard overview, and threat monitoring with a professional dark theme optimized for desktop use.
+Native desktop application built with Electron and React, featuring comprehensive security management with **full backend integration**. Latest major update includes complete React-based architecture, advanced focus handling for Electron input issues, comprehensive authentication system, and all security management features. Features professional dark theme with glass-morphism design, real-time data synchronization, and native desktop optimizations.
 
-### 📱 **Mobile Application - V1.0**
-**React Native Mobile App**
+### 📱 **Mobile Application - V2.1**
+**React Native Mobile App - FULLY INTEGRATED**
 
-Cross-platform mobile application built with React Native and Expo, providing full access to all security management features on mobile devices. Features comprehensive security monitoring, threat analysis, user management, and interactive security testing with a mobile-optimized interface.
+Cross-platform mobile application built with React Native and Expo, providing **complete backend integration** with all security management features on mobile devices. Latest update includes React 19 upgrade, enhanced error handling, and improved mobile-optimized interface. Features comprehensive security monitoring, threat analysis, user management, and interactive security testing with real backend data integration.
 
-## Recent Updates (V3.1)
+### 🔧 **Backend API - V1.1**
+**Node.js with Express 5 - Enhanced Security**
+
+Robust backend API built with Node.js, Express 5, and MongoDB. Latest update includes Express 5 upgrade for improved performance, enhanced security middleware, comprehensive logging system, and advanced attack detection. Features JWT authentication, role-based access control, and enterprise-grade security implementation.
+
+## Recent Updates (V3.3)
+
+### 🖥️ **Desktop Application - MAJOR UPDATE V2.0**
+- **Complete React Architecture**: Full migration from HTML/CSS to React-based desktop application
+- **Advanced Electron Integration**: Enhanced focus handling for Electron input issues with comprehensive JavaScript injection
+- **Full Backend Integration**: All desktop screens now use real backend data with complete API integration
+- **Professional UI/UX**: Glass-morphism design with dark theme, smooth animations, and native desktop optimizations
+- **Comprehensive Authentication**: JWT-based authentication with session management and automatic token validation
+- **Real-time Data Sync**: Live data synchronization between desktop and backend systems
+- **Native Desktop Features**: Window management, external URL handling, and platform-specific optimizations
+- **Enhanced Development**: Concurrent development server with hot reload and Electron DevTools integration
+
+### 🌐 **Web Application - V3.3 Performance Update**
+- **Next.js 15 Upgrade**: Latest Next.js framework with React 19 for improved performance
+- **Turbopack Integration**: Faster builds and development with Turbopack bundler
+- **React 19 Features**: Latest React features including improved concurrent rendering
+- **Enhanced Performance**: Optimized rendering and faster page loads
+- **Improved Developer Experience**: Better development tools and faster hot reload
+
+### 📱 **Mobile Application - V2.1 Enhancement Update**
+- **React 19 Upgrade**: Latest React Native with React 19 for improved performance
+- **Enhanced Error Handling**: Better error messages and user feedback across all mobile screens
+- **Improved Mobile UX**: Better touch interactions and mobile-optimized interface
+- **Real Backend Integration**: All screens continue to use real backend data with full API integration
+- **Performance Optimizations**: Faster loading and smoother animations
+
+### 🔧 **Backend API - V1.1 Security Enhancement**
+- **Express 5 Upgrade**: Latest Express.js framework for improved performance and security
+- **Enhanced Security Middleware**: Advanced attack detection and prevention across all endpoints
+- **Comprehensive Logging**: 30 different event types with detailed tracking and analysis
+- **Improved Authentication**: Enhanced JWT handling and session management
+- **Better Error Handling**: Comprehensive error logging and user feedback
+
+### 🧹 **Code Cleanup & Optimization**
+- **Removed Non-Functional Settings**: Eliminated session timeout and notification settings that were only logged but not enforced
+- **Removed Testing Code**: Cleaned up all debug console logs, API test buttons, and redundant testing functionality
+- **Simplified Network Config**: Streamlined mobile network configuration for better reliability
+- **Enhanced Error Handling**: Improved error messages and user feedback across all platforms
+- **Consistent UI/UX**: Synchronized interfaces across web, desktop, and mobile applications
 
 ### 🔧 **Critical Bug Fixes**
 - **Fixed CSRF Token Validation**: Resolved crash when accessing backup endpoints due to undefined request body
 - **Enhanced Error Handling**: Improved backup page error messages and debugging capabilities
 - **Development Experience**: Better security detection for localhost development while maintaining production security
+- **Mobile API Integration**: Fixed all API endpoint mismatches and authentication issues
+- **React Key Warnings**: Resolved all React unique key prop warnings in mobile components
+- **Electron Focus Issues**: Comprehensive fix for Electron input focus problems with advanced JavaScript injection
 
 ### 🛡️ **Security Improvements**
 - **Production Security Maintained**: All security features remain fully active in production environments
 - **Development Convenience**: Suspicious activity detection relaxed only for localhost in development mode
 - **Better Error Messages**: Clear feedback for authentication, permission, and network issues
+- **Cross-Platform Security**: Full security detection and logging across web, desktop, and mobile platforms
+- **Real-time Threat Detection**: All platforms now trigger actual backend security events
 
 ### 📊 **Backup System Enhancements**
-- **Improved Error Handling**: Better user feedback for backup operations
+- **Improved Error Handling**: Better user feedback for backup operations across all platforms
 - **Enhanced Debugging**: Console logging for troubleshooting API issues
 - **Token Validation**: Proper handling of expired or missing authentication tokens
+- **Cross-Platform Backup**: Complete backup functionality on web, desktop, and mobile devices
 
 ## Features
 
@@ -55,38 +104,58 @@ Cross-platform mobile application built with React Native and Expo, providing fu
 
 ## 🖥️ Desktop Application (Electron)
 
-The USOD desktop application provides a native desktop experience with the same security-focused functionality as the web application.
+The USOD desktop application provides a comprehensive native desktop experience with full backend integration and advanced security management capabilities.
 
 ### Desktop App Features
 
-**🔐 Authentication System:**
-- Secure login with JWT-based authentication
+**🔐 Advanced Authentication System:**
+- Secure JWT-based authentication with automatic token validation
+- Session management with automatic logout and token refresh
 - Demo credentials pre-configured for testing
-- Session management with automatic logout
+- Real-time session status monitoring
 
-**📊 Dashboard Overview:**
-- Real-time security metrics display
-- Interactive stat cards with trend indicators
-- Professional dark theme with emerald/cyan accents
-- Smooth animations and transitions
+**📊 Comprehensive Dashboard:**
+- Real-time security metrics with live data synchronization
+- Interactive stat cards with trend indicators and animations
+- Professional dark theme with glass-morphism design
+- Smooth animations and transitions optimized for desktop
 
-**🚨 Threat Monitoring:**
+**🚨 Advanced Threat Monitoring:**
 - Security event cards with severity levels (High, Medium, Low, Critical)
-- Real-time threat information with timestamps
-- Interactive threat action buttons
-- Color-coded threat indicators
+- Real-time threat information with timestamps and detailed analysis
+- Interactive threat action buttons with backend integration
+- Color-coded threat indicators with professional styling
 
-**🤖 AI Analysis:**
-- Text analysis for potential security threats
-- Interactive textarea for threat input
-- Analysis simulation with loading states
-- Results notification system
+**🤖 AI Analysis & Insights:**
+- Text analysis for potential security threats with real backend processing
+- Interactive textarea for threat input with advanced validation
+- Analysis simulation with loading states and progress indicators
+- Results notification system with detailed feedback
 
-**🎨 User Interface:**
-- Dark professional theme matching web app
-- Glass-morphism design with backdrop blur
-- Responsive layout optimized for desktop
-- Toast notifications for user feedback
+**👥 Complete User Management:**
+- User creation, deletion, and role management with full backend integration
+- Real-time user statistics and activity monitoring
+- Advanced user search and filtering capabilities
+- Role-based access control with admin privileges
+
+**🛡️ Security Management:**
+- IP blocking and unblocking with real-time updates
+- Security statistics and threat monitoring
+- Interactive security lab with 12 different attack types
+- Real-time security event detection and logging
+
+**💾 Backup Management:**
+- Complete backup creation, restoration, and management
+- Backup scheduling and automated operations
+- Storage management with detailed statistics
+- Cross-platform backup compatibility
+
+**🎨 Professional User Interface:**
+- Dark professional theme with emerald/cyan accents
+- Glass-morphism design with backdrop blur effects
+- Responsive layout optimized for desktop with window management
+- Toast notifications and advanced user feedback
+- Native desktop features with platform-specific optimizations
 
 ### Desktop App Setup
 
@@ -97,8 +166,8 @@ The USOD desktop application provides a native desktop experience with the same 
 #### Installation & Setup
 
 ```bash
-# Navigate to electron directory
-cd electron
+# Navigate to desktop directory
+cd desktop
 
 # Install dependencies
 npm install
@@ -127,10 +196,28 @@ The desktop app includes the same demo credentials as the web application:
 #### Desktop App Structure
 
 ```
-electron/
-├── main.js              # Main Electron process
-├── login.html           # Login page with authentication
-├── dashboard.html       # Main dashboard with stats and threats
+desktop/
+├── public/
+│   └── electron.js      # Main Electron process
+├── src/
+│   ├── App.js           # Main React application
+│   ├── components/      # React components
+│   │   ├── Header.js    # Application header
+│   │   ├── Layout.js    # Main layout wrapper
+│   │   └── Sidebar.js   # Navigation sidebar
+│   ├── pages/           # Application pages
+│   │   ├── LoginPage.js # Authentication page
+│   │   ├── DashboardPage.js # Main dashboard
+│   │   ├── LogsPage.js  # Security logs
+│   │   ├── ThreatsPage.js # Threat analysis
+│   │   ├── UsersPage.js # User management
+│   │   ├── SettingsPage.js # Settings configuration
+│   │   ├── SecurityPage.js # Security management
+│   │   ├── SecurityLabPage.js # Interactive security lab
+│   │   ├── BackupPage.js # Backup management
+│   │   └── ChangePasswordPage.js # Password change
+│   └── services/
+│       └── api.js       # API service functions
 ├── package.json         # Dependencies and scripts
 └── README.md           # Desktop app documentation
 ```
@@ -138,11 +225,20 @@ electron/
 #### Development Commands
 
 ```bash
-# Start desktop app
+# Start desktop app (production mode)
 npm start
 
-# Start with development tools
+# Start with development tools and hot reload
 npm run dev
+
+# Start with simple development mode
+npm run dev-simple
+
+# Build for production
+npm run build
+
+# Build Electron app for distribution
+npm run build-electron
 ```
 
 ## 📱 Mobile Application (React Native)
@@ -164,13 +260,13 @@ The USOD mobile application provides a comprehensive security management experie
 - Mobile-optimized layout and navigation
 
 **🚨 Comprehensive Security Management:**
-- **Threat Analysis**: Interactive text analysis for potential security threats
-- **Security Lab**: Interactive attack testing with 12 different attack types
-- **Logs Analysis**: Real-time security logs with filtering and pagination
-- **Analytics Dashboard**: Security insights with charts and metrics
-- **User Management**: Create, delete, and manage user roles
-- **Backup Management**: Create, restore, and schedule backups
-- **Settings Configuration**: Comprehensive settings management
+- **Threat Analysis**: Interactive text analysis for potential security threats with real backend data
+- **Security Lab**: Interactive attack testing with 12 different attack types and real security detection
+- **Logs Analysis**: Real-time security logs with filtering, pagination, and backend integration
+- **Analytics Dashboard**: Security insights with charts, metrics, and real-time data synchronization
+- **User Management**: Create, delete, and manage user roles with full backend API integration
+- **Backup Management**: Create, restore, and manage backups with complete backend functionality
+- **Settings Configuration**: Profile management with real backend integration (non-functional settings removed)
 
 **🛡️ Interactive Security Lab:**
 - **Attack Testing**: Test 12 different attack types (SQL injection, XSS, brute force, etc.)
@@ -336,10 +432,10 @@ mobile/
 - Additional security options
 
 **⚙️ Settings Screen:**
-- Comprehensive configuration
-- Security settings
-- Notification preferences
-- App information
+- Profile management with real backend integration
+- User information display (role, ID, account details)
+- System information and app statistics
+- **Note**: Non-functional settings (session timeout, notifications) have been removed as they were only logged but not enforced by the backend
 
 #### Testing on Devices
 
@@ -387,29 +483,38 @@ mobile/
 - **Responsive Layout**: Adapts to different screen sizes
 - **Mobile Notifications**: Native mobile notifications
 - **Offline Mode**: Basic functionality without internet connection
+- **Real Backend Integration**: All screens now use actual backend APIs instead of dummy data
+- **Consistent Data**: Mobile and web apps show identical data from the same backend
+- **Enhanced Error Handling**: Better error messages and user feedback
+- **Clean Interface**: Removed all testing code and non-functional settings
 
 ## Tech Stack
 
 ### Backend
-- **Node.js** with Express.js
+- **Node.js** with Express 5
 - **MongoDB** with Mongoose ODM
 - **JWT** for authentication
 - **bcryptjs** for password hashing
 - **Server-Sent Events** for real-time updates
+- **Comprehensive logging** with 30 event types
 
 ### Frontend
 - **Next.js 15** with React 19
+- **Turbopack** for faster builds
 - **Tailwind CSS** for styling
 - **Responsive design** with dark theme
 
 ### Desktop Application
-- **Electron** for native desktop functionality
-- **HTML/CSS/JavaScript** for UI components
-- **Node.js** integration for backend communication
+- **Electron 38** for native desktop functionality
+- **React 18** with React Router for navigation
+- **React Scripts** for build tooling
+- **Concurrent development** with hot reload
 - **Glass-morphism design** with dark theme
+- **Cross-platform builds** (Windows, macOS, Linux)
 
 ### Mobile Application
-- **React Native** with Expo for cross-platform development
+- **React Native** with Expo 54
+- **React 19** for latest features
 - **React Navigation** for navigation management
 - **React Native Safe Area Context** for device compatibility
 - **StyleSheet** for mobile-optimized styling
@@ -495,8 +600,8 @@ npm run dev
 ### 7. Desktop Application (Optional)
 
 ```bash
-# Navigate to electron directory
-cd electron
+# Navigate to desktop directory
+cd desktop
 
 # Install dependencies
 npm install
@@ -506,9 +611,10 @@ npm start
 ```
 
 **Desktop App Features:**
-- Native desktop experience
-- Same authentication and dashboard as web app
-- Professional dark theme with emerald/cyan accents
+- Native desktop experience with React architecture
+- Full backend integration with real-time data
+- Professional dark theme with glass-morphism design
+- Complete security management capabilities
 - Demo credentials pre-configured
 
 ### 8. Mobile Application (Optional)
@@ -1045,11 +1151,10 @@ curl -X POST http://localhost:5000/api/backup/cleanup -H "Authorization: Bearer 
 - **Backup History**: Complete list of all available backups with metadata
 
 #### Settings (`/dashboard/settings`)
-- **Profile Management**: Update username, email, and personal information
-- **Security Settings**: Configure session timeout, login attempts, password expiry
-- **Notification Preferences**: Manage alert settings for different event types
+- **Profile Management**: Update username, email, and personal information with real backend integration
 - **System Information**: View application version, environment, and user statistics
 - **Settings Logging**: All changes are automatically logged for audit purposes
+- **Note**: Non-functional settings (session timeout, login attempts, password expiry, notifications) have been removed as they were only logged but not enforced by the backend
 
 #### Change Password (`/dashboard/change-password`)
 - Secure password change with current password verification
@@ -1156,18 +1261,36 @@ usod-testing/
 │   └── package.json
 ├── frontend/
 │   ├── src/
-│   │   ├── app/             # Next.js app router pages
+│   │   ├── app/             # Next.js 15 app router pages
 │   │   │   ├── dashboard/   # Dashboard pages
 │   │   │   └── login/       # Authentication pages
-│   │   ├── components/      # React components
+│   │   ├── components/      # React 19 components
 │   │   └── services/        # API service functions
 │   └── package.json
-├── electron/                # Desktop application
-│   ├── main.js              # Main Electron process
-│   ├── login.html           # Login page
-│   ├── dashboard.html       # Dashboard page
+├── desktop/                 # Desktop application (React + Electron)
+│   ├── public/
+│   │   └── electron.js      # Main Electron process
+│   ├── src/
+│   │   ├── App.js           # Main React application
+│   │   ├── components/      # React components
+│   │   │   ├── Header.js    # Application header
+│   │   │   ├── Layout.js    # Main layout wrapper
+│   │   │   └── Sidebar.js   # Navigation sidebar
+│   │   ├── pages/           # Application pages
+│   │   │   ├── LoginPage.js # Authentication page
+│   │   │   ├── DashboardPage.js # Main dashboard
+│   │   │   ├── LogsPage.js  # Security logs
+│   │   │   ├── ThreatsPage.js # Threat analysis
+│   │   │   ├── UsersPage.js # User management
+│   │   │   ├── SettingsPage.js # Settings configuration
+│   │   │   ├── SecurityPage.js # Security management
+│   │   │   ├── SecurityLabPage.js # Interactive security lab
+│   │   │   ├── BackupPage.js # Backup management
+│   │   │   └── ChangePasswordPage.js # Password change
+│   │   └── services/
+│   │       └── api.js       # API service functions
 │   └── package.json         # Desktop app dependencies
-├── mobile/                  # Mobile application
+├── mobile/                  # Mobile application (React Native + Expo)
 │   ├── App.js               # Main React Native app entry
 │   ├── screens/             # All application screens
 │   │   ├── LoginScreen.js   # Authentication screen
@@ -1197,23 +1320,34 @@ usod-testing/
 - `src/middleware/apiKeyAuth.js` - API key authentication
 - `src/scripts/fullSecurityReset.js` - Security state reset script
 
-#### Frontend Dashboard Pages
+#### Frontend Dashboard Pages (Next.js 15 + React 19)
 - `src/app/dashboard/security-lab/page.js` - Security testing interface
 - `src/app/dashboard/logs/page.js` - Real-time log monitoring
 - `src/app/dashboard/users/page.js` - User management interface
 - `src/app/dashboard/backup/page.js` - Backup management interface
 
-#### Desktop Application Files
-- `electron/main.js` - Main Electron process with window management
-- `electron/login.html` - Desktop login page with authentication
-- `electron/dashboard.html` - Desktop dashboard with stats and threats
-- `electron/package.json` - Desktop app dependencies and scripts
+#### Desktop Application Files (React + Electron)
+- `public/electron.js` - Main Electron process with advanced focus handling
+- `src/App.js` - Main React application with routing
+- `src/pages/LoginPage.js` - Desktop authentication page
+- `src/pages/DashboardPage.js` - Desktop dashboard with real-time data
+- `src/pages/SecurityLabPage.js` - Interactive security testing
+- `src/services/api.js` - API service functions for backend integration
+
+#### Mobile Application Files (React Native + Expo)
+- `App.js` - Main React Native application entry point
+- `screens/LoginScreen.js` - Mobile authentication screen
+- `screens/DashboardScreen.js` - Mobile dashboard with real-time data
+- `screens/SecurityLabScreen.js` - Mobile security testing interface
+- `services/api.js` - Mobile API service functions
 
 #### Configuration Files
 - `backend/.env` - Backend environment variables
-- `frontend/next.config.mjs` - Next.js configuration
-- `backend/package.json` - Backend dependencies
-- `frontend/package.json` - Frontend dependencies
+- `frontend/next.config.mjs` - Next.js 15 configuration
+- `desktop/package.json` - Desktop app dependencies and scripts
+- `mobile/package.json` - Mobile app dependencies and scripts
+- `backend/package.json` - Backend dependencies (Express 5)
+- `frontend/package.json` - Frontend dependencies (Next.js 15 + React 19)
 
 ## Development
 
@@ -1231,9 +1365,12 @@ npm run dev  # Development server with hot reload
 
 ### Desktop Application Development
 ```bash
-cd electron
-npm start    # Start desktop application
-npm run dev  # Start with development tools (DevTools)
+cd desktop
+npm start    # Start desktop application (production mode)
+npm run dev  # Start with development tools and hot reload
+npm run dev-simple  # Start with simple development mode
+npm run build  # Build for production
+npm run build-electron  # Build Electron app for distribution
 ```
 
 ### Database Seeding
