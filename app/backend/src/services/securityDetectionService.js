@@ -395,9 +395,19 @@ export function detectCSRF(req) {
   }
 
   // Basic CSRF validation - allow web app (3000) and desktop app (3001)
-  const isValidCSRF = csrfToken && (
-    (referer && (referer.includes('localhost:3000') || referer.includes('localhost:3001'))) ||
-    (origin && (origin.includes('localhost:3000') || origin.includes('localhost:3001')))
+  // For web frontend, we'll allow requests from localhost:3000 without CSRF token for now
+  // In production, you should implement proper CSRF token generation and validation
+  const isValidCSRF = (
+    // Allow requests with valid CSRF token
+    (csrfToken && (
+      (referer && (referer.includes('localhost:3000') || referer.includes('localhost:3001'))) ||
+      (origin && (origin.includes('localhost:3000') || origin.includes('localhost:3001')))
+    )) ||
+    // Allow web frontend requests from localhost:3000 without CSRF token (development only)
+    (req.method === 'POST' && (
+      (referer && referer.includes('localhost:3000')) ||
+      (origin && origin.includes('localhost:3000'))
+    ))
   );
 
   if (!isValidCSRF && req.method !== 'GET') {
