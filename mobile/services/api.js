@@ -34,7 +34,8 @@ class ApiService {
   getHeaders() {
     const headers = {
       'Content-Type': 'application/json',
-      'X-Platform': 'mobile'
+      'X-Platform': 'mobile',
+      'x-platform': 'mobile' // Also send lowercase version for compatibility
     };
 
     if (this.token) {
@@ -68,9 +69,11 @@ class ApiService {
   // Authentication methods
   async login(username, password) {
     try {
+      const headers = this.getHeaders();
+      
       const response = await fetch(`${this.baseURL}/api/auth/login`, {
         method: 'POST',
-        headers: this.getHeaders(),
+        headers,
         body: JSON.stringify({ username, password })
       });
 
