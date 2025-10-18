@@ -16,7 +16,7 @@ export default function DashboardIndex() {
       setLoading(true);
       const [s, e] = await Promise.all([
         getData('/api/data/dashboard-stats'),
-        getData('/api/data/security-events?count=5')
+        getData('/api/data/security-events?count=6')
       ]);
       setStats(s);
       setEvents(e);
@@ -65,7 +65,7 @@ export default function DashboardIndex() {
         <button className="text-sm text-blue-400 hover:underline" onClick={loadData}>View All</button>
       </div>
       {events && events.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           {events.map((ev) => (
             <ThreatCard
               key={ev.id}
