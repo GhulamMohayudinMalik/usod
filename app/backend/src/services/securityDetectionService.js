@@ -372,7 +372,7 @@ export function detectCSRF(req) {
   const referer = req.headers.referer;
   const origin = req.headers.origin;
   const userAgent = req.headers['user-agent'] || '';
-  const platform = req.headers['x-platform'] || '';
+  const platform = req.headers['x-platform'] || req.headers['X-Platform'] || '';
 
   // Skip CSRF check for localhost API testing and development
   if (userAgent.includes('PowerShell')) {
@@ -395,12 +395,23 @@ export function detectCSRF(req) {
   }
 
   // Basic CSRF validation - allow web app (3000) and desktop app (3001)
-  const isValidCSRF = csrfToken && 
+  const isValidCSRF = csrfToken && (
     (referer && (referer.includes('localhost:3000') || referer.includes('localhost:3001'))) ||
-    (origin && (origin.includes('localhost:3000') || origin.includes('localhost:3001')));
+    (origin && (origin.includes('localhost:3000') || origin.includes('localhost:3001')))
+  );
 
   if (!isValidCSRF && req.method !== 'GET') {
     const ip = getRealIP(req);
+    
+    console.log('🚨 CSRF attempt detected:', {
+      platform,
+      userAgent,
+      referer,
+      origin,
+      csrfToken: !!csrfToken,
+      method: req.method,
+      ip
+    });
     
     logActions.securityEvent(null, 'detected', req, {
       eventType: 'csrf_attempt',

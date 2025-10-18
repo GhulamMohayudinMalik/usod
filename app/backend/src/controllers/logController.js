@@ -91,8 +91,7 @@ export const logController = {
       if (!logData.timestamp) logData.timestamp = new Date();
       if (req.user?.id) logData.userId = req.user.id;
       
-      // Set platform from header or default to web
-      logData.platform = req.headers['x-platform'] || 'web';
+      // Platform is set in details by the logging service
       
       // Set device info if provided
       if (req.body.deviceInfo) {
