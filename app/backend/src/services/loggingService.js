@@ -460,5 +460,52 @@ export const logActions = {
       restoreReason: details.restoreReason || 'manual',
       restoreScope: details.restoreScope || 'full' // 'full', 'partial', 'specific'
     });
+  },
+
+  // Network AI Service Logging Actions
+  async networkMonitoringStarted(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'network_monitoring_started', status, req, {
+      ...details,
+      interface: details.interface || 'unknown',
+      duration: details.duration || 'unknown',
+      monitoringId: details.monitoringId || 'unknown',
+      startedBy: details.startedBy || 'system'
+    });
+  },
+
+  async networkMonitoringStopped(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'network_monitoring_stopped', status, req, {
+      ...details,
+      monitoringId: details.monitoringId || 'unknown',
+      stoppedBy: details.stoppedBy || 'system',
+      duration: details.duration || 'unknown'
+    });
+  },
+
+  async networkThreatDetected(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'network_threat_detected', status, req, {
+      ...details,
+      threatType: details.threatType || 'unknown',
+      threatLevel: details.threatLevel || 'unknown',
+      sourceIP: details.sourceIP || 'unknown',
+      targetIP: details.targetIP || 'unknown',
+      protocol: details.protocol || 'unknown',
+      port: details.port || 'unknown',
+      description: details.description || 'unknown',
+      confidence: details.confidence || 'unknown',
+      modelUsed: details.modelUsed || 'unknown'
+    });
+  },
+
+  async pcapFileAnalyzed(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'pcap_file_analyzed', status, req, {
+      ...details,
+      filePath: details.filePath || 'unknown',
+      fileName: details.fileName || 'unknown',
+      fileSize: details.fileSize || 'unknown',
+      analysisId: details.analysisId || 'unknown',
+      threatsFound: details.threatsFound || 0,
+      analyzedBy: details.analyzedBy || 'system'
+    });
   }
 };

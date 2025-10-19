@@ -11,6 +11,7 @@ import streamRoutes from './routes/streamRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import userManagementRoutes from './routes/userManagementRoutes.js';
 import backupRoutes from './routes/backupRoutes.js';
+import networkRoutes from './routes/networkRoutes.js';
 import { startSessionCleanup } from './services/sessionService.js';
 
 // Load env
@@ -61,6 +62,7 @@ app.use('/api/ingest', ingestRoutes);
 app.use('/api/stream', streamRoutes);
 app.use('/api/users', userManagementRoutes);
 app.use('/api/backup', backupRoutes);
+app.use('/api/network', networkRoutes);
 
 app.get('/', (req, res) => {
   const html = `
@@ -105,6 +107,11 @@ app.get('/', (req, res) => {
         <div class="endpoint">GET /api/data/security-events</div>
         <div class="endpoint">GET /api/data/login-attempts</div>
         <div class="endpoint">GET /api/data/all</div>
+        <div class="endpoint">POST /api/network/start-monitoring</div>
+        <div class="endpoint">POST /api/network/stop-monitoring</div>
+        <div class="endpoint">GET /api/network/threats</div>
+        <div class="endpoint">GET /api/network/statistics</div>
+        <div class="endpoint">GET /api/network/status</div>
       </div>
       <div class="info-card">
         <h3>Health Status</h3>
