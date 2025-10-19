@@ -13,6 +13,8 @@ from datetime import datetime
 import asyncio
 import threading
 import time
+import httpx
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -38,6 +40,10 @@ app.add_middleware(
 monitoring_active = False
 capture_thread = None
 detected_threats = []
+
+# Webhook configuration for Node.js backend
+NODEJS_BACKEND_URL = "http://localhost:5000"
+WEBHOOK_ENDPOINT = f"{NODEJS_BACKEND_URL}/api/network/webhook"
 
 # Import simple detector (for testing without admin privileges)
 # Handle import errors gracefully
@@ -109,9 +115,9 @@ class MockDetector:
                     "duration": round(random.uniform(1.0, 30.0), 2)
                 }
             }
-            self.detected_threats.append(threat)
+            # Use webhook integration for threat detection
+            detect_threat_with_webhook(threat)
             self.stats['threats_detected'] = len(self.detected_threats)
-            logger.info(f"🚨 MOCK THREAT DETECTED: {threat['threat_type']} (confidence: {threat['confidence']})")
         
         # Start detection in background
         detection_thread = threading.Thread(target=simulate_detection, daemon=True)
@@ -131,6 +137,34 @@ class MockDetector:
             'threats_detected': len(self.detected_threats),
             'models_loaded': False
         }
+
+# Webhook function to send threats to Node.js backend
+async def send_webhook(threat_data: Dict[str, Any]):
+    """Send threat data to Node.js backend via webhook"""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.post(
+                WEBHOOK_ENDPOINT,
+                json=threat_data,
+                headers={"Content-Type": "application/json"}
+            )
+            if response.status_code == 200:
+                logger.info(f"✅ Webhook sent successfully: {threat_data['threat_id']}")
+            else:
+                logger.warning(f"⚠️ Webhook failed: {response.status_code}")
+    except Exception as e:
+        logger.error(f"❌ Webhook error: {e}")
+
+# Enhanced threat detection with webhook integration
+def detect_threat_with_webhook(threat_data: Dict[str, Any]):
+    """Detect threat and send webhook to Node.js backend"""
+    # Add to local storage
+    detected_threats.append(threat_data)
+    
+    # Send webhook asynchronously
+    asyncio.create_task(send_webhook(threat_data))
+    
+    logger.info(f"🚨 THREAT DETECTED: {threat_data['threat_type']} (confidence: {threat_data['confidence']})")
 
 # Use mock detector if real detector failed
 if real_time_detector is None:

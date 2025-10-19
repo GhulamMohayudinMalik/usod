@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USOD Network Threat SSE Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .status {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .threats-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .threat-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #ff6b6b;
+        }
+        .threat-item.high {
+            border-left-color: #ff4757;
+        }
+        .threat-item.medium {
+            border-left-color: #ffa502;
+        }
+        .threat-item.low {
+            border-left-color: #2ed573;
+        }
+        .threat-type {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        .threat-details {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+        .connection-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        .connected {
+            background: #2ed573;
+            color: white;
+        }
+        .disconnected {
+            background: #ff4757;
+            color: white;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .start-btn {
+            background: #2ed573;
+            color: white;
+        }
+        .stop-btn {
+            background: #ff4757;
+            color: white;
+        }
+        .test-btn {
+            background: #3742fa;
+            color: white;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚨 USOD Network Threat Detection - SSE Test</h1>
+            <p>Real-time threat monitoring with Server-Sent Events</p>
+        </div>
+
+        <div class="status">
+            <h3>Connection Status</h3>
+            <span id="connectionStatus" class="connection-status disconnected">Disconnected</span>
+            <p id="connectionInfo">Click "Connect" to start receiving real-time threats</p>
+        </div>
+
+        <div class="controls">
+            <button id="connectBtn" class="start-btn">Connect to SSE</button>
+            <button id="disconnectBtn" class="stop-btn">Disconnect</button>
+            <button id="testBtn" class="test-btn">Test Python Service</button>
+            <button id="clearBtn" class="test-btn">Clear Threats</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalThreats">0</div>
+                <div class="stat-label">Total Threats</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="highThreats">0</div>
+                <div class="stat-label">High Severity</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="mediumThreats">0</div>
+                <div class="stat-label">Medium Severity</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="lowThreats">0</div>
+                <div class="stat-label">Low Severity</div>
+            </div>
+        </div>
+
+        <div class="threats-container">
+            <h3>Real-time Threats</h3>
+            <div id="threatsList">
+                <p style="text-align: center; opacity: 0.6;">No threats detected yet...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let threatCount = 0;
+        let highThreats = 0;
+        let mediumThreats = 0;
+        let lowThreats = 0;
+
+        // Get authentication token (you'll need to replace this with actual token)
+        const AUTH_TOKEN = 'YOUR_JWT_TOKEN_HERE'; // Replace with actual token
+
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            const infoEl = document.getElementById('connectionInfo');
+            
+            if (connected) {
+                statusEl.textContent = 'Connected';
+                statusEl.className = 'connection-status connected';
+                infoEl.textContent = 'Receiving real-time threats...';
+            } else {
+                statusEl.textContent = 'Disconnected';
+                statusEl.className = 'connection-status disconnected';
+                infoEl.textContent = 'Click "Connect" to start receiving real-time threats';
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalThreats').textContent = threatCount;
+            document.getElementById('highThreats').textContent = highThreats;
+            document.getElementById('mediumThreats').textContent = mediumThreats;
+            document.getElementById('lowThreats').textContent = lowThreats;
+        }
+
+        function addThreat(threatData) {
+            threatCount++;
+            
+            // Update severity counters
+            switch(threatData.severity) {
+                case 'high':
+                    highThreats++;
+                    break;
+                case 'medium':
+                    mediumThreats++;
+                    break;
+                case 'low':
+                    lowThreats++;
+                    break;
+            }
+            
+            updateStats();
+
+            const threatsList = document.getElementById('threatsList');
+            
+            // Remove "no threats" message if it exists
+            const noThreatsMsg = threatsList.querySelector('p');
+            if (noThreatsMsg) {
+                noThreatsMsg.remove();
+            }
+
+            const threatElement = document.createElement('div');
+            threatElement.className = `threat-item ${threatData.severity}`;
+            threatElement.innerHTML = `
+                <div class="threat-type">🚨 ${threatData.threat_type.toUpperCase()}</div>
+                <div class="threat-details">
+                    <strong>ID:</strong> ${threatData.threat_id}<br>
+                    <strong>Severity:</strong> ${threatData.severity}<br>
+                    <strong>Source:</strong> ${threatData.source_ip} → <strong>Destination:</strong> ${threatData.destination_ip}<br>
+                    <strong>Confidence:</strong> ${(threatData.confidence * 100).toFixed(1)}%<br>
+                    <strong>Time:</strong> ${new Date(threatData.timestamp).toLocaleString()}
+                </div>
+            `;
+
+            threatsList.insertBefore(threatElement, threatsList.firstChild);
+
+            // Keep only last 20 threats
+            while (threatsList.children.length > 20) {
+                threatsList.removeChild(threatsList.lastChild);
+            }
+        }
+
+        function connectSSE() {
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            console.log('🔗 Connecting to SSE endpoint...');
+            
+            eventSource = new EventSource(`http://localhost:5000/api/network/stream`, {
+                headers: {
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                }
+            });
+
+            eventSource.onopen = function(event) {
+                console.log('✅ SSE connection opened');
+                updateConnectionStatus(true);
+            };
+
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('📡 SSE message received:', data);
+                    
+                    if (data.type === 'threat_detected') {
+                        addThreat(data.data);
+                    } else if (data.type === 'connection') {
+                        console.log('🔗 SSE connection established:', data.message);
+                    } else if (data.type === 'heartbeat') {
+                        console.log('💓 Heartbeat received');
+                    }
+                } catch (error) {
+                    console.error('❌ Error parsing SSE message:', error);
+                }
+            };
+
+            eventSource.onerror = function(event) {
+                console.error('❌ SSE connection error:', event);
+                updateConnectionStatus(false);
+            };
+        }
+
+        function disconnectSSE() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+                updateConnectionStatus(false);
+                console.log('🔌 SSE connection closed');
+            }
+        }
+
+        async function testPythonService() {
+            try {
+                console.log('🧪 Testing Python AI service...');
+                
+                // Test Python service health
+                const healthResponse = await fetch('http://localhost:8000/health');
+                const healthData = await healthResponse.json();
+                console.log('🐍 Python service health:', healthData);
+                
+                // Start monitoring to generate threats
+                const startResponse = await fetch('http://localhost:8000/api/start-capture', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        interface: 'auto',
+                        duration: 30
+                    })
+                });
+                
+                const startData = await startResponse.json();
+                console.log('🚀 Monitoring started:', startData);
+                
+                alert('✅ Python service test successful! Monitoring started for 30 seconds.');
+                
+            } catch (error) {
+                console.error('❌ Python service test failed:', error);
+                alert('❌ Python service test failed: ' + error.message);
+            }
+        }
+
+        function clearThreats() {
+            threatCount = 0;
+            highThreats = 0;
+            mediumThreats = 0;
+            lowThreats = 0;
+            updateStats();
+            
+            const threatsList = document.getElementById('threatsList');
+            threatsList.innerHTML = '<p style="text-align: center; opacity: 0.6;">No threats detected yet...</p>';
+        }
+
+        // Event listeners
+        document.getElementById('connectBtn').addEventListener('click', connectSSE);
+        document.getElementById('disconnectBtn').addEventListener('click', disconnectSSE);
+        document.getElementById('testBtn').addEventListener('click', testPythonService);
+        document.getElementById('clearBtn').addEventListener('click', clearThreats);
+
+        // Initialize
+        updateConnectionStatus(false);
+        updateStats();
+
+        console.log('🚀 USOD Network Threat SSE Test initialized');
+        console.log('💡 Make sure to replace AUTH_TOKEN with a valid JWT token');
+    </script>
+</body>
+</html>

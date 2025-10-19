@@ -507,5 +507,48 @@ export const logActions = {
       threatsFound: details.threatsFound || 0,
       analyzedBy: details.analyzedBy || 'system'
     });
+  },
+
+  // Network Threat Detection Logging
+  async networkThreat(threatData, req, additionalDetails = {}) {
+    const userId = req.user?.id || 'system';
+    const status = 'detected';
+    
+    // Extract threat information
+    const {
+      threat_id,
+      threat_type,
+      severity,
+      source_ip,
+      destination_ip,
+      confidence,
+      timestamp,
+      details: threatDetails
+    } = threatData;
+
+    // Map threat types to SecurityLog actions
+    const threatActionMap = {
+      'port_scan': 'network_port_scan',
+      'ddos': 'network_dos',
+      'intrusion': 'network_intrusion',
+      'malware': 'network_malware',
+      'anomaly': 'network_anomaly'
+    };
+
+    const action = threatActionMap[threat_type] || 'network_threat_detected';
+
+    return await logSecurityEvent(userId, action, status, req, {
+      ...additionalDetails,
+      threatId: threat_id,
+      threatType: threat_type,
+      severity: severity,
+      sourceIP: source_ip,
+      destinationIP: destination_ip,
+      confidence: confidence,
+      threatTimestamp: timestamp,
+      threatDetails: threatDetails,
+      detectedBy: 'ai_ml_models',
+      modelUsed: additionalDetails.modelUsed || 'unknown'
+    });
   }
 };

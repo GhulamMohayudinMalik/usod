@@ -2,6 +2,7 @@ import express from 'express';
 import networkAIService from '../services/networkAIService.js';
 import { authenticateToken as auth } from '../middleware/auth.js';
 import { logActions } from '../services/loggingService.js';
+import { eventBus, emitNetworkThreat, emitMonitoringEvent, NETWORK_EVENTS } from '../services/eventBus.js';
 
 const router = express.Router();
 
@@ -39,6 +40,14 @@ router.post('/start-monitoring', auth, async (req, res) => {
         interface: networkInterface,
         duration,
         monitoringId: result.data?.monitoring_id || 'unknown'
+      });
+
+      // Emit real-time event
+      emitMonitoringEvent(NETWORK_EVENTS.MONITORING_STARTED, {
+        interface: networkInterface,
+        duration,
+        monitoringId: result.data?.monitoring_id,
+        startedBy: req.user.username || 'system'
       });
 
       res.json({
@@ -147,6 +156,25 @@ router.get('/threats', auth, async (req, res) => {
     const result = await networkAIService.getNetworkThreats(limitNum);
 
     if (result.success) {
+      // Log each threat to MongoDB for persistence and emit real-time events
+      if (result.threats && result.threats.length > 0) {
+        for (const threat of result.threats) {
+          try {
+            // Log to MongoDB
+            await logActions.networkThreat(threat, req, {
+              modelUsed: 'ai_ml_models',
+              retrievedBy: req.user.username || 'system'
+            });
+
+            // Emit real-time event
+            emitNetworkThreat(threat);
+          } catch (logError) {
+            console.error('Failed to log network threat:', logError);
+            // Continue processing even if logging fails
+          }
+        }
+      }
+
       res.json({
         success: true,
         threats: result.threats,
@@ -369,6 +397,131 @@ router.post('/test-connection', auth, async (req, res) => {
       error: error.message
     });
   }
+});
+
+/**
+ * @route POST /api/network/webhook
+ * @desc Webhook endpoint to receive threats from Python AI service
+ * @access Public (internal service communication)
+ */
+router.post('/webhook', async (req, res) => {
+  try {
+    console.log('🔗 Webhook received from Python AI service:', req.body);
+    
+    const threatData = req.body;
+    
+    // Validate threat data structure
+    if (!threatData.threat_id || !threatData.threat_type) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid threat data structure'
+      });
+    }
+    
+    // Emit threat event via EventBus for SSE broadcasting
+    emitNetworkThreat(threatData);
+    
+    // Log the threat (optional - for audit trail)
+    console.log(`🚨 Threat received via webhook: ${threatData.threat_type} (${threatData.threat_id})`);
+    
+    res.json({
+      success: true,
+      message: 'Threat received and broadcasted',
+      threat_id: threatData.threat_id
+    });
+    
+  } catch (error) {
+    console.error('❌ Webhook processing error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Webhook processing failed',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route GET /api/network/stream
+ * @desc Server-Sent Events endpoint for real-time threat streaming
+ * @access Private
+ */
+router.get('/stream', auth, (req, res) => {
+  console.log(`📡 SSE connection established for user: ${req.user.username}`);
+  
+  // Set SSE headers
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Cache-Control'
+  });
+
+  // Send initial connection event
+  res.write(`data: ${JSON.stringify({
+    type: 'connection',
+    message: 'Connected to real-time threat stream',
+    timestamp: new Date().toISOString(),
+    user: req.user.username
+  })}\n\n`);
+
+  // Create event handlers for different network events
+  const handleNetworkThreat = (threatData) => {
+    console.log(`🚨 Broadcasting threat: ${threatData.threat_type}`);
+    res.write(`data: ${JSON.stringify({
+      type: 'threat_detected',
+      data: threatData,
+      timestamp: new Date().toISOString()
+    })}\n\n`);
+  };
+
+  const handleMonitoringEvent = (eventData) => {
+    console.log(`📊 Broadcasting monitoring event: ${eventData.type}`);
+    res.write(`data: ${JSON.stringify({
+      type: 'monitoring_event',
+      data: eventData,
+      timestamp: new Date().toISOString()
+    })}\n\n`);
+  };
+
+  const handleModelStats = (statsData) => {
+    console.log(`📈 Broadcasting model stats update`);
+    res.write(`data: ${JSON.stringify({
+      type: 'model_stats',
+      data: statsData,
+      timestamp: new Date().toISOString()
+    })}\n\n`);
+  };
+
+  // Register event listeners
+  eventBus.on(NETWORK_EVENTS.THREAT_DETECTED, handleNetworkThreat);
+  eventBus.on(NETWORK_EVENTS.MONITORING_STARTED, handleMonitoringEvent);
+  eventBus.on(NETWORK_EVENTS.MONITORING_STOPPED, handleMonitoringEvent);
+  eventBus.on(NETWORK_EVENTS.MODEL_STATS_UPDATED, handleModelStats);
+
+  // Handle client disconnect
+  req.on('close', () => {
+    console.log(`📡 SSE connection closed for user: ${req.user.username}`);
+    
+    // Remove event listeners to prevent memory leaks
+    eventBus.removeListener(NETWORK_EVENTS.THREAT_DETECTED, handleNetworkThreat);
+    eventBus.removeListener(NETWORK_EVENTS.MONITORING_STARTED, handleMonitoringEvent);
+    eventBus.removeListener(NETWORK_EVENTS.MONITORING_STOPPED, handleMonitoringEvent);
+    eventBus.removeListener(NETWORK_EVENTS.MODEL_STATS_UPDATED, handleModelStats);
+  });
+
+  // Send periodic heartbeat to keep connection alive
+  const heartbeat = setInterval(() => {
+    res.write(`data: ${JSON.stringify({
+      type: 'heartbeat',
+      timestamp: new Date().toISOString()
+    })}\n\n`);
+  }, 30000); // Every 30 seconds
+
+  // Clean up heartbeat on disconnect
+  req.on('close', () => {
+    clearInterval(heartbeat);
+  });
 });
 
 export default router;

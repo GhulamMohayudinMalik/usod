@@ -36,7 +36,17 @@ const SecurityLogSchema = new Schema({
             'xss_attempt',
             'csrf_attempt',
             'ip_blocked',
-            'ip_unblocked'
+            'ip_unblocked',
+            // Network AI Service Actions
+            'network_intrusion',
+            'network_port_scan',
+            'network_dos',
+            'network_malware',
+            'network_anomaly',
+            'network_monitoring_started',
+            'network_monitoring_stopped',
+            'network_threat_detected',
+            'pcap_file_analyzed'
         ]
     },
     status: { type: String, required: true, enum: ['success', 'failure', 'detected'] },
