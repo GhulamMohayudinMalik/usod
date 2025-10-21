@@ -28,7 +28,7 @@ class NetworkAIService {
         }
       });
 
-      if (response.data.success) {
+      if (response.data.status === 'started') {
         this.isMonitoring = true;
         this.monitoringInterface = networkInterface;
         this.monitoringDuration = duration;
@@ -41,11 +41,30 @@ class NetworkAIService {
         data: response.data
       };
     } catch (error) {
-      console.error('❌ Failed to start network monitoring:', error.message);
+      console.error('❌ Failed to start network monitoring:');
+      console.error('Error message:', error.message);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Full error:', error);
+      
+      // Handle specific error cases
+      if (error.response && error.response.status === 400) {
+        if (error.response.data.detail === "Monitoring is already active") {
+          return {
+            success: true,
+            message: 'Monitoring is already active',
+            data: { status: 'already_active' }
+          };
+        }
+      }
+      
+      // Return detailed error information
+      const errorDetail = error.response?.data?.detail || error.response?.data?.message || error.message || 'Unknown error';
+      
       return {
         success: false,
         message: 'Failed to start network monitoring',
-        error: error.message
+        error: errorDetail
       };
     }
   }
@@ -65,7 +84,7 @@ class NetworkAIService {
         }
       });
 
-      if (response.data.success) {
+      if (response.data.status === 'stopped') {
         this.isMonitoring = false;
         this.monitoringInterface = null;
         this.monitoringDuration = null;
@@ -79,6 +98,24 @@ class NetworkAIService {
       };
     } catch (error) {
       console.error('❌ Failed to stop network monitoring:', error.message);
+      
+      // Handle specific error cases
+      if (error.response && error.response.status === 400) {
+        if (error.response.data.detail === "Monitoring is not active") {
+          // Monitoring wasn't active on Python side, but that's okay
+          // Just update our local state
+          this.isMonitoring = false;
+          this.monitoringInterface = null;
+          this.monitoringDuration = null;
+          console.log('⚠️ Monitoring was not active on Python service, state synchronized');
+          return {
+            success: true,
+            message: 'Monitoring already stopped',
+            data: { status: 'already_stopped' }
+          };
+        }
+      }
+      
       return {
         success: false,
         message: 'Failed to stop network monitoring',
@@ -159,6 +196,8 @@ class NetworkAIService {
         }
       });
 
+      console.log(`✅ Python service response:`, response.data);
+
       return {
         success: true,
         message: 'PCAP file analyzed successfully',
@@ -166,11 +205,17 @@ class NetworkAIService {
         data: response.data
       };
     } catch (error) {
-      console.error('❌ Failed to analyze PCAP file:', error.message);
+      console.error('❌ Failed to analyze PCAP file:');
+      console.error('Error message:', error.message);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      const errorDetail = error.response?.data?.detail || error.response?.data?.message || error.message || 'Unknown error';
+      
       return {
         success: false,
         message: 'Failed to analyze PCAP file',
-        error: error.message
+        error: errorDetail
       };
     }
   }

@@ -49,7 +49,7 @@ const SecurityLogSchema = new Schema({
             'pcap_file_analyzed'
         ]
     },
-    status: { type: String, required: true, enum: ['success', 'failure', 'detected'] },
+    status: { type: String, required: true, enum: ['success', 'failure', 'detected', 'started', 'stopped', 'analyzed', 'blocked', 'unblocked'] },
     ipAddress: { type: String, required: true },
     userAgent: { type: String, required: true },
     deviceInfo: { 

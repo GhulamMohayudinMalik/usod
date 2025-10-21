@@ -249,7 +249,7 @@ export async function logSecurityEvent(userId, action, status, req, details = {}
     const platform = detectPlatform(userAgent, req);
     
     // Get username for the log
-    let username = 'unknown';
+    let username = 'system'; // Default for automated/webhook calls
     if (userId) {
       try {
         const user = await User.findById(userId);
@@ -258,6 +258,7 @@ export async function logSecurityEvent(userId, action, status, req, details = {}
         }
       } catch (error) {
         console.error('Error fetching user for log:', error);
+        username = 'unknown';
       }
     }
     
@@ -511,7 +512,7 @@ export const logActions = {
 
   // Network Threat Detection Logging
   async networkThreat(threatData, req, additionalDetails = {}) {
-    const userId = req.user?.id || 'system';
+    const userId = req.user?.id || null; // null instead of 'system' for webhook calls
     const status = 'detected';
     
     // Extract threat information
@@ -537,8 +538,10 @@ export const logActions = {
 
     const action = threatActionMap[threat_type] || 'network_threat_detected';
 
-    return await logSecurityEvent(userId, action, status, req, {
+    // Create log with threat's original timestamp
+    const log = await logSecurityEvent(userId, action, status, req, {
       ...additionalDetails,
+      threatData: threatData, // Store complete threat data for retrieval
       threatId: threat_id,
       threatType: threat_type,
       severity: severity,
@@ -549,6 +552,38 @@ export const logActions = {
       threatDetails: threatDetails,
       detectedBy: 'ai_ml_models',
       modelUsed: additionalDetails.modelUsed || 'unknown'
+    });
+
+    // Override the log timestamp with the threat's timestamp for accurate timeline
+    if (log && timestamp) {
+      log.timestamp = new Date(timestamp);
+      await log.save();
+    }
+
+    return log;
+  },
+
+  // IP Blocking/Security Actions
+  async ipBlocked(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'ip_blocked', status, req, {
+      ...details,
+      ip: details.ip || 'unknown',
+      reason: details.reason || 'manual_block',
+      threatId: details.threatId || null,
+      severity: details.severity || null,
+      threatType: details.threatType || null,
+      blockedBy: details.blockedBy || 'system',
+      action: 'blocked'
+    });
+  },
+
+  async ipUnblocked(userId, status, req, details = {}) {
+    return await logSecurityEvent(userId, 'ip_unblocked', status, req, {
+      ...details,
+      ip: details.ip || 'unknown',
+      reason: details.reason || 'manual_unblock',
+      unblockedBy: details.unblockedBy || 'system',
+      action: 'unblocked'
     });
   }
 };

@@ -5,7 +5,6 @@ import mongoose from 'mongoose';
 import { connectMongoDB } from './config/database.js';
 import dataRoutes from './routes/dataRoutes.js';
 import logRoutes from './routes/logRoutes.js';
-// import { startLiveGenerator } from './scripts/generate.js';
 import ingestRoutes from './routes/ingestRoutes.js';
 import streamRoutes from './routes/streamRoutes.js';
 import authRoutes from './routes/authRoutes.js';

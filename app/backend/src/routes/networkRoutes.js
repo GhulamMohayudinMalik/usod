@@ -1,10 +1,49 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import networkAIService from '../services/networkAIService.js';
 import { authenticateToken as auth } from '../middleware/auth.js';
 import { logActions } from '../services/loggingService.js';
 import { eventBus, emitNetworkThreat, emitMonitoringEvent, NETWORK_EVENTS } from '../services/eventBus.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const router = express.Router();
+
+// Configure multer for PCAP file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../../uploads');
+    // Create uploads directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    // Generate unique filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'pcap-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedExtensions = ['.pcap', '.pcapng'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedExtensions.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only .pcap and .pcapng files are allowed.'));
+    }
+  }
+});
 
 /**
  * @route POST /api/network/start-monitoring
@@ -36,11 +75,16 @@ router.post('/start-monitoring', auth, async (req, res) => {
 
     if (result.success) {
       // Log the action
-      await logActions.networkMonitoringStarted(req, {
-        interface: networkInterface,
-        duration,
-        monitoringId: result.data?.monitoring_id || 'unknown'
-      });
+      try {
+        await logActions.networkMonitoringStarted(req.user.id, 'started', req, {
+          interface: networkInterface,
+          duration,
+          monitoringId: result.data?.monitoring_id || 'unknown'
+        });
+      } catch (logError) {
+        console.error('⚠️ Failed to log monitoring start:', logError);
+        // Continue anyway - don't fail the request
+      }
 
       // Emit real-time event
       emitMonitoringEvent(NETWORK_EVENTS.MONITORING_STARTED, {
@@ -61,18 +105,19 @@ router.post('/start-monitoring', auth, async (req, res) => {
         }
       });
     } else {
+      console.error('❌ Network monitoring failed:', result.error);
       res.status(500).json({
         success: false,
         message: 'Failed to start network monitoring',
-        error: result.error
+        error: result.error || 'Unknown error'
       });
     }
   } catch (error) {
-    console.error('Error starting network monitoring:', error);
+    console.error('❌ Error starting network monitoring:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
-      error: error.message
+      message: 'Failed to start network monitoring',
+      error: error.message || error.toString()
     });
   }
 });
@@ -97,9 +142,14 @@ router.post('/stop-monitoring', auth, async (req, res) => {
 
     if (result.success) {
       // Log the action
-      await logActions.networkMonitoringStopped(req, {
-        monitoringId: result.data?.monitoring_id || 'unknown'
-      });
+      try {
+        await logActions.networkMonitoringStopped(req.user.id, 'stopped', req, {
+          monitoringId: result.data?.monitoring_id || 'unknown'
+        });
+      } catch (logError) {
+        console.error('⚠️ Failed to log monitoring stop:', logError);
+        // Continue anyway - don't fail the request
+      }
 
       res.json({
         success: true,
@@ -109,18 +159,19 @@ router.post('/stop-monitoring', auth, async (req, res) => {
         }
       });
     } else {
+      console.error('❌ Failed to stop monitoring:', result.error);
       res.status(500).json({
         success: false,
         message: 'Failed to stop network monitoring',
-        error: result.error
+        error: result.error || 'Unknown error'
       });
     }
   } catch (error) {
-    console.error('Error stopping network monitoring:', error);
+    console.error('❌ Error stopping network monitoring:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
-      error: error.message
+      message: 'Failed to stop network monitoring',
+      error: error.message || error.toString()
     });
   }
 });
@@ -244,39 +295,66 @@ router.get('/statistics', auth, async (req, res) => {
  * @desc Upload and analyze PCAP file
  * @access Private (Admin only)
  */
-router.post('/upload-pcap', auth, async (req, res) => {
+router.post('/upload-pcap', auth, upload.single('pcap'), async (req, res) => {
   try {
     // Check if user is admin
     if (req.user.role !== 'admin') {
+      // Clean up uploaded file if not admin
+      if (req.file) {
+        fs.unlinkSync(req.file.path);
+      }
       return res.status(403).json({
         success: false,
         message: 'Access denied. Admin privileges required.'
       });
     }
 
-    const { filePath } = req.body;
-
-    if (!filePath) {
+    if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'File path is required'
+        message: 'No file uploaded'
       });
     }
+
+    const filePath = req.file.path;
+    const fileName = req.file.originalname;
+
+    console.log(`📁 PCAP file uploaded: ${fileName} (${req.file.size} bytes)`);
+    console.log(`📂 File saved to: ${filePath}`);
 
     // Analyze PCAP file
     const result = await networkAIService.analyzePCAPFile(filePath);
 
+    // Clean up uploaded file after analysis
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`🗑️  Cleaned up temporary file: ${filePath}`);
+      }
+    } catch (cleanupError) {
+      console.error('Error cleaning up file:', cleanupError);
+    }
+
     if (result.success) {
       // Log the action
-      await logActions.pcapFileAnalyzed(req, {
-        filePath,
-        analysisId: result.data?.analysis_id || 'unknown'
-      });
+      try {
+        await logActions.pcapFileAnalyzed(req.user.id, 'analyzed', req, {
+          fileName,
+          fileSize: req.file.size,
+          threatsDetected: result.data?.threats?.length || 0,
+          flowsAnalyzed: result.data?.flowsAnalyzed || 0
+        });
+      } catch (logError) {
+        console.error('Failed to log PCAP analysis:', logError);
+      }
 
       res.json({
         success: true,
         message: 'PCAP file analyzed successfully',
-        analysis: result.analysis
+        threats: result.data?.threats || [],
+        flowsAnalyzed: result.data?.flowsAnalyzed || 0,
+        fileName: fileName,
+        analysisTimestamp: result.data?.analysis_timestamp
       });
     } else {
       res.status(500).json({
@@ -286,6 +364,15 @@ router.post('/upload-pcap', auth, async (req, res) => {
       });
     }
   } catch (error) {
+    // Clean up file on error
+    if (req.file && fs.existsSync(req.file.path)) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (cleanupError) {
+        console.error('Error cleaning up file on error:', cleanupError);
+      }
+    }
+
     console.error('Error analyzing PCAP file:', error);
     res.status(500).json({
       success: false,
@@ -400,29 +487,89 @@ router.post('/test-connection', auth, async (req, res) => {
 });
 
 /**
+ * @route GET /api/network/threats/history
+ * @desc Get network threats from MongoDB (persisted threats)
+ * @access Private
+ */
+router.get('/threats/history', auth, async (req, res) => {
+  try {
+    const { limit = 50 } = req.query;
+    const limitNum = Math.min(parseInt(limit) || 50, 100);
+
+    // Query SecurityLog for network threat actions
+    const { SecurityLog } = await import('../models/SecurityLog.js');
+    
+    const threats = await SecurityLog.find({
+      action: 'network_threat_detected'
+    })
+    .sort({ timestamp: -1 })
+    .limit(limitNum)
+    .lean();
+
+    // Extract threat data from details field
+    const threatData = threats.map(log => log.details?.threatData || log.details).filter(Boolean);
+
+    console.log(`📊 Retrieved ${threatData.length} threats from MongoDB`);
+
+    res.json({
+      success: true,
+      threats: threatData,
+      count: threatData.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching threat history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve threat history',
+      error: error.message
+    });
+  }
+});
+
+/**
  * @route POST /api/network/webhook
  * @desc Webhook endpoint to receive threats from Python AI service
  * @access Public (internal service communication)
  */
 router.post('/webhook', async (req, res) => {
   try {
-    console.log('🔗 Webhook received from Python AI service:', req.body);
+    console.log('=' .repeat(80));
+    console.log('🔗 WEBHOOK RECEIVED from Python AI service');
+    console.log('📦 Request body:', JSON.stringify(req.body, null, 2));
+    console.log('=' .repeat(80));
     
     const threatData = req.body;
     
     // Validate threat data structure
     if (!threatData.threat_id || !threatData.threat_type) {
+      console.error('❌ WEBHOOK: Invalid threat data structure - missing threat_id or threat_type');
       return res.status(400).json({
         success: false,
         message: 'Invalid threat data structure'
       });
     }
     
+    // Log threat to MongoDB for persistence
+    try {
+      await logActions.networkThreat(threatData, req, {
+        source: 'python_ai_service',
+        detectedBy: 'ml_models'
+      });
+      console.log(`💾 WEBHOOK: Threat saved to MongoDB: ${threatData.threat_id}`);
+    } catch (dbError) {
+      console.error(`❌ WEBHOOK: Failed to save to MongoDB:`, dbError);
+      // Continue anyway - don't fail the webhook
+    }
+    
     // Emit threat event via EventBus for SSE broadcasting
+    console.log(`📡 WEBHOOK: Emitting threat event via EventBus...`);
     emitNetworkThreat(threatData);
+    console.log(`✅ WEBHOOK: Threat event emitted successfully`);
     
     // Log the threat (optional - for audit trail)
-    console.log(`🚨 Threat received via webhook: ${threatData.threat_type} (${threatData.threat_id})`);
+    console.log(`🚨 WEBHOOK: Threat processed: ${threatData.threat_type} (${threatData.threat_id})`);
+    console.log('=' .repeat(80));
     
     res.json({
       success: true,
@@ -431,7 +578,7 @@ router.post('/webhook', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('❌ Webhook processing error:', error);
+    console.error('❌ WEBHOOK ERROR:', error);
     res.status(500).json({
       success: false,
       message: 'Webhook processing failed',
@@ -445,7 +592,21 @@ router.post('/webhook', async (req, res) => {
  * @desc Server-Sent Events endpoint for real-time threat streaming
  * @access Private
  */
-router.get('/stream', auth, (req, res) => {
+router.get('/stream', (req, res) => {
+  // Handle token authentication via query parameter for SSE
+  const token = req.query.token;
+  if (!token) {
+    return res.status(401).json({ error: 'Token required' });
+  }
+
+  // Verify token manually since SSE doesn't work well with middleware
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key');
+    req.user = decoded;
+  } catch (error) {
+    console.error('Token verification error:', error.message);
+    return res.status(401).json({ error: 'Invalid token' });
+  }
   console.log(`📡 SSE connection established for user: ${req.user.username}`);
   
   // Set SSE headers
@@ -466,13 +627,20 @@ router.get('/stream', auth, (req, res) => {
   })}\n\n`);
 
   // Create event handlers for different network events
-  const handleNetworkThreat = (threatData) => {
-    console.log(`🚨 Broadcasting threat: ${threatData.threat_type}`);
+  const handleNetworkThreat = (eventData) => {
+    console.log(`🚨 SSE: Broadcasting threat to client...`);
+    console.log(`📊 SSE: Event data:`, JSON.stringify(eventData, null, 2));
+    
+    // eventData is already wrapped by emitNetworkThreat with {type, data, timestamp}
+    // Extract the actual threat data
+    const actualThreatData = eventData.data || eventData;
+    
     res.write(`data: ${JSON.stringify({
       type: 'threat_detected',
-      data: threatData,
-      timestamp: new Date().toISOString()
+      data: actualThreatData,
+      timestamp: eventData.timestamp || new Date().toISOString()
     })}\n\n`);
+    console.log(`✅ SSE: Threat broadcasted to client - ${actualThreatData.threat_id}`);
   };
 
   const handleMonitoringEvent = (eventData) => {

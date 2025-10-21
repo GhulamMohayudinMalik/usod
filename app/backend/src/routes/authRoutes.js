@@ -434,13 +434,29 @@ router.get('/security/blocked-ips', async (req, res) => {
 // Block an IP address (admin only)
 router.post('/security/block-ip', async (req, res) => {
   try {
-    const { ip, reason = 'manual_block' } = req.body;
+    const { ip, reason = 'manual_block', threatId, severity, threat_type } = req.body;
     
     if (!ip) {
       return res.status(400).json({ message: 'IP address required' });
     }
 
     blockIP(ip, reason);
+    
+    // Log the action with network threat details if available
+    try {
+      const { logActions } = await import('../services/loggingService.js');
+      await logActions.ipBlocked(req.user?.id || 'system', 'blocked', req, {
+        ip,
+        reason,
+        threatId: threatId || null,
+        severity: severity || null,
+        threatType: threat_type || null,
+        blockedBy: req.user?.username || 'system'
+      });
+    } catch (logError) {
+      console.error('Failed to log IP block:', logError);
+      // Continue anyway
+    }
     
     res.json({
       message: 'IP address blocked successfully',
