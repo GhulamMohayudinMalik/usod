@@ -330,7 +330,7 @@ function AIInsightsPage() {
         <h1 className="text-2xl font-semibold text-gray-100">Network Threat Analytics</h1>
         <p className="mt-1 text-sm text-gray-400">AI-powered network threat analysis and visualization</p>
       </div>
-
+      
       {/* Filters */}
       <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -442,10 +442,10 @@ function AIInsightsPage() {
               <p className="text-2xl font-bold text-red-400">{analytics.highSeverity}</p>
             </div>
           </div>
-                </div>
-
+        </div>
+        
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
-          <div className="flex items-center">
+                <div className="flex items-center">
             <div className="flex-shrink-0">
               <svg className="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
@@ -456,14 +456,14 @@ function AIInsightsPage() {
               <p className="text-2xl font-bold text-yellow-400">{analytics.mediumSeverity}</p>
             </div>
                 </div>
-              </div>
+                </div>
 
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 p-6">
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+                      </svg>
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-400">Low Severity</p>
@@ -566,7 +566,7 @@ function AIInsightsPage() {
             Threats Over Time
             <span className="text-sm text-gray-400 ml-2 font-normal">
               (Last 24 Hours)
-            </span>
+                  </span>
           </h3>
           {analytics.totalThreats === 0 ? (
             <div className="h-64 flex items-center justify-center">
@@ -630,22 +630,22 @@ function AIInsightsPage() {
                               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-gray-700 px-2 py-1 rounded text-xs text-gray-100 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
                                 {interval.count} {interval.count === 1 ? 'threat' : 'threats'}
                               </div>
-                            </div>
-                          </div>
+                </div>
+              </div>
                         );
                       });
                     })()}
-                  </div>
-                </div>
-              </div>
-              
+          </div>
+        </div>
+      </div>
+      
               {/* X-axis labels */}
               <div className="flex mt-2 pl-10">
                 <div className="flex-1 flex justify-between gap-1 px-1">
                   {analytics.threatsOverTime.map((interval, index) => (
                     <div key={index} className="flex-1 text-xs text-gray-400 text-center">
                       <span className="block overflow-hidden text-ellipsis whitespace-nowrap">{interval.label}</span>
-                    </div>
+        </div>
                   ))}
                 </div>
               </div>
@@ -669,8 +669,8 @@ function AIInsightsPage() {
                   </div>
                 <div className="w-full bg-gray-700 rounded-full h-2">
                   <div className="bg-red-500 h-2 rounded-full transition-all" style={{ width: `${percentage}%` }}></div>
+                  </div>
                 </div>
-            </div>
             );
           })}
           {analytics.topSourceIPs.length === 0 && (

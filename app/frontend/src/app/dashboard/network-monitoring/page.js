@@ -345,7 +345,7 @@ export default function NetworkMonitoringPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-100">AI Net-Monitor</h1>
+          <h1 className="text-2xl font-semibold text-gray-100">AI Network Monitoring</h1>
           <p className="text-sm text-gray-400">Real-time AI-powered network threat detection and analysis</p>
         </div>
         <div className="flex items-center space-x-4">
