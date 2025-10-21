@@ -1,0 +1,45 @@
+# Core ML and Data Science
+scikit-learn==1.3.2
+pandas==2.1.4
+numpy==1.24.4
+scipy==1.11.4
+
+# Deep Learning (optional for advanced models)
+tensorflow==2.15.0
+keras==2.15.0
+
+# Network Packet Capture and Analysis
+scapy==2.5.0
+pyshark==0.6
+
+# Web API Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+
+# HTTP Client for Node.js communication
+httpx==0.25.2
+requests==2.31.0
+
+# Data Processing and Visualization
+matplotlib==3.8.2
+seaborn==0.13.0
+plotly==5.17.0
+
+# File Processing
+python-multipart==0.0.6
+aiofiles==23.2.1
+
+# Utilities
+python-dotenv==1.0.0
+loguru==0.7.2
+tqdm==4.66.1
+
+# Development and Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+black==23.11.0
+flake8==6.1.0
+
+# Windows-specific (for packet capture)
+# Note: Npcap must be installed separately from https://npcap.com/

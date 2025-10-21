@@ -58,6 +58,15 @@ const SettingsIcon = () => (
   </svg>
 );
 
+const NetworkMonitoringIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+    <path d="M16 3h5v5" />
+    <path d="M8 3H3v5" />
+    <path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" />
+    <path d="M21 3l-7.828 7.828A4 4 0 0 0 12 13.7V22" />
+  </svg>
+);
+
 const UsersIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -101,6 +110,7 @@ const SecurityLabIcon = () => (
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
+  { name: 'AI Network Monitoring', href: '/dashboard/network-monitoring', icon: NetworkMonitoringIcon },
   { name: 'Threat Analysis', href: '/dashboard/threats', icon: ThreatIcon },
   { name: 'Logs Analysis', href: '/dashboard/logs', icon: LogIcon },
   { name: 'Analytics', href: '/dashboard/analytics', icon: AnalyticsIcon },
