@@ -7,6 +7,7 @@ import asyncio
 import threading
 import time
 import logging
+import requests
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 from pathlib import Path
@@ -463,9 +464,185 @@ class SimpleDetector:
             # Log threat detection
             logger.warning(f"🚨 THREAT DETECTED: {threat['threat_type']} from {flow.get('src_ip')}:{flow.get('src_port')} to {flow.get('dst_ip')}:{flow.get('dst_port')} (confidence: {threat_result['confidence']:.3f})")
             
+            # Send webhook to Node.js backend
+            self._send_webhook(threat)
+            
         except Exception as e:
             logger.error(f"Error handling threat detection: {e}")
-    
+
+    def _extract_real_pcap_features(self, flow: Dict[str, Any]) -> Optional[pd.DataFrame]:
+        """
+        Extract REAL CICIDS2017 features from actual PCAP flow data with bidirectional statistics
+
+        Args:
+            flow: Bidirectional flow dictionary with detailed packet inspection
+
+        Returns:
+            pd.DataFrame: Feature vector with proper column names or None if extraction fails
+        """
+        try:
+            import numpy as np
+            
+            # Extract basic flow info
+            dst_port = flow.get('dst_port', 0)
+            forward_packets = len(flow.get('forward_packets', []))
+            backward_packets = len(flow.get('backward_packets', []))
+            forward_bytes = flow.get('forward_bytes', 0)
+            backward_bytes = flow.get('backward_bytes', 0)
+            total_packets = forward_packets + backward_packets
+            total_bytes = forward_bytes + backward_bytes
+            
+            # Get packet length arrays
+            forward_packet_lengths = flow.get('forward_packet_lengths', [])
+            backward_packet_lengths = flow.get('backward_packet_lengths', [])
+            all_packet_lengths = flow.get('packet_lengths', [])
+            timestamps = flow.get('timestamps', [])
+            
+            # Calculate flow duration
+            if len(timestamps) > 1:
+                flow_duration = (timestamps[-1] - timestamps[0]) * 1000000  # Convert to microseconds
+                flow_duration = max(flow_duration, 1)  # Avoid division by zero
+            else:
+                flow_duration = 1
+            
+            # ==== Packet Size Features ====
+            if all_packet_lengths:
+                packet_length_mean = np.mean(all_packet_lengths)
+                packet_length_std = np.std(all_packet_lengths)
+                packet_length_variance = np.var(all_packet_lengths)
+                max_packet_length = np.max(all_packet_lengths)
+                average_packet_size = packet_length_mean
+            else:
+                packet_length_mean = 0
+                packet_length_std = 0
+                packet_length_variance = 0
+                max_packet_length = 0
+                average_packet_size = 0
+            
+            # Forward packet size features
+            if forward_packet_lengths:
+                fwd_packet_length_mean = np.mean(forward_packet_lengths)
+                fwd_packet_length_std = np.std(forward_packet_lengths)
+                fwd_packet_length_max = np.max(forward_packet_lengths)
+                avg_fwd_segment_size = fwd_packet_length_mean
+                total_fwd_packets = forward_bytes
+            else:
+                fwd_packet_length_mean = 0
+                fwd_packet_length_std = 0
+                fwd_packet_length_max = 0
+                avg_fwd_segment_size = 0
+                total_fwd_packets = 0
+            
+            # Backward packet size features
+            if backward_packet_lengths:
+                bwd_packet_length_mean = np.mean(backward_packet_lengths)
+                bwd_packet_length_max = np.max(backward_packet_lengths)
+                avg_bwd_segment_size = bwd_packet_length_mean
+            else:
+                bwd_packet_length_mean = 0
+                bwd_packet_length_max = 0
+                avg_bwd_segment_size = 0
+            
+            # ==== Inter-Arrival Time (IAT) Features ====
+            # Calculate IAT arrays
+            def calculate_iats(timestamps_list):
+                if len(timestamps_list) < 2:
+                    return []
+                iats = []
+                for i in range(1, len(timestamps_list)):
+                    iat = (timestamps_list[i] - timestamps_list[i-1]) * 1000000  # Microseconds
+                    iats.append(iat)
+                return iats
+            
+            # Forward IATs
+            forward_timestamps = [timestamps[i] for i in range(len(timestamps)) if i < len(flow.get('forward_packets', []))]
+            forward_iats = calculate_iats(forward_timestamps)
+            if forward_iats:
+                fwd_iat_mean = np.mean(forward_iats)
+                fwd_iat_std = np.std(forward_iats)
+                fwd_iat_max = np.max(forward_iats)
+            else:
+                fwd_iat_mean = 0
+                fwd_iat_std = 0
+                fwd_iat_max = 0
+            
+            # Backward IATs
+            backward_timestamps = [timestamps[i] for i in range(len(timestamps)) if i >= len(flow.get('forward_packets', []))]
+            backward_iats = calculate_iats(backward_timestamps)
+            if backward_iats:
+                bwd_iat_std = np.std(backward_iats)
+                bwd_iat_max = np.max(backward_iats)
+            else:
+                bwd_iat_std = 0
+                bwd_iat_max = 0
+            
+            # Flow IATs (all packets)
+            flow_iats = calculate_iats(timestamps)
+            if flow_iats:
+                flow_iat_std = np.std(flow_iats)
+                flow_iat_max = np.max(flow_iats)
+            else:
+                flow_iat_std = 0
+                flow_iat_max = 0
+            
+            # ==== TCP Flag Features ====
+            syn_flag_count = flow.get('syn_count', 0)
+            fwd_psh_flags = flow.get('psh_count', 0)
+            
+            # ==== Window Size Features ====
+            init_win_bytes_forward = flow.get('init_win_bytes_forward', 0)
+            
+            # ==== Subflow Features ====
+            subflow_fwd_bytes = forward_bytes
+            
+            # Create feature dictionary with exact names from CICIDS2017
+            features_dict = {
+                'Destination Port': float(dst_port),
+                'Bwd IAT Std': float(bwd_iat_std),
+                'Average Packet Size': float(average_packet_size),
+                'Avg Fwd Segment Size': float(avg_fwd_segment_size),
+                'SYN Flag Count': float(syn_flag_count),
+                'Packet Length Variance': float(packet_length_variance),
+                'Packet Length Mean': float(packet_length_mean),
+                'Fwd Packet Length Std': float(fwd_packet_length_std),
+                'Fwd Packet Length Mean': float(fwd_packet_length_mean),
+                'Fwd PSH Flags': float(fwd_psh_flags),
+                'Packet Length Std': float(packet_length_std),
+                'Max Packet Length': float(max_packet_length),
+                'Fwd Packet Length Max': float(fwd_packet_length_max),
+                'Fwd IAT Std': float(fwd_iat_std),
+                'Fwd IAT Max': float(fwd_iat_max),
+                'Flow IAT Max': float(flow_iat_max),
+                'Bwd Packet Length Mean': float(bwd_packet_length_mean),
+                'Init_Win_bytes_forward': float(init_win_bytes_forward),
+                'Bwd IAT Max': float(bwd_iat_max),
+                'Total Length of Fwd Packets': float(total_fwd_packets),
+                'Subflow Fwd Bytes': float(subflow_fwd_bytes),
+                'Flow IAT Std': float(flow_iat_std),
+                'Flow Duration': float(flow_duration),
+                'Avg Bwd Segment Size': float(avg_bwd_segment_size),
+                'Bwd Packet Length Max': float(bwd_packet_length_max)
+            }
+
+            # Convert to DataFrame
+            df = pd.DataFrame([features_dict])
+
+            # Ensure all 25 features are present in correct order
+            expected_features = [
+                'Destination Port', 'Bwd IAT Std', 'Average Packet Size', 'Avg Fwd Segment Size',
+                'SYN Flag Count', 'Packet Length Variance', 'Packet Length Mean', 'Fwd Packet Length Std',
+                'Fwd Packet Length Mean', 'Fwd PSH Flags', 'Packet Length Std', 'Max Packet Length',
+                'Fwd Packet Length Max', 'Fwd IAT Std', 'Fwd IAT Max', 'Flow IAT Max',
+                'Bwd Packet Length Mean', 'Init_Win_bytes_forward', 'Bwd IAT Max', 'Total Length of Fwd Packets',
+                'Subflow Fwd Bytes', 'Flow IAT Std', 'Flow Duration', 'Avg Bwd Segment Size', 'Bwd Packet Length Max'
+            ]
+
+            return df[expected_features]
+
+        except Exception as e:
+            logger.error(f"Error extracting real PCAP features: {e}", exc_info=True)
+            return None
+
     def _determine_severity(self, confidence: float) -> str:
         """
         Determine threat severity based on confidence score
@@ -516,3 +693,31 @@ class SimpleDetector:
         self.detected_threats.clear()
         self.stats['threats_detected'] = 0
         logger.info("🧹 Cleared threat history")
+    
+    def _send_webhook(self, threat_data: Dict[str, Any]):
+        """
+        Send threat data to Node.js backend via webhook
+        
+        Args:
+            threat_data: Threat information dictionary
+        """
+        NODEJS_BACKEND_URL = "http://localhost:5000"
+        WEBHOOK_ENDPOINT = f"{NODEJS_BACKEND_URL}/api/network/webhook"
+        
+        try:
+            response = requests.post(
+                WEBHOOK_ENDPOINT,
+                json=threat_data,
+                headers={"Content-Type": "application/json"},
+                timeout=5.0
+            )
+            if response.status_code == 200:
+                logger.info(f"✅ Webhook sent successfully: {threat_data['threat_id']}")
+            else:
+                logger.warning(f"⚠️ Webhook failed with status {response.status_code}: {response.text}")
+        except requests.exceptions.Timeout:
+            logger.error(f"❌ Webhook timeout for threat {threat_data['threat_id']}")
+        except requests.exceptions.ConnectionError:
+            logger.error(f"❌ Webhook connection error - is Node.js backend running?")
+        except Exception as e:
+            logger.error(f"❌ Webhook error: {e}")

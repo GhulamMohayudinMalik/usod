@@ -15,6 +15,7 @@ import threading
 import time
 import httpx
 import json
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -100,24 +101,39 @@ class MockDetector:
         import time
         
         def simulate_detection():
-            time.sleep(3)  # Wait 3 seconds
-            # Add a mock threat
-            threat = {
-                "threat_id": f"threat_{len(self.detected_threats) + 1:06d}",
-                "threat_type": random.choice(["port_scan", "ddos", "brute_force", "web_attack"]),
-                "severity": random.choice(["low", "medium", "high"]),
-                "source_ip": f"192.168.1.{random.randint(100, 200)}",
-                "destination_ip": f"192.168.1.{random.randint(1, 10)}",
-                "confidence": round(random.uniform(0.6, 0.95), 3),
-                "timestamp": datetime.now().isoformat(),
-                "details": {
-                    "packet_count": random.randint(10, 1000),
-                    "duration": round(random.uniform(1.0, 30.0), 2)
-                }
-            }
-            # Use webhook integration for threat detection
-            detect_threat_with_webhook(threat)
-            self.stats['threats_detected'] = len(self.detected_threats)
+            global monitoring_active
+            logger.info("🎭 MockDetector: Starting threat simulation...")
+            start_time = time.time()
+            
+            while time.time() - start_time < duration:
+                try:
+                    time.sleep(10)  # Generate a threat every 10 seconds
+                    
+                    # Add a mock threat
+                    threat = {
+                        "threat_id": f"threat_{len(self.detected_threats) + 1:06d}",
+                        "threat_type": random.choice(["port_scan", "ddos", "intrusion", "malware", "anomaly"]),
+                        "severity": random.choice(["low", "medium", "high"]),
+                        "source_ip": f"192.168.1.{random.randint(100, 200)}",
+                        "destination_ip": f"192.168.1.{random.randint(1, 10)}",
+                        "confidence": round(random.uniform(0.6, 0.95), 3),
+                        "timestamp": datetime.now().isoformat(),
+                        "details": {
+                            "packet_count": random.randint(10, 1000),
+                            "duration": round(random.uniform(1.0, 30.0), 2),
+                            "protocol": random.choice(["TCP", "UDP", "ICMP"])
+                        }
+                    }
+                    # Use webhook integration for threat detection
+                    detect_threat_with_webhook(threat)
+                    self.stats['threats_detected'] = len(self.detected_threats)
+                    logger.info(f"🚨 MockDetector: Generated threat {threat['threat_id']} ({threat['threat_type']}, {threat['severity']})")
+                except Exception as e:
+                    logger.error(f"❌ MockDetector error: {e}")
+            
+            # Duration expired, set monitoring_active to False
+            monitoring_active = False
+            logger.info("🎭 MockDetector: Simulation ended (duration expired, monitoring_active = False)")
         
         # Start detection in background
         detection_thread = threading.Thread(target=simulate_detection, daemon=True)
@@ -161,8 +177,21 @@ def detect_threat_with_webhook(threat_data: Dict[str, Any]):
     # Add to local storage
     detected_threats.append(threat_data)
     
-    # Send webhook asynchronously
-    asyncio.create_task(send_webhook(threat_data))
+    # Send webhook synchronously using requests (works from any thread)
+    import requests
+    try:
+        response = requests.post(
+            WEBHOOK_ENDPOINT,
+            json=threat_data,
+            headers={"Content-Type": "application/json"},
+            timeout=5.0
+        )
+        if response.status_code == 200:
+            logger.info(f"✅ Webhook sent successfully: {threat_data['threat_id']}")
+        else:
+            logger.warning(f"⚠️ Webhook failed: {response.status_code}")
+    except Exception as e:
+        logger.error(f"❌ Webhook error: {e}")
     
     logger.info(f"🚨 THREAT DETECTED: {threat_data['threat_type']} (confidence: {threat_data['confidence']})")
 
@@ -310,14 +339,234 @@ async def get_threats(limit: int = 50):
         }
 
 @app.post("/api/analyze-pcap")
-async def analyze_pcap(file_path: str):
-    """Analyze uploaded PCAP file"""
-    # TODO: Implement PCAP file analysis
+async def analyze_pcap(request: dict):
+    """Analyze uploaded PCAP file with real packet inspection"""
+    try:
+        logger.info(f"📥 Received PCAP analysis request: {request}")
+        
+        file_path = request.get("file_path")
+        if not file_path:
+            raise HTTPException(status_code=400, detail="file_path is required")
+        
+        logger.info(f"🔍 Checking file path: {file_path}")
+        logger.info(f"📂 Current working directory: {os.getcwd()}")
+        
+        # Check if file exists
+        if not os.path.exists(file_path):
+            logger.error(f"❌ File not found: {file_path}")
+            abs_path = os.path.abspath(file_path)
+            logger.error(f"❌ Absolute path would be: {abs_path}")
+            raise HTTPException(status_code=404, detail=f"File not found: {file_path} (Absolute: {abs_path})")
+        
+        logger.info(f"✅ File exists! Starting REAL PCAP analysis: {file_path}")
+        
+        threats = []
+        flows_analyzed = 0
+        
+        try:
+            from services.simple_detector import SimpleDetector
+            from scapy.all import rdpcap, IP, TCP, UDP
+            
+            detector = SimpleDetector()
+            
+            # Read PCAP file
+            logger.info(f"📖 Reading PCAP file...")
+            packets = rdpcap(file_path)
+            logger.info(f"✅ Loaded {len(packets)} packets from PCAP")
+            
+            # Extract bidirectional flows with deep packet inspection
+            flows_dict = {}
+            
+            for pkt_idx, packet in enumerate(packets):
+                try:
+                    if IP not in packet:
+                        continue
+                    
+                    src_ip = packet[IP].src
+                    dst_ip = packet[IP].dst
+                    timestamp = float(packet.time) if hasattr(packet, 'time') else 0
+                    packet_length = len(packet)
+                    
+                    # Extract TCP/UDP info
+                    src_port = 0
+                    dst_port = 0
+                    proto_name = "IP"
+                    tcp_flags = {}
+                    window_size = 0
+                    header_length = 0
+                    
+                    if TCP in packet:
+                        src_port = packet[TCP].sport
+                        dst_port = packet[TCP].dport
+                        proto_name = "TCP"
+                        tcp_flags = {
+                            'syn': int(packet[TCP].flags.S),
+                            'ack': int(packet[TCP].flags.A),
+                            'psh': int(packet[TCP].flags.P),
+                            'fin': int(packet[TCP].flags.F),
+                            'rst': int(packet[TCP].flags.R),
+                            'urg': int(packet[TCP].flags.U),
+                            'ece': int(packet[TCP].flags.E),
+                            'cwr': int(packet[TCP].flags.C)
+                        }
+                        window_size = packet[TCP].window
+                        header_length = packet[TCP].dataofs * 4
+                        
+                    elif UDP in packet:
+                        src_port = packet[UDP].sport
+                        dst_port = packet[UDP].dport
+                        proto_name = "UDP"
+                        header_length = 8
+                    
+                    # Create bidirectional flow key
+                    if (src_ip, src_port) < (dst_ip, dst_port):
+                        flow_key = f"{src_ip}:{src_port}<->{dst_ip}:{dst_port}:{proto_name}"
+                        direction = 'forward'
+                    else:
+                        flow_key = f"{dst_ip}:{dst_port}<->{src_ip}:{src_port}:{proto_name}"
+                        direction = 'backward'
+                    
+                    # Initialize flow if new
+                    if flow_key not in flows_dict:
+                        flows_dict[flow_key] = {
+                            'src_ip': src_ip if direction == 'forward' else dst_ip,
+                            'dst_ip': dst_ip if direction == 'forward' else src_ip,
+                            'src_port': src_port if direction == 'forward' else dst_port,
+                            'dst_port': dst_port if direction == 'forward' else src_port,
+                            'protocol': proto_name,
+                            'forward_packets': [],
+                            'backward_packets': [],
+                            'forward_bytes': 0,
+                            'backward_bytes': 0,
+                            'forward_header_bytes': 0,
+                            'backward_header_bytes': 0,
+                            'timestamps': [],
+                            'packet_lengths': [],
+                            'forward_packet_lengths': [],
+                            'backward_packet_lengths': [],
+                            'syn_count': 0,
+                            'ack_count': 0,
+                            'psh_count': 0,
+                            'urg_count': 0,
+                            'fin_count': 0,
+                            'rst_count': 0,
+                            'ece_count': 0,
+                            'init_win_bytes_forward': 0,
+                            'init_win_bytes_backward': 0,
+                            'act_data_pkt_fwd': 0
+                        }
+                    
+                    flow = flows_dict[flow_key]
+                    
+                    # Update flow statistics
+                    flow['timestamps'].append(timestamp)
+                    flow['packet_lengths'].append(packet_length)
+                    
+                    if direction == 'forward':
+                        flow['forward_packets'].append(pkt_idx)
+                        flow['forward_bytes'] += packet_length
+                        flow['forward_header_bytes'] += header_length
+                        flow['forward_packet_lengths'].append(packet_length)
+                        
+                        if len(flow['forward_packets']) == 1 and proto_name == 'TCP':
+                            flow['init_win_bytes_forward'] = window_size
+                        
+                        if packet_length > header_length + 20:
+                            flow['act_data_pkt_fwd'] += 1
+                    else:
+                        flow['backward_packets'].append(pkt_idx)
+                        flow['backward_bytes'] += packet_length
+                        flow['backward_header_bytes'] += header_length
+                        flow['backward_packet_lengths'].append(packet_length)
+                        
+                        if len(flow['backward_packets']) == 1 and proto_name == 'TCP':
+                            flow['init_win_bytes_backward'] = window_size
+                    
+                    # Count TCP flags
+                    if tcp_flags:
+                        flow['syn_count'] += tcp_flags['syn']
+                        flow['ack_count'] += tcp_flags['ack']
+                        flow['psh_count'] += tcp_flags['psh']
+                        flow['urg_count'] += tcp_flags['urg']
+                        flow['fin_count'] += tcp_flags['fin']
+                        flow['rst_count'] += tcp_flags['rst']
+                        flow['ece_count'] += tcp_flags['ece']
+                        
+                except Exception as packet_error:
+                    continue
+            
+            flows_analyzed = len(flows_dict)
+            logger.info(f"📊 Extracted {flows_analyzed} bidirectional flows from {len(packets)} packets")
+            
+            # Analyze each flow with ML models
+            for flow_key, flow in flows_dict.items():
+                try:
+                    features = detector._extract_real_pcap_features(flow)
+                    
+                    if features is None:
+                        logger.warning(f"Could not extract features for flow {flow_key}")
+                        continue
+                    
+                    prediction_result = detector._predict_threat(features, flow)
+                    
+                    is_threat = prediction_result.get('is_threat', False)
+                    threat_type = prediction_result.get('threat_type', 'unknown')
+                    confidence = prediction_result.get('confidence', 0.0)
+                    severity = detector._determine_severity(confidence)
+                    
+                    if is_threat:
+                        # Use actual packet timestamp from the PCAP file
+                        threat_timestamp = datetime.fromtimestamp(flow['timestamps'][0]).isoformat() if flow.get('timestamps') else datetime.now().isoformat()
+                        
+                        threat_data = {
+                            "threat_id": f"pcap_threat_{len(threats)+1:06d}",
+                            "threat_type": threat_type,
+                            "severity": severity,
+                            "source_ip": flow['src_ip'],
+                            "destination_ip": flow['dst_ip'],
+                            "source_port": flow.get('src_port'),
+                            "destination_port": flow.get('dst_port'),
+                            "protocol": flow.get('protocol', 'UNKNOWN'),
+                            "confidence": float(confidence),
+                            "timestamp": threat_timestamp,
+                            "details": {
+                                "rf_prediction": prediction_result.get('random_forest', {}).get('prediction', 0),
+                                "rf_confidence": prediction_result.get('random_forest', {}).get('confidence', 0.0),
+                                "iso_prediction": prediction_result.get('isolation_forest', {}).get('prediction', 0),
+                                "iso_score": prediction_result.get('isolation_forest', {}).get('anomaly_score', 0.0),
+                                "forward_packets": len(flow['forward_packets']),
+                                "backward_packets": len(flow['backward_packets']),
+                                "forward_bytes": flow['forward_bytes'],
+                                "backward_bytes": flow['backward_bytes']
+                            }
+                        }
+                        threats.append(threat_data)
+                        logger.info(f"🚨 Threat detected: {threat_type} ({severity}) from {flow['src_ip']} → {flow['dst_ip']} (confidence: {confidence:.2f})")
+                        
+                except Exception as analysis_error:
+                    logger.warning(f"Could not analyze flow {flow_key}: {analysis_error}")
+                    continue
+            
+            logger.info(f"✅ PCAP analysis complete: {len(threats)} threats detected from {flows_analyzed} flows")
+            
     return {
-        "status": "analysis_started",
+                                "success": True,
+                                "threats": threats,
+                                "flowsAnalyzed": flows_analyzed,
         "file_path": file_path,
-        "message": "PCAP analysis will be implemented in next phase"
-    }
+                                "analysis_timestamp": datetime.now().isoformat(),
+                                "message": f"Analysis complete: {len(threats)} threats detected from {flows_analyzed} flows"
+                            }
+            
+        except Exception as analysis_error:
+            logger.error(f"❌ Error during PCAP analysis: {analysis_error}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"PCAP analysis error: {str(analysis_error)}")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error analyzing PCAP: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"PCAP analysis failed: {str(e)}")
 
 @app.get("/api/model-stats")
 async def get_model_stats():
