@@ -11,10 +11,97 @@ import authRoutes from './routes/authRoutes.js';
 import userManagementRoutes from './routes/userManagementRoutes.js';
 import backupRoutes from './routes/backupRoutes.js';
 import networkRoutes from './routes/networkRoutes.js';
+import blockchainRoutes from './routes/blockchainRoutes.js';
+import apiDocsRoutes from './routes/apiDocsRoutes.js';
 import { startSessionCleanup } from './services/sessionService.js';
 
 // Load env
 dotenv.config();
+
+// ============================================================
+// SUPPRESS FABRIC SDK LOGS COMPLETELY (Nuclear approach)
+// ============================================================
+
+// Helper to check if message should be suppressed
+const shouldSuppressFabricLog = (message) => {
+  if (typeof message !== 'string') {
+    message = String(message);
+  }
+  
+  // NEVER suppress BlockchainService errors - we need to see them!
+  if (message.includes('[BlockchainService]') || message.includes('Error in logThreat')) {
+    return false;
+  }
+  
+  return (
+    message.includes('[ServiceEndpoint]') ||
+    message.includes('[NetworkConfig]') ||
+    message.includes('Failed to connect before the deadline') ||
+    message.includes('waitForReady') ||
+    message.includes('orderer.usod.com') ||
+    message.includes('grpc://orderer') ||
+    message.includes('checkState') ||
+    message.includes('_onTimeout') ||
+    message.includes('connectFailed')
+  );
+};
+
+// Intercept stderr
+const originalStderr = process.stderr.write;
+process.stderr.write = function(chunk, encoding, callback) {
+  const message = chunk.toString();
+  if (shouldSuppressFabricLog(message)) {
+    if (typeof callback === 'function') callback();
+    return true;
+  }
+  return originalStderr.apply(process.stderr, arguments);
+};
+
+// Intercept stdout (some Fabric logs go here too)
+const originalStdout = process.stdout.write;
+process.stdout.write = function(chunk, encoding, callback) {
+  const message = chunk.toString();
+  if (shouldSuppressFabricLog(message)) {
+    if (typeof callback === 'function') callback();
+    return true;
+  }
+  return originalStdout.apply(process.stdout, arguments);
+};
+
+// Override console methods
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+const originalConsoleLog = console.log;
+const originalConsoleInfo = console.info;
+
+console.error = function(...args) {
+  const message = args.join(' ');
+  if (!shouldSuppressFabricLog(message)) {
+    originalConsoleError.apply(console, args);
+  }
+};
+
+console.warn = function(...args) {
+  const message = args.join(' ');
+  if (!shouldSuppressFabricLog(message)) {
+    originalConsoleWarn.apply(console, args);
+  }
+};
+
+console.log = function(...args) {
+  const message = args.join(' ');
+  if (!shouldSuppressFabricLog(message)) {
+    originalConsoleLog.apply(console, args);
+  }
+};
+
+console.info = function(...args) {
+  const message = args.join(' ');
+  if (!shouldSuppressFabricLog(message)) {
+    originalConsoleInfo.apply(console, args);
+  }
+};
+// ============================================================
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -62,8 +149,13 @@ app.use('/api/stream', streamRoutes);
 app.use('/api/users', userManagementRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/network', networkRoutes);
+app.use('/api/blockchain', blockchainRoutes);
 
-app.get('/', (req, res) => {
+// API Documentation Routes - Must be registered before the old homepage route
+app.use('/', apiDocsRoutes);
+
+// Legacy HTML homepage (kept for backward compatibility)
+app.get('/legacy', (req, res) => {
   const html = `
   <!DOCTYPE html>
   <html lang="en">

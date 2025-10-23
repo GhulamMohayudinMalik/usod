@@ -19,12 +19,14 @@ class BlockchainService {
     this.channelName = 'usod-channel';
     this.chaincodeName = 'threat-logger';
     this.walletPath = path.join(__dirname, '../../../blockchain/wallets');
-    this.connectionProfilePath = path.join(__dirname, '../../../blockchain/connection-profiles/connection-usod.json');
-    this.identity = 'appUser';
+    this.connectionProfilePath = path.join(__dirname, '../config/connection-profile.json');
+    this.identity = 'admin';
     
     console.log('🔗 Blockchain Service initialized');
     console.log(`   Channel: ${this.channelName}`);
     console.log(`   Chaincode: ${this.chaincodeName}`);
+    console.log(`   Wallet: ${this.walletPath}`);
+    console.log(`   Connection Profile: ${this.connectionProfilePath}`);
   }
 
   /**
@@ -49,11 +51,11 @@ class BlockchainService {
       // Create gateway instance
       const gateway = new Gateway();
 
-      // Connect to gateway
+      // Connect to gateway (disable discovery to prevent orderer connection spam)
       await gateway.connect(connectionProfile, {
         wallet,
         identity: this.identity,
-        discovery: { enabled: true, asLocalhost: true }
+        discovery: { enabled: false, asLocalhost: false }
       });
 
       return gateway;
@@ -104,7 +106,7 @@ class BlockchainService {
     let gateway;
     
     try {
-      console.log(`🔗 Logging threat to blockchain: ${threat._id}`);
+      // Logging threat to blockchain: ${threat._id}
 
       // Get contract
       const result = await this.getContract();
@@ -129,19 +131,34 @@ class BlockchainService {
       const hash = this.calculateHash(threatDetails);
 
       // Submit transaction to blockchain
-      const response = await contract.submitTransaction(
-        'CreateThreatLog',
-        threat._id.toString(),                    // logId
-        'network_threat',                         // logType
-        JSON.stringify(threatDetails),            // threatDetails
-        hash,                                     // hash
-        threat.timestamp?.toISOString() || new Date().toISOString(), // timestamp
-        'network_ai_service'                      // detector
-      );
-
-      const result_data = JSON.parse(response.toString());
-
-      console.log(`✅ Threat logged to blockchain: ${threat._id}`);
+      const logType = threat.logType || 'network_threat'; // Use provided logType or default
+      const detector = threat.detector || 'network_ai_service';
+      
+      // Submit transaction - Fabric SDK throws errors even on success
+      try {
+        await contract.submitTransaction(
+          'CreateThreatLog',
+          threat._id.toString(),
+          logType,
+          JSON.stringify(threatDetails),
+          hash,
+          threat.timestamp?.toISOString() || new Date().toISOString(),
+          detector
+        );
+      } catch (submitError) {
+        // Fabric SDK quirk: empty errors array means it actually worked
+        if (!submitError.responses || !submitError.errors || submitError.errors.length > 0) {
+          throw submitError; // Real error
+        }
+        // Otherwise, ignore the error and continue
+      }
+      
+      // Wait 1 second for blockchain to commit
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Verify the log was actually stored
+      const verifyResponse = await contract.evaluateTransaction('ReadThreatLog', threat._id.toString());
+      const result_data = JSON.parse(verifyResponse.toString());
       
       return {
         success: true,
@@ -151,7 +168,22 @@ class BlockchainService {
       };
 
     } catch (error) {
-      console.error('❌ Failed to log threat to blockchain:', error.message);
+      // Use process.stderr.write to BYPASS ALL suppression
+      process.stderr.write(`\n❌❌❌ [CRITICAL BlockchainService ERROR] ❌❌❌\n`);
+      process.stderr.write(`   → Error type: ${error.constructor.name}\n`);
+      process.stderr.write(`   → Error message: ${error.message || 'NO MESSAGE'}\n`);
+      
+      // Fabric SDK errors have responses and errors arrays
+      if (error.responses) {
+        process.stderr.write(`   → Responses: ${JSON.stringify(error.responses, null, 2)}\n`);
+      }
+      if (error.errors) {
+        process.stderr.write(`   → Errors array: ${JSON.stringify(error.errors, null, 2)}\n`);
+      }
+      
+      process.stderr.write(`   → Error string: ${error.toString()}\n`);
+      process.stderr.write(`   → Error stack:\n${error.stack || 'NO STACK'}\n`);
+      process.stderr.write(`❌❌❌ END ERROR ❌❌❌\n\n`);
       
       return {
         success: false,
@@ -174,7 +206,7 @@ class BlockchainService {
     let gateway;
     
     try {
-      console.log(`🔍 Retrieving threat from blockchain: ${logId}`);
+      // Retrieving threat from blockchain: ${logId}
 
       const result = await this.getContract();
       gateway = result.gateway;
@@ -183,7 +215,7 @@ class BlockchainService {
       const response = await contract.evaluateTransaction('ReadThreatLog', logId);
       const threatLog = JSON.parse(response.toString());
 
-      console.log(`✅ Threat retrieved from blockchain: ${logId}`);
+      // Threat retrieved from blockchain: ${logId}
       
       return {
         success: true,
@@ -215,7 +247,7 @@ class BlockchainService {
     let gateway;
     
     try {
-      console.log(`🔐 Verifying threat integrity: ${logId}`);
+      // Verifying threat integrity: ${logId}
 
       const result = await this.getContract();
       gateway = result.gateway;
@@ -233,11 +265,16 @@ class BlockchainService {
       
       const verification = JSON.parse(response.toString());
 
-      console.log(`${verification.valid ? '✅' : '❌'} Threat verification: ${logId} - ${verification.valid ? 'VALID' : 'TAMPERED'}`);
+      // Threat verification: ${logId} - ${verification.valid ? 'VALID' : 'TAMPERED'}
       
+      // Map chaincode response to frontend-expected format
       return {
         success: true,
-        ...verification
+        valid: verification.valid,
+        originalHash: verification.storedHash,     // Blockchain hash
+        currentHash: verification.providedHash,    // Recalculated hash
+        logId: verification.logId,
+        timestamp: verification.timestamp
       };
 
     } catch (error) {
@@ -261,7 +298,7 @@ class BlockchainService {
     let gateway;
     
     try {
-      console.log('📋 Fetching all threats from blockchain...');
+      // Fetching all threats from blockchain
 
       const result = await this.getContract();
       gateway = result.gateway;
@@ -270,7 +307,7 @@ class BlockchainService {
       const response = await contract.evaluateTransaction('GetAllThreats');
       const threats = JSON.parse(response.toString());
 
-      console.log(`✅ Retrieved ${threats.length} threats from blockchain`);
+      // Retrieved ${threats.length} threats from blockchain
       
       return {
         success: true,
@@ -298,7 +335,7 @@ class BlockchainService {
     let gateway;
     
     try {
-      console.log('📊 Fetching blockchain statistics...');
+      // Fetching blockchain statistics
 
       const result = await this.getContract();
       gateway = result.gateway;
@@ -307,7 +344,7 @@ class BlockchainService {
       const response = await contract.evaluateTransaction('GetThreatStats');
       const stats = JSON.parse(response.toString());
 
-      console.log(`✅ Retrieved blockchain stats`);
+      // Retrieved blockchain stats
       
       return {
         success: true,

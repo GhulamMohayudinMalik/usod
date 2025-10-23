@@ -1,6 +1,7 @@
 import { SecurityLog } from '../models/securityLog.js';
 import { User } from '../models/User.js';
 import { eventBus } from './eventBus.js';
+import blockchainService from './blockchainService.js';
 
 // Helper function to get real IP address
 function getRealIP(req) {
@@ -216,14 +217,14 @@ function detectPlatform(userAgent, req) {
       userAgent.includes('Expo') ||
       userAgent.includes('Mobile App') ||
       req.headers['x-platform'] === 'mobile') {
-    return 'Mobile';
+    return 'mobile';
   }
   
   // Check for desktop app indicators
   if (userAgent.includes('Electron') ||
       userAgent.includes('Desktop App') ||
       req.headers['x-platform'] === 'desktop') {
-    return 'Desktop';
+    return 'desktop';
   }
   
   // Check for web app indicators (default for web browsers)
@@ -233,11 +234,100 @@ function detectPlatform(userAgent, req) {
       userAgent.includes('Firefox') ||
       userAgent.includes('Edge') ||
       req.headers['x-platform'] === 'web') {
-    return 'Web';
+    return 'web';
   }
   
   // Default to web for unknown cases (most likely web browsers)
-  return 'Web';
+  return 'web';
+}
+
+// Categorize log type for blockchain storage
+function categorizeLogType(action) {
+  const categories = {
+    // Authentication
+    'login': 'authentication',
+    'logout': 'authentication',
+    'session_created': 'authentication',
+    'session_expired': 'authentication',
+    'invalid_token': 'authentication',
+    'token_refresh': 'authentication',
+    
+    // User Management
+    'user_created': 'user_management',
+    'user_deleted': 'user_management',
+    'user_updated': 'user_management',
+    'role_changed': 'user_management',
+    'password_changed': 'user_management',
+    'profile_updated': 'user_management',
+    
+    // Security Actions
+    'ip_blocked': 'security_action',
+    'ip_unblocked': 'security_action',
+    'account_locked': 'security_action',
+    'account_unlocked': 'security_action',
+    
+    // Network Threats
+    'network_threat_detected': 'network_threat',
+    'network_port_scan': 'network_threat',
+    'network_dos': 'network_threat',
+    'network_intrusion': 'network_threat',
+    'network_malware': 'network_threat',
+    'network_anomaly': 'network_threat',
+    
+    // Data Operations
+    'backup_created': 'data_operation',
+    'backup_restored': 'data_operation',
+    'backup_deleted': 'data_operation',
+    'data_exported': 'data_operation',
+    'data_imported': 'data_operation',
+    
+    // PCAP Analysis
+    'pcap_uploaded': 'pcap_analysis',
+    'pcap_analyzed': 'pcap_analysis',
+    
+    // Monitoring
+    'monitoring_started': 'monitoring',
+    'monitoring_stopped': 'monitoring',
+  };
+  
+  return categories[action] || 'other';
+}
+
+// Determine severity based on action and status
+function determineSeverity(action, status) {
+  // Failed authentication/security = high severity
+  if (status === 'failed') {
+    if (action.includes('login') || action.includes('session') || action.includes('token')) {
+      return 'high';
+    }
+    return 'medium';
+  }
+  
+  // Network threats = critical/high
+  if (action.includes('network_')) {
+    if (action.includes('dos') || action.includes('intrusion') || action.includes('malware')) {
+      return 'critical';
+    }
+    return 'high';
+  }
+  
+  // Security actions = medium
+  if (action.includes('ip_blocked') || action.includes('account_locked')) {
+    return 'medium';
+  }
+  
+  // User management = low (normal operations)
+  if (action.includes('user_') || action.includes('role_') || action.includes('password_') || action.includes('profile_')) {
+    return 'low';
+  }
+  
+  // Data operations = low
+  if (action.includes('backup_') || action.includes('data_')) {
+    return 'low';
+  }
+  
+  // Default for successful operations
+  return 'low';
 }
 
 // Generic logging function
@@ -265,6 +355,7 @@ export async function logSecurityEvent(userId, action, status, req, details = {}
     const logData = {
       action,
       status,
+      platform, // Set the main platform field
       ipAddress: getRealIP(req),
       userAgent,
       details: {
@@ -284,6 +375,44 @@ export async function logSecurityEvent(userId, action, status, req, details = {}
     }
     
     const logEntry = await SecurityLog.create(logData);
+    
+    // Log to blockchain for immutable audit trail - ALL LOGS (non-blocking)
+    // Use setImmediate to make this async and non-blocking
+    setImmediate(async () => {
+      try {
+        // Determine log category and severity based on action
+        const logCategory = categorizeLogType(action);
+        const logSeverity = determineSeverity(action, status);
+        
+        const threatDetails = {
+          type: action || 'security_event',
+          category: logCategory, // NEW: authentication, network, user_management, etc.
+          severity: logSeverity,
+          sourceIP: logData.ipAddress || 'unknown',
+          destinationIP: 'system',
+          description: `${action}: ${status}`,
+          username: logData.details.username || 'unknown',
+          platform: logData.details.platform || 'unknown',
+          browser: logData.details.browser || 'unknown',
+          os: logData.details.os || 'unknown',
+          details: logData.details
+        };
+        
+        await blockchainService.logThreat({
+          _id: logEntry._id,
+          action,
+          logType: logCategory, // Pass category as logType
+          severity: logSeverity,
+          details: threatDetails,
+          timestamp: logEntry.timestamp
+        });
+        
+        console.log(`✓ Blockchain: ${logCategory} log ${logEntry._id.toString().substring(0, 8)}...`);
+      } catch (blockchainError) {
+        console.error(`✗ Blockchain failed for ${action}: ${blockchainError.message}`);
+        // Continue even if blockchain logging fails
+      }
+    });
     
     eventBus.emit('log.created', logEntry);
     return logEntry;

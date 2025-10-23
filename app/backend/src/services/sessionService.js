@@ -40,10 +40,13 @@ function shouldRefreshToken(token) {
 // Create a new session for a user
 export async function createSession(userId, req, loginMethod = 'password') {
   try {
+    console.log('🎫 createSession called with userId:', userId);
     const user = await User.findById(userId);
     if (!user) {
+      console.log('❌ User not found in createSession');
       throw new Error('User not found');
     }
+    console.log('🎫 User found in createSession:', user.username);
 
     // Generate session ID and token
     const sessionId = generateSessionId();
@@ -80,13 +83,15 @@ export async function createSession(userId, req, loginMethod = 'password') {
       timestamp: new Date()
     });
 
+    console.log('🎫 Session creation successful');
     return {
       token,
       sessionId,
       expiresAt: user.sessionExpiresAt
     };
   } catch (error) {
-    console.error('Error creating session:', error);
+    console.error('❌ Error creating session:', error);
+    console.error('❌ Session error stack:', error.stack);
     throw error;
   }
 }

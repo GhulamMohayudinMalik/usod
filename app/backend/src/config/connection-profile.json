@@ -1,0 +1,58 @@
+{
+  "name": "usod-network",
+  "version": "1.0.0",
+  "client": {
+    "organization": "USODOrg",
+    "connection": {
+      "timeout": {
+        "peer": {
+          "endorser": "300"
+        },
+        "orderer": "300"
+      }
+    }
+  },
+  "organizations": {
+    "USODOrg": {
+      "mspid": "USODOrgMSP",
+      "peers": [
+        "peer0.org1.usod.com"
+      ],
+      "certificateAuthorities": []
+    }
+  },
+  "peers": {
+    "peer0.org1.usod.com": {
+      "url": "grpc://localhost:7051",
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.org1.usod.com",
+        "hostnameOverride": "peer0.org1.usod.com"
+      }
+    }
+  },
+  "orderers": {
+    "orderer.usod.com": {
+      "url": "grpc://localhost:7050",
+      "grpcOptions": {
+        "ssl-target-name-override": "orderer.usod.com",
+        "hostnameOverride": "orderer.usod.com"
+      }
+    }
+  },
+  "channels": {
+    "usod-channel": {
+      "orderers": [
+        "orderer.usod.com"
+      ],
+      "peers": {
+        "peer0.org1.usod.com": {
+          "endorsingPeer": true,
+          "chaincodeQuery": true,
+          "ledgerQuery": true,
+          "eventSource": true
+        }
+      }
+    }
+  }
+}
+

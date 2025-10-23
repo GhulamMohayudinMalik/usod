@@ -1,0 +1,15 @@
+OrdererOrgs:
+  - Name: Orderer
+    Domain: usod.com
+    Specs:
+      - Hostname: orderer
+
+PeerOrgs:
+  - Name: USODOrg
+    Domain: org1.usod.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 1
+

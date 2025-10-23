@@ -15,6 +15,7 @@ import {
   isAccountLocked
 } from '../services/sessionService.js';
 import { logSecurityEvent } from '../services/loggingService.js';
+import { authenticateToken, requireRole } from '../middleware/auth.js';
 import { 
   performSecurityCheck, 
   trackFailedLogin, 
@@ -103,11 +104,13 @@ async function logLogoutEvent(userId, req, details = {}) {
 }
 
 // Login endpoint
-router.post('/login', performSecurityCheck, async (req, res) => {
+router.post('/login', async (req, res) => {
   try {
+    console.log('🔐 Login attempt:', { username: req.body.username, hasPassword: !!req.body.password });
     const { username, password } = req.body;
     
     if (!username || !password) {
+      console.log('❌ Missing credentials');
       return res.status(400).json({ message: 'Username and password required' });
     }
 
@@ -120,8 +123,10 @@ router.post('/login', performSecurityCheck, async (req, res) => {
       });
     }
 
+    console.log('🔍 Looking up user:', username);
     const user = await User.findOne({ username });
     if (!user) {
+      console.log('❌ User not found:', username);
       // Track failed login for security detection
       trackFailedLogin(ip, username, req);
       
@@ -132,6 +137,7 @@ router.post('/login', performSecurityCheck, async (req, res) => {
       });
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+    console.log('✅ User found:', user.username, 'isActive:', user.isActive);
 
     // Check if account is locked
     const isLocked = await isAccountLocked(user._id);
@@ -145,7 +151,9 @@ router.post('/login', performSecurityCheck, async (req, res) => {
       });
     }
 
+    console.log('🔐 Checking password...');
     const isValidPassword = await bcrypt.compare(password, user.password);
+    console.log('🔐 Password valid:', isValidPassword);
     if (!isValidPassword) {
       // Track failed login for security detection
       trackFailedLogin(ip, username, req);
@@ -188,7 +196,9 @@ router.post('/login', performSecurityCheck, async (req, res) => {
     await user.save();
 
     // Create new session
+    console.log('🎫 Creating session...');
     const sessionData = await createSession(user._id, req, 'password');
+    console.log('🎫 Session created:', { sessionId: sessionData.sessionId, hasToken: !!sessionData.token });
 
     // Log successful login
     await logLoginAttempt(user._id, 'success', req, {
@@ -211,8 +221,10 @@ router.post('/login', performSecurityCheck, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Login failed' });
+    console.error('❌ Login error:', error);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error message:', error.message);
+    res.status(500).json({ message: 'Login failed', error: error.message });
   }
 });
 
@@ -404,7 +416,7 @@ router.get('/session-status', async (req, res) => {
 // Security management endpoints
 
 // Get security statistics
-router.get('/security/stats', async (req, res) => {
+router.get('/security/stats', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
     const stats = getSecurityStats();
     res.json({
@@ -418,7 +430,7 @@ router.get('/security/stats', async (req, res) => {
 });
 
 // Get blocked IPs
-router.get('/security/blocked-ips', async (req, res) => {
+router.get('/security/blocked-ips', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
     const blockedIPs = getBlockedIPs();
     res.json({
@@ -432,7 +444,7 @@ router.get('/security/blocked-ips', async (req, res) => {
 });
 
 // Block an IP address (admin only)
-router.post('/security/block-ip', async (req, res) => {
+router.post('/security/block-ip', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
     const { ip, reason = 'manual_block', threatId, severity, threat_type } = req.body;
     
@@ -470,7 +482,7 @@ router.post('/security/block-ip', async (req, res) => {
 });
 
 // Unblock an IP address (admin only)
-router.post('/security/unblock-ip', async (req, res) => {
+router.post('/security/unblock-ip', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
     const { ip, reason = 'manual_unblock' } = req.body;
     

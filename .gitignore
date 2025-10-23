@@ -37,6 +37,10 @@ infrastructure/.terraform/
 # ML models (large files)
 ml-services/models/*.pkl
 ml-services/models/*.h5
+ai/data/
+
+# BlockChain
+blockchain/bin/
 
 # Docker
 docker-compose.override.yml
