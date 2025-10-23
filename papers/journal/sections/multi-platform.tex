@@ -1,0 +1,59 @@
+\subsection{Frontend Applications}
+
+The frontend implementation provides a modern, responsive user interface built with Next.js 15 and React 19. The application implements server-side rendering for optimal performance and SEO, while maintaining client-side interactivity for real-time security operations.
+
+\textbf{Web Application Architecture}: The Next.js application uses the App Router for optimal performance and developer experience. The application implements a component-based architecture with reusable UI components for consistent user experience across different sections.
+
+\textbf{Real-time Updates}: The frontend integrates with the backend through WebSocket connections for real-time security event updates. The application uses React hooks for state management and implements optimistic UI updates for immediate user feedback.
+
+\textbf{Responsive Design}: The application implements a mobile-first responsive design using Tailwind CSS, ensuring optimal user experience across desktop, tablet, and mobile devices. The design system includes consistent color schemes, typography, and spacing.
+
+\begin{lstlisting}[language=JavaScript, caption=Frontend Security Dashboard Component, basicstyle=\footnotesize\ttfamily, breaklines=true]
+// Security Dashboard Component
+import { useState, useEffect } from 'react';
+import { useWebSocket } from '../hooks/useWebSocket';
+
+export default function SecurityDashboard() {
+  const [securityEvents, setSecurityEvents] = useState([]);
+  const [threatStats, setThreatStats] = useState({
+    totalThreats: 0, blockedIPs: 0, activeThreats: 0
+  });
+  
+  const { socket, isConnected } = useWebSocket('ws://localhost:5000/stream/logs');
+  
+  useEffect(() => {
+    if (socket) {
+      socket.on('log', (event) => {
+        if (event.action === 'security_event') {
+          setSecurityEvents(prev => [event, ...prev.slice(0, 99)]);
+          setThreatStats(prev => ({
+            ...prev,
+            totalThreats: prev.totalThreats + 1,
+            activeThreats: prev.activeThreats + 1
+          }));
+        }
+      });
+    }
+  }, [socket]);
+  
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-red-400">Active Threats</h3>
+        <p className="text-3xl font-bold text-red-300">{threatStats.activeThreats}</p>
+      </div>
+      {/* Additional dashboard components */}
+    </div>
+  );
+}
+\end{lstlisting}
+
+\subsection{Mobile and Desktop Platforms}
+
+The mobile and desktop platforms provide native application experiences while maintaining code reuse and consistent functionality with the web platform.
+
+\textbf{React Native Mobile Application}: The mobile app is built using React Native with Expo, ensuring cross-platform compatibility between iOS and Android. The application implements touch-optimized interfaces and leverages native mobile capabilities such as biometric authentication and push notifications.
+
+\textbf{Electron Desktop Application}: The desktop app leverages Electron to provide native desktop functionality while maintaining code reuse with the web platform. The application includes native notifications, system tray integration, and offline capabilities for critical security operations.
+
+\textbf{Cross-Platform Compatibility}: Both mobile and desktop applications share common business logic and API integration code, ensuring consistent behavior across all platforms. The applications implement platform-specific UI components while maintaining a unified user experience.

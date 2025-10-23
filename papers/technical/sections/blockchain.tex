@@ -1,0 +1,158 @@
+\textit{[FUTURE WORK - ARCHITECTURAL DESIGN ONLY - NOT YET IMPLEMENTED]}
+
+The blockchain integration in USOD is architecturally designed to provide immutable, tamper-proof storage for security logs and audit trails, ensuring data integrity and compliance with regulatory requirements. Complete documentation and configuration files for Hyperledger Fabric integration exist in the project's blockchain directory, including network setup scripts, chaincode specifications, and deployment guides. However, the actual blockchain network is not yet deployed or integrated with the production system.
+
+\subsection{Hyperledger Fabric Integration Design}
+
+The planned blockchain integration is designed around Hyperledger Fabric, a permissioned blockchain platform optimized for enterprise applications. The architecture specifications include single-organization network configuration for development/FYP purposes, with documented expansion plans for multi-organization deployment. The design targets support for thousands of transactions per second while maintaining data integrity.
+
+\textbf{Network Architecture}: The Hyperledger Fabric network consists of multiple peer nodes, orderer nodes, and certificate authorities (CAs) configured for high availability and fault tolerance. The network implements a Byzantine Fault Tolerant (BFT) consensus mechanism that ensures data consistency even in the presence of malicious nodes.
+
+\textbf{Channel Configuration}: Security logs are stored in dedicated channels that provide data isolation and access control. Each channel implements specific access policies that determine which organizations can read and write security log data, ensuring compliance with data privacy regulations.
+
+\textbf{Smart Contract Deployment}: The system deploys custom chaincode (smart contracts) that define the business logic for storing, retrieving, and validating security logs. The chaincode implements comprehensive validation rules and access controls to ensure data integrity and security.
+
+\subsection{Immutable Logging System}
+
+The immutable logging system provides tamper-proof storage for security events, ensuring that once logged, security data cannot be modified or deleted without detection. The system implements cryptographic hashing and digital signatures to guarantee data integrity.
+
+\textbf{Log Data Structure}: Security logs are structured as JSON objects containing comprehensive metadata including timestamp, event type, source IP, user information, and detailed event descriptions. Each log entry includes cryptographic hashes and digital signatures for integrity verification.
+
+\textbf{Blockchain Storage Mechanism}: Security logs are stored as key-value pairs in the Hyperledger Fabric world state, with composite keys that enable efficient querying and retrieval. The system implements data compression and indexing strategies to optimize storage efficiency and query performance.
+
+\textbf{Data Integrity Guarantees}: Each log entry is cryptographically hashed and digitally signed before storage, ensuring that any modification to the data will be detected during verification. The blockchain's immutable nature provides additional protection against data tampering.
+
+\subsubsection{Smart Contract Implementation}
+
+\begin{lstlisting}[language=JavaScript, caption=Hyperledger Fabric Chaincode Implementation, basicstyle=\footnotesize\ttfamily, breaklines=true]
+const { Contract } = require('fabric-contract-api');
+const crypto = require('crypto');
+
+class SecurityLogContract extends Contract {
+    async storeSecurityLog(ctx, logData) {
+        // Validate input data
+        if (!logData.timestamp || !logData.eventType || !logData.sourceIP) {
+            throw new Error('Invalid log data: missing required fields');
+        }
+
+        // Create composite key for efficient querying
+        const logId = ctx.stub.createCompositeKey('securityLog', [
+            logData.timestamp, logData.eventType, logData.sourceIP
+        ]);
+
+        // Generate cryptographic hash for integrity verification
+        const logHash = crypto.createHash('sha256')
+            .update(JSON.stringify(logData))
+            .digest('hex');
+
+        // Add hash and signature to log data
+        const enrichedLogData = {
+            ...logData,
+            hash: logHash,
+            signature: await this.generateSignature(logData),
+            blockNumber: ctx.stub.getTxID(),
+            timestamp: new Date().toISOString()
+        };
+
+        // Store in blockchain
+        await ctx.stub.putState(logId, Buffer.from(JSON.stringify(enrichedLogData)));
+
+        // Emit event for real-time notifications
+        ctx.stub.setEvent('logStored', Buffer.from(JSON.stringify({
+            logId: logId, eventType: logData.eventType,
+            timestamp: logData.timestamp, hash: logHash
+        })));
+
+        return {
+            success: true, logId: logId, hash: logHash,
+            blockNumber: ctx.stub.getTxID()
+        };
+    }
+
+    async getSecurityLog(ctx, logId) {
+        const logData = await ctx.stub.getState(logId);
+        if (!logData || logData.length === 0) {
+            throw new Error(`Security log with ID ${logId} not found`);
+        }
+
+        const log = JSON.parse(logData.toString());
+        
+        // Verify data integrity
+        const isValid = await this.verifyLogIntegrity(log);
+        if (!isValid) {
+            throw new Error('Log data integrity verification failed');
+        }
+
+        return log;
+    }
+
+    async verifyLogIntegrity(log) {
+        const { hash, signature, ...logData } = log;
+        
+        // Verify hash
+        const calculatedHash = crypto.createHash('sha256')
+            .update(JSON.stringify(logData))
+            .digest('hex');
+        
+        if (calculatedHash !== hash) {
+            return false;
+        }
+
+        // Verify signature
+        const calculatedSignature = crypto.createHmac('sha256', 'secret-key')
+            .update(JSON.stringify(logData))
+            .digest('hex');
+        
+        return calculatedSignature === signature;
+    }
+}
+
+module.exports = SecurityLogContract;
+\end{lstlisting}
+
+\subsection{Distributed Trust Mechanisms}
+
+The blockchain integration implements sophisticated trust mechanisms that ensure data integrity and prevent unauthorized modifications. The system leverages cryptographic primitives and consensus algorithms to establish trust in a distributed environment.
+
+\textbf{Consensus Algorithms}: The system implements Raft consensus for ordering transactions, providing high throughput and low latency while maintaining data consistency. The consensus mechanism ensures that all network participants agree on the order and validity of transactions.
+
+\textbf{Node Validation}: All network nodes undergo identity verification and certificate-based authentication. The system implements role-based access control that determines which nodes can participate in consensus and data validation processes.
+
+\textbf{Trust Establishment}: Trust is established through a combination of cryptographic certificates, digital signatures, and consensus mechanisms. The system maintains a certificate authority (CA) that issues and manages digital certificates for all network participants.
+
+\subsection{Log Integrity Verification}
+
+The log integrity verification system provides comprehensive mechanisms for detecting data tampering and ensuring audit trail authenticity. The system implements multiple layers of verification to guarantee data integrity.
+
+\textbf{Hash Verification}: Each log entry includes a cryptographic hash that enables immediate detection of data tampering. The system uses SHA-256 hashing to ensure collision resistance and data integrity verification.
+
+\textbf{Digital Signatures}: Log entries are digitally signed using the private key of the logging system, enabling verification of data authenticity and source identification. The signature verification process ensures that logs have not been modified since creation.
+
+\textbf{Tamper Detection}: The system implements continuous monitoring of log integrity with automated alerts for any detected tampering attempts. The blockchain's immutable nature provides additional protection against data modification.
+
+\subsection{Planned Performance Characteristics}
+
+\textit{[PROJECTED SPECIFICATIONS - NOT YET VALIDATED]}
+
+The blockchain integration design targets high performance while maintaining security and data integrity. Several optimization strategies are specified for efficient production operation.
+
+\textbf{Target Transaction Throughput}: Design specifications target 1,000+ transactions per second through optimized chaincode implementation and efficient data structures. Batch processing capabilities are planned for high-volume log ingestion without performance degradation. \textit{[NOT YET BENCHMARKED]} Actual performance will be measured upon implementation.
+
+\textbf{Planned Latency}: Target average transaction latency is below 100ms through network optimization and efficient consensus mechanisms. Connection pooling and request batching strategies are documented to minimize latency. \textit{[ESTIMATED]} Actual latency will depend on network configuration and hardware specifications.
+
+\textbf{Storage Strategy}: Data compression and indexing strategies are designed to optimize storage requirements while maintaining query performance. Data archival policies are planned to manage long-term storage costs. \textit{[IMPLEMENTATION PENDING]} Actual storage efficiency will be measured during deployment.
+
+\subsection{Planned Security Benefits}
+
+\textit{[ANTICIPATED BENEFITS UPON IMPLEMENTATION]}
+
+The blockchain integration is designed to provide significant security benefits that would enhance the overall security posture of the USOD platform upon implementation.
+
+\textbf{Immutability Guarantees}: Once the blockchain network is operational, security logs stored on-chain will be immutable, providing audit trails that meet compliance requirements for data retention and integrity. \textit{[CURRENT IMPLEMENTATION]} MongoDB currently provides comprehensive logging with indexing and access controls, but without blockchain-level immutability guarantees.
+
+\textbf{Tamper Resistance}: The cryptographic nature of blockchain technology is designed to make data tampering extremely difficult to achieve without detection through hash mismatches and signature verification failures. \textit{[CURRENT IMPLEMENTATION]} Current MongoDB implementation uses application-level access controls and backup systems for data protection.
+
+\textbf{Audit Trail Integrity}: The planned distributed blockchain architecture would ensure audit trail integrity even if individual nodes are compromised, with consensus mechanisms preventing unauthorized ledger modifications. \textit{[CURRENT IMPLEMENTATION]} Current centralized MongoDB approach provides comprehensive audit logging with administrative access controls.
+
+\textbf{Compliance Support}: Upon implementation, blockchain-stored logs would provide enhanced support for regulatory compliance requirements including SOX, GDPR, and HIPAA through immutable audit trails. \textit{[CURRENT IMPLEMENTATION]} Current system maintains detailed audit trails in MongoDB that satisfy many compliance requirements, with planned blockchain enhancement for additional immutability guarantees.
+
