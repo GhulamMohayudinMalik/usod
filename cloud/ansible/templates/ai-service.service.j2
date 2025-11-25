@@ -1,0 +1,21 @@
+[Unit]
+Description=USOD AI Service (FastAPI)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory={{ app_dir }}/ai
+Environment="PATH={{ app_dir }}/ai/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PYTHONUNBUFFERED=1"
+Environment="BACKEND_WEBHOOK_URL={{ backend_webhook_url }}"
+ExecStart={{ app_dir }}/ai/.venv/bin/uvicorn main:app --host 0.0.0.0 --port {{ service_port }}
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/usod-ai-service.log
+StandardError=append:/var/log/usod-ai-service-error.log
+
+[Install]
+WantedBy=multi-user.target
+

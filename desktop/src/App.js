@@ -11,6 +11,9 @@ import BackupPage from './pages/BackupPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import SecurityPage from './pages/SecurityPage';
 import SecurityLabPage from './pages/SecurityLabPage';
+import NetworkMonitoringPage from './pages/NetworkMonitoringPage';
+import PcapAnalyzerPage from './pages/PcapAnalyzerPage';
+import BlockchainPage from './pages/BlockchainPage';
 import LoginPage from './pages/LoginPage';
 import Layout from './components/Layout';
 import apiService from './services/api';
@@ -248,6 +251,42 @@ function AppContent() {
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
                 <SecurityLabPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } 
+        />
+        <Route 
+          path="/network-monitoring" 
+          element={
+            isAuthenticated ? (
+              <Layout user={user} onLogout={handleLogout}>
+                <NetworkMonitoringPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } 
+        />
+        <Route 
+          path="/pcap-analyzer" 
+          element={
+            isAuthenticated ? (
+              <Layout user={user} onLogout={handleLogout}>
+                <PcapAnalyzerPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          } 
+        />
+        <Route 
+          path="/blockchain" 
+          element={
+            isAuthenticated ? (
+              <Layout user={user} onLogout={handleLogout}>
+                <BlockchainPage />
               </Layout>
             ) : (
               <Navigate to="/login" replace />

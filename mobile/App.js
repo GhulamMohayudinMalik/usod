@@ -16,6 +16,9 @@ import SecurityLabScreen from './screens/SecurityLabScreen';
 import BackupScreen from './screens/BackupScreen';
 import ChangePasswordScreen from './screens/ChangePasswordScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import NetworkMonitoringScreen from './screens/NetworkMonitoringScreen';
+import PcapAnalyzerScreen from './screens/PcapAnalyzerScreen';
+import BlockchainScreen from './screens/BlockchainScreen';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import apiService from './services/api';
@@ -96,6 +99,12 @@ function MainNavigator() {
         return <SecurityScreen />;
       case 'SecurityLab':
         return <SecurityLabScreen />;
+      case 'NetworkMonitoring':
+        return <NetworkMonitoringScreen />;
+      case 'PcapAnalyzer':
+        return <PcapAnalyzerScreen />;
+      case 'BlockchainLedger':
+        return <BlockchainScreen />;
       case 'Backup':
         return <BackupScreen />;
       case 'ChangePassword':

@@ -114,12 +114,21 @@ const PCAPIcon = () => (
   </svg>
 );
 
+const BlockchainIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+    <path d="M2 17l10 5 10-5" />
+    <path d="M2 12l10 5 10-5" />
+  </svg>
+);
+
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
   { name: 'AI Network Monitoring', href: '/dashboard/network-monitoring', icon: NetworkMonitoringIcon },
-  { name: 'PCAP Analyzer', href: '/dashboard/pcap-analyzer', icon: PCAPIcon },
-  { name: 'Threat Analysis', href: '/dashboard/threats', icon: ThreatIcon },
+  { name: 'Blockchain Ledger', href: '/dashboard/blockchain', icon: BlockchainIcon },
+  { name: 'AI Packet Analyzer', href: '/dashboard/pcap-analyzer', icon: PCAPIcon },
   { name: 'Logs Analysis', href: '/dashboard/logs', icon: LogIcon },
+  { name: 'Threats Analysis', href: '/dashboard/threats', icon: ThreatIcon },
   { name: 'Analytics', href: '/dashboard/analytics', icon: AnalyticsIcon },
   { name: 'AI Insights', href: '/dashboard/ai-insights', icon: AiInsightsIcon },
   { name: 'Security Lab', href: '/dashboard/security-lab', icon: SecurityLabIcon },

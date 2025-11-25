@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import apiService from '../services/api';
+import Modal from '../components/Modal';
 
 const LogsPage = () => {
   const [logs, setLogs] = useState([]);
@@ -17,6 +18,8 @@ const LogsPage = () => {
     totalPages: 0
   });
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Fetch logs from backend
   const fetchLogs = async () => {
@@ -108,8 +111,13 @@ const LogsPage = () => {
 
 
   const showLogDetails = (log) => {
-    const details = JSON.stringify(log.details || {}, null, 2);
-    alert(`Log Details:\n\n${details}`);
+    setSelectedLog(log);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedLog(null);
   };
 
   const applyFilters = () => {
@@ -632,6 +640,105 @@ const LogsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Log Details Modal */}
+      <Modal
+        isOpen={isModalOpen && selectedLog}
+        onClose={closeModal}
+        title="Log Details"
+        size="lg"
+      >
+        {selectedLog && (
+          <div>
+            {/* Basic Information */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#9ca3af', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                  Action
+                </label>
+                <p style={{ color: 'white', fontWeight: '500', margin: 0 }}>
+                  {selectedLog.action}
+                </p>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#9ca3af', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                  User
+                </label>
+                <p style={{ color: 'white', fontWeight: '500', margin: 0 }}>
+                  {selectedLog.userId?.username || 'System'}
+                </p>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#9ca3af', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                  Timestamp
+                </label>
+                <p style={{ color: 'white', fontWeight: '500', margin: 0 }}>
+                  {new Date(selectedLog.timestamp).toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.75rem', color: '#9ca3af', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                  Platform
+                </label>
+                <span style={{
+                  display: 'inline-block',
+                  padding: '0.25rem 0.5rem',
+                  borderRadius: '9999px',
+                  fontSize: '0.75rem',
+                  fontWeight: '500',
+                  ...getPlatformBadgeStyle(selectedLog.platform)
+                }}>
+                  {toTitleCase(selectedLog.platform)}
+                </span>
+              </div>
+            </div>
+
+            {/* IP Information */}
+            {selectedLog.ipAddress && (
+              <div style={{ marginBottom: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(55, 65, 81, 0.3)' }}>
+                <h4 style={{ fontSize: '0.875rem', fontWeight: '600', color: '#d1d5db', marginBottom: '0.75rem' }}>
+                  Network Information
+                </h4>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', color: '#9ca3af', textTransform: 'uppercase', marginBottom: '0.25rem' }}>
+                    IP Address
+                  </label>
+                  <p style={{ color: 'white', fontFamily: 'monospace', margin: 0 }}>
+                    {selectedLog.ipAddress}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Additional Details */}
+            {selectedLog.details && Object.keys(selectedLog.details).length > 0 && (
+              <div style={{ paddingTop: '1rem', borderTop: '1px solid rgba(55, 65, 81, 0.3)' }}>
+                <h4 style={{ fontSize: '0.875rem', fontWeight: '600', color: '#d1d5db', marginBottom: '0.75rem' }}>
+                  Additional Details
+                </h4>
+                <div style={{ 
+                  background: 'rgba(55, 65, 81, 0.5)', 
+                  padding: '1rem', 
+                  borderRadius: '0.5rem',
+                  maxHeight: '300px',
+                  overflow: 'auto'
+                }}>
+                  <pre style={{ 
+                    fontSize: '0.75rem', 
+                    color: '#d1d5db', 
+                    margin: 0, 
+                    whiteSpace: 'pre-wrap', 
+                    overflow: 'auto',
+                    fontFamily: 'monospace'
+                  }}>
+                    {JSON.stringify(selectedLog.details, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

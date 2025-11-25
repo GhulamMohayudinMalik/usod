@@ -1,0 +1,41 @@
+#cloud-config
+# Cloud-init configuration for OCI instance
+
+# Update and upgrade packages
+package_update: true
+package_upgrade: true
+
+# Install basic packages
+packages:
+  - curl
+  - wget
+  - git
+  - htop
+  - vim
+  - net-tools
+
+# Configure firewall
+runcmd:
+  # Disable firewalld (we use OCI security lists)
+  - systemctl stop firewalld
+  - systemctl disable firewalld
+  
+  # Set hostname
+  - hostnamectl set-hostname usod-${service_name}
+  - echo "127.0.0.1 usod-${service_name}" >> /etc/hosts
+  
+  # Create application user
+  - useradd -m -s /bin/bash usod
+  - usermod -aG wheel usod
+  - echo "usod ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/usod
+  
+  # Update SELinux to permissive (for development)
+  - setenforce 0
+  - sed -i 's/^SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
+
+# Set timezone
+timezone: UTC
+
+# Final message
+final_message: "USOD ${service_name} instance is ready!"
+

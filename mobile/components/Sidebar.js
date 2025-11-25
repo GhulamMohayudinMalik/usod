@@ -14,8 +14,11 @@ const { width } = Dimensions.get('window');
 const Sidebar = ({ visible, onClose, onNavigate, activeRoute, user }) => {
   const navigationItems = [
     { name: 'Dashboard', route: 'Dashboard', icon: '📊' },
-    { name: 'Threat Analysis', route: 'Threats', icon: '⚠️' },
+    { name: 'AI Network Monitoring', route: 'NetworkMonitoring', icon: '📡' },
+    { name: 'Blockchain Ledger', route: 'BlockchainLedger', icon: '🔗' },
+    { name: 'AI Packet Analyzer', route: 'PcapAnalyzer', icon: '📦' },
     { name: 'Logs Analysis', route: 'Logs', icon: '📋' },
+    { name: 'Threat Analysis', route: 'Threats', icon: '⚠️' },
     { name: 'Analytics', route: 'Analytics', icon: '📈' },
     { name: 'AI Insights', route: 'AIInsights', icon: '🤖' },
     { name: 'Security Lab', route: 'SecurityLab', icon: '🧪' },

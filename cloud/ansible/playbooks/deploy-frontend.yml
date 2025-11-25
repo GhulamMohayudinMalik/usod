@@ -1,0 +1,154 @@
+---
+# Ansible Playbook - Deploy Next.js Frontend
+# Deploys USOD frontend application
+
+- name: Deploy USOD Frontend
+  hosts: frontend
+  become: yes
+  gather_facts: yes
+
+  vars:
+    app_name: usod-frontend
+    app_dir: /opt/usod/frontend
+    git_repo: https://github.com/your-org/usod-testing.git  # CHANGE
+    git_branch: main
+    node_version: "18"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install dependencies
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+          - nginx
+          - build-essential
+        state: present
+
+    - name: Install Node.js
+      block:
+        - name: Download Node.js setup script
+          get_url:
+            url: "https://deb.nodesource.com/setup_{{ node_version }}.x"
+            dest: /tmp/nodejs_setup.sh
+            mode: '0755'
+
+        - name: Run Node.js setup script
+          shell: bash /tmp/nodejs_setup.sh
+
+        - name: Install Node.js
+          apt:
+            name: nodejs
+            state: present
+
+    - name: Install PM2 globally
+      npm:
+        name: pm2
+        global: yes
+        state: present
+
+    - name: Create application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Clone repository
+      git:
+        repo: "{{ git_repo }}"
+        dest: "{{ app_dir }}"
+        version: "{{ git_branch }}"
+        force: yes
+      become_user: ubuntu
+
+    - name: Install frontend dependencies
+      npm:
+        path: "{{ app_dir }}/frontend"
+      become_user: ubuntu
+
+    - name: Create .env.local file
+      template:
+        src: ../templates/frontend.env.j2
+        dest: "{{ app_dir }}/frontend/.env.local"
+        owner: ubuntu
+        group: ubuntu
+        mode: '0600'
+
+    - name: Build Next.js application
+      command: npm run build
+      args:
+        chdir: "{{ app_dir }}/frontend"
+      become_user: ubuntu
+      environment:
+        NODE_ENV: production
+
+    - name: Stop existing PM2 process
+      command: pm2 delete {{ app_name }}
+      become_user: ubuntu
+      ignore_errors: yes
+
+    - name: Start frontend with PM2
+      command: pm2 start npm --name {{ app_name }} -- start
+      args:
+        chdir: "{{ app_dir }}/frontend"
+      become_user: ubuntu
+      environment:
+        NODE_ENV: production
+        PORT: "{{ service_port }}"
+
+    - name: Save PM2 process list
+      command: pm2 save
+      become_user: ubuntu
+
+    - name: Configure Nginx reverse proxy
+      template:
+        src: ../templates/nginx-frontend.conf.j2
+        dest: /etc/nginx/sites-available/usod-frontend
+        mode: '0644'
+
+    - name: Enable Nginx site
+      file:
+        src: /etc/nginx/sites-available/usod-frontend
+        dest: /etc/nginx/sites-enabled/usod-frontend
+        state: link
+
+    - name: Remove default Nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Test Nginx configuration
+      command: nginx -t
+      register: nginx_test
+
+    - name: Reload Nginx
+      systemd:
+        name: nginx
+        state: reloaded
+      when: nginx_test.rc == 0
+
+    - name: Configure firewall for HTTP/HTTPS
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - '80'
+        - '443'
+        - "{{ service_port }}"
+
+    - name: Enable firewall
+      ufw:
+        state: enabled
+
+    - name: Display deployment status
+      debug:
+        msg: "Frontend deployed successfully at http://{{ ansible_host }}"
+

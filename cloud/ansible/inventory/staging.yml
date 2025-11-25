@@ -1,0 +1,28 @@
+# Ansible Inventory - Staging Environment
+# Single server with all services for testing
+
+all:
+  children:
+    staging:
+      hosts:
+        staging-server:
+          ansible_host: 10.0.0.1  # CHANGE: Your staging server IP
+          ansible_user: ubuntu
+          ansible_ssh_private_key_file: ~/.ssh/usod-key
+          ansible_python_interpreter: /usr/bin/python3
+      vars:
+        env: staging
+        mongodb_uri: "mongodb://localhost:27017/usod-staging"
+        jwt_secret: "staging-secret-key-change-me"
+        node_env: staging
+        backend_port: 5000
+        ai_service_port: 8000
+        frontend_port: 3000
+        orderer_port: 7050
+        peer_port: 7051
+        ca_port: 7054
+
+  vars:
+    ansible_connection: ssh
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+

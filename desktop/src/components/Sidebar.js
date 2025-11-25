@@ -10,16 +10,34 @@ const Sidebar = ({ currentPath, onNavigate }) => {
       description: 'Overview & Analytics'
     },
     {
-      path: '/threats',
-      icon: '🚨',
-      label: 'Threats',
-      description: 'Security Events'
+      path: '/network-monitoring',
+      icon: '📡',
+      label: 'AI Network Monitoring',
+      description: 'Real-time Detection'
+    },
+    {
+      path: '/blockchain',
+      icon: '🔗',
+      label: 'Blockchain Ledger',
+      description: 'Immutable Logs'
+    },
+    {
+      path: '/pcap-analyzer',
+      icon: '📦',
+      label: 'AI Packet Analyzer',
+      description: 'Packet Analysis'
     },
     {
       path: '/logs',
       icon: '📋',
-      label: 'Security Logs',
+      label: 'Logs Analysis',
       description: 'Monitor Activities'
+    },
+    {
+      path: '/threats',
+      icon: '🚨',
+      label: 'Threats Analysis',
+      description: 'Security Events'
     },
     {
       path: '/analytics',
@@ -42,19 +60,19 @@ const Sidebar = ({ currentPath, onNavigate }) => {
     {
       path: '/security',
       icon: '🛡️',
-      label: 'Security',
+      label: 'Security Management',
       description: 'Security Monitoring'
     },
     {
       path: '/users',
       icon: '👥',
-      label: 'Users',
+      label: 'User Management',
       description: 'User Management'
     },
     {
       path: '/backup',
       icon: '💾',
-      label: 'Backup',
+      label: 'Backup Management',
       description: 'Data Management'
     },
     {

@@ -10,6 +10,7 @@ import {
   Dimensions 
 } from 'react-native';
 import apiService from '../services/api';
+import Modal from '../components/Modal';
 
 const { width } = Dimensions.get('window');
 
@@ -31,6 +32,8 @@ const LogsScreen = () => {
     endDate: ''
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
 
   useEffect(() => {
@@ -155,12 +158,13 @@ const LogsScreen = () => {
   ];
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
+    <>
+      <ScrollView 
+        style={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
@@ -279,7 +283,10 @@ const LogsScreen = () => {
                     
                     <TouchableOpacity 
                       style={styles.detailsButton}
-                      onPress={() => Alert.alert('Log Details', JSON.stringify(log.details || {}, null, 2))}
+                      onPress={() => {
+                        setSelectedLog(log);
+                        setIsModalOpen(true);
+                      }}
                     >
                       <Text style={styles.detailsButtonText}>View Details</Text>
                     </TouchableOpacity>
@@ -321,7 +328,82 @@ const LogsScreen = () => {
           )}
         </View>
       </View>
-    </ScrollView>
+      </ScrollView>
+
+      {/* Log Details Modal - positioned outside ScrollView for proper centering */}
+      <Modal
+        visible={isModalOpen && !!selectedLog}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedLog(null);
+        }}
+        title="Log Details"
+        size="lg"
+      >
+        {selectedLog && (
+          <View style={styles.modalContent}>
+            {/* Basic Information */}
+            <View style={styles.modalSection}>
+              <View style={styles.modalRow}>
+                <Text style={styles.modalLabel}>Action</Text>
+                <Text style={styles.modalValue}>{selectedLog.action}</Text>
+              </View>
+              <View style={styles.modalRow}>
+                <Text style={styles.modalLabel}>User</Text>
+                <Text style={styles.modalValue}>
+                  {selectedLog.userId?.username || 'System'}
+                </Text>
+              </View>
+              <View style={styles.modalRow}>
+                <Text style={styles.modalLabel}>Timestamp</Text>
+                <Text style={styles.modalValue}>
+                  {new Date(selectedLog.timestamp).toLocaleString()}
+                </Text>
+              </View>
+              <View style={styles.modalRow}>
+                <Text style={styles.modalLabel}>Platform</Text>
+                <View style={[
+                  styles.platformBadge,
+                  { backgroundColor: getStatusBgColor(selectedLog.platform) }
+                ]}>
+                  <Text style={[
+                    styles.platformBadgeText,
+                    { color: getStatusColor(selectedLog.platform) }
+                  ]}>
+                    {selectedLog.platform?.toUpperCase() || 'UNKNOWN'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* IP Information */}
+            {selectedLog.ipAddress && (
+              <View style={styles.modalSection}>
+                <Text style={styles.modalSectionTitle}>Network Information</Text>
+                <View style={styles.modalRow}>
+                  <Text style={styles.modalLabel}>IP Address</Text>
+                  <Text style={[styles.modalValue, styles.monoFont]}>
+                    {selectedLog.ipAddress}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Additional Details */}
+            {selectedLog.details && Object.keys(selectedLog.details).length > 0 && (
+              <View style={[styles.modalSection, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+                <Text style={styles.modalSectionTitle}>Additional Details</Text>
+                <View style={styles.detailsContainer}>
+                  <Text style={styles.detailsText} selectable={true}>
+                    {JSON.stringify(selectedLog.details, null, 2)}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+      </Modal>
+    </>
   );
 };
 
@@ -585,6 +667,64 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+  modalContent: {
+    gap: 16,
+  },
+  modalSection: {
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(55, 65, 81, 0.3)',
+  },
+  modalSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#D1D5DB',
+    marginBottom: 12,
+  },
+  modalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  modalLabel: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    flex: 1,
+  },
+  modalValue: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '500',
+    flex: 1,
+    textAlign: 'right',
+  },
+  platformBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  platformBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  detailsContainer: {
+    backgroundColor: 'rgba(55, 65, 81, 0.5)',
+    borderRadius: 8,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(75, 85, 99, 0.5)',
+    marginTop: 4,
+  },
+  detailsText: {
+    fontSize: 12,
+    color: '#D1D5DB',
+    fontFamily: 'monospace',
+    lineHeight: 18,
+  },
+  monoFont: {
+    fontFamily: 'monospace',
   },
 });
 

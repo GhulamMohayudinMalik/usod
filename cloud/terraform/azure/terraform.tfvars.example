@@ -1,0 +1,35 @@
+# Azure Terraform Variables - Example Configuration
+# Copy this file to terraform.tfvars and update with your values
+
+# Project Configuration
+project_name = "usod"
+environment  = "production"  # production, staging, or development
+
+# Azure Configuration
+location = "eastus"  # Change to your preferred region
+# Other options: westus, westeurope, eastasia, etc.
+
+# VM Configuration
+vm_size = "Standard_B1s"  # Low cost option, change if needed
+# Free tier options: B1s (1 vCPU, 1GB RAM)
+
+# Admin Configuration
+admin_username       = "azureuser"
+ssh_public_key_path  = "~/.ssh/usod-key.pub"  # Path to your public key
+
+# Additional Tags (Optional)
+tags = {
+  Owner      = "USOD Team"
+  Department = "Computer Science"
+  University = "Your University"
+  CostCenter = "FYP"
+  Purpose    = "Blockchain Network"
+}
+
+# Notes:
+# 1. Create Azure account: https://azure.microsoft.com/free/students/
+# 2. Install Azure CLI: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli
+# 3. Login: az login
+# 4. Generate SSH key: ssh-keygen -t rsa -b 4096 -f ~/.ssh/usod-key
+# 5. Set subscription: az account set --subscription "your-subscription-id"
+

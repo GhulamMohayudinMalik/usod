@@ -697,6 +697,174 @@ class ApiService {
       return { success: false, message: error.message };
     }
   }
+
+  // Network monitoring methods
+  async startNetworkMonitoring(networkInterface = 'auto', duration = 300) {
+    try {
+      console.log('Starting network monitoring...');
+      const response = await this.fetch(`${this.baseURL}/api/network/start-monitoring`, {
+        method: 'POST',
+        body: JSON.stringify({ interface: networkInterface, duration })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Network monitoring started successfully');
+        return { success: true, data };
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to start monitoring' }));
+        console.log('❌ Start monitoring failed:', response.status, errorData.message);
+        return { success: false, message: errorData.message };
+      }
+    } catch (error) {
+      console.log('❌ Start monitoring error:', error.message);
+      return { success: false, message: error.message };
+    }
+  }
+
+  async stopNetworkMonitoring() {
+    try {
+      console.log('Stopping network monitoring...');
+      const response = await this.fetch(`${this.baseURL}/api/network/stop-monitoring`, {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Network monitoring stopped successfully');
+        return { success: true, data };
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to stop monitoring' }));
+        console.log('❌ Stop monitoring failed:', response.status, errorData.message);
+        return { success: false, message: errorData.message };
+      }
+    } catch (error) {
+      console.log('❌ Stop monitoring error:', error.message);
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getNetworkThreats(limit = 50) {
+    try {
+      console.log('Fetching network threats...');
+      const response = await this.fetch(`${this.baseURL}/api/network/threats/history?limit=${limit}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Network threats fetched successfully:', data.threats?.length || 0, 'threats');
+        return { success: true, threats: data.threats, count: data.count };
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch threats' }));
+        console.log('❌ Fetch threats failed:', response.status, errorData.message);
+        return { success: false, message: errorData.message };
+      }
+    } catch (error) {
+      console.log('❌ Fetch threats error:', error.message);
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getNetworkStatus() {
+    try {
+      console.log('Fetching network status...');
+      const response = await this.fetch(`${this.baseURL}/api/network/status`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Network status fetched successfully');
+        return { success: true, data: data.status };
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch network status' }));
+        console.log('❌ Fetch network status failed:', response.status, errorData.message);
+        return { success: false, message: errorData.message };
+      }
+    } catch (error) {
+      console.log('❌ Fetch network status error:', error.message);
+      return { success: false, message: error.message };
+    }
+  }
+
+  async uploadPcapFile(file) {
+    try {
+      console.log('Uploading PCAP file:', file.name);
+      
+      const formData = new FormData();
+      formData.append('pcap', file);
+
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`${this.baseURL}/api/network/upload-pcap`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-Platform': 'desktop',
+          'x-platform': 'desktop'
+        },
+        body: formData
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ PCAP file uploaded and analyzed successfully');
+        return { success: true, ...data };
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to upload PCAP file' }));
+        console.log('❌ Upload PCAP failed:', response.status, errorData.message);
+        return { success: false, message: errorData.message };
+      }
+    } catch (error) {
+      console.log('❌ Upload PCAP error:', error.message);
+      return { success: false, message: error.message };
+    }
+  }
+
+  // ============================================
+  // Helper Methods (get/post convenience methods)
+  // ============================================
+
+  async get(endpoint) {
+    const response = await this.fetch(`${this.baseURL}${endpoint}`);
+    if (response.ok) {
+      return { data: await response.json() };
+    } else {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+  }
+
+  async post(endpoint, data) {
+    const response = await this.fetch(`${this.baseURL}${endpoint}`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    if (response.ok) {
+      return { data: await response.json() };
+    } else {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+  }
+
+  async put(endpoint, data) {
+    const response = await this.fetch(`${this.baseURL}${endpoint}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    if (response.ok) {
+      return { data: await response.json() };
+    } else {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+  }
+
+  async delete(endpoint) {
+    const response = await this.fetch(`${this.baseURL}${endpoint}`, {
+      method: 'DELETE'
+    });
+    if (response.ok) {
+      return { data: await response.json() };
+    } else {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+  }
 }
 
 // Create and export a singleton instance

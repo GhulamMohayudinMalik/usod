@@ -6,135 +6,314 @@ import {
   ScrollView, 
   TouchableOpacity, 
   RefreshControl,
-  Dimensions 
+  Dimensions,
+  TextInput 
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import apiService from '../services/api';
 
 const { width } = Dimensions.get('window');
 
+// Simple SVG Pie/Donut Chart Component for React Native
+function PieChart({ data, size = 150, innerRadius = 0, centerLabel, subLabel }) {
+  const total = data.reduce((sum, d) => sum + (d.value || 0), 0);
+  const radius = size / 2;
+  const rOuter = radius - 2;
+  const rInner = Math.max(0, Math.min(innerRadius, rOuter - 4));
+
+  const polarToCartesian = (cx, cy, r, angleInDegrees) => {
+    const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+    return {
+      x: cx + r * Math.cos(angleInRadians),
+      y: cy + r * Math.sin(angleInRadians)
+    };
+  };
+
+  const describeArcPath = (cx, cy, rOuter, rInner, startAngle, endAngle) => {
+    const angleDiff = endAngle - startAngle;
+    const isFullCircle = angleDiff >= 359.9;
+    
+    if (isFullCircle) {
+      if (rInner <= 0) {
+        return [
+          `M ${cx} ${cy}`,
+          `m 0 ${-rOuter}`,
+          `a ${rOuter} ${rOuter} 0 1 1 0 ${2 * rOuter}`,
+          `a ${rOuter} ${rOuter} 0 1 1 0 ${-2 * rOuter}`,
+          'Z'
+        ].join(' ');
+      } else {
+        return [
+          `M ${cx} ${cy - rOuter}`,
+          `a ${rOuter} ${rOuter} 0 1 1 0 ${2 * rOuter}`,
+          `a ${rOuter} ${rOuter} 0 1 1 0 ${-2 * rOuter}`,
+          `M ${cx} ${cy - rInner}`,
+          `a ${rInner} ${rInner} 0 1 0 0 ${2 * rInner}`,
+          `a ${rInner} ${rInner} 0 1 0 0 ${-2 * rInner}`,
+          'Z'
+        ].join(' ');
+      }
+    }
+
+    const largeArcFlag = angleDiff <= 180 ? 0 : 1;
+
+    if (rInner <= 0) {
+      const start = polarToCartesian(cx, cy, rOuter, startAngle);
+      const end = polarToCartesian(cx, cy, rOuter, endAngle);
+      return [
+        `M ${cx} ${cy}`,
+        `L ${start.x} ${start.y}`,
+        `A ${rOuter} ${rOuter} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`,
+        'Z'
+      ].join(' ');
+    }
+
+    const outerStart = polarToCartesian(cx, cy, rOuter, startAngle);
+    const outerEnd = polarToCartesian(cx, cy, rOuter, endAngle);
+    const innerStart = polarToCartesian(cx, cy, rInner, startAngle);
+    const innerEnd = polarToCartesian(cx, cy, rInner, endAngle);
+    
+    return [
+      `M ${outerStart.x} ${outerStart.y}`,
+      `A ${rOuter} ${rOuter} 0 ${largeArcFlag} 1 ${outerEnd.x} ${outerEnd.y}`,
+      `L ${innerEnd.x} ${innerEnd.y}`,
+      `A ${rInner} ${rInner} 0 ${largeArcFlag} 0 ${innerStart.x} ${innerStart.y}`,
+      'Z'
+    ].join(' ');
+  };
+
+  const cx = radius;
+  const cy = radius;
+
+  const slices = [];
+  let cumulative = 0;
+  data.forEach((d, idx) => {
+    const value = d.value || 0;
+    if (value > 0) {
+      const startAngle = (cumulative / (total || 1)) * 360;
+      cumulative += value;
+      const endAngle = (cumulative / (total || 1)) * 360;
+      const path = describeArcPath(cx, cy, rOuter, rInner, startAngle, endAngle);
+      slices.push({ path, color: d.color, key: idx });
+    }
+  });
+
+  return (
+    <View style={{ width: size, height: size, position: 'relative' }}>
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {slices.map((slice) => (
+          <Path 
+            key={slice.key} 
+            d={slice.path} 
+            fill={slice.color}
+          />
+        ))}
+      </Svg>
+
+      {(centerLabel || subLabel) && (
+        <View style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          {centerLabel && (
+            <Text style={{ fontSize: 18, fontWeight: '600', color: '#f3f4f6' }}>{centerLabel}</Text>
+          )}
+          {subLabel && (
+            <Text style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>{subLabel}</Text>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
 const AIInsightsScreen = () => {
-  const [threatData, setThreatData] = useState([]);
-  const [insightResult, setInsightResult] = useState(null);
+  const [threats, setThreats] = useState([]);
+  const [filteredThreats, setFilteredThreats] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [insightLoading, setInsightLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  
+  // Filters
+  const [dateFilter, setDateFilter] = useState('all');
+  const [severityFilter, setSeverityFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Analytics
+  const [analytics, setAnalytics] = useState({
+    totalThreats: 0,
+    highSeverity: 0,
+    mediumSeverity: 0,
+    lowSeverity: 0,
+    topSourceIPs: [],
+    threatsByType: {},
+    threatsOverTime: []
+  });
 
-  // Dummy threat data
-  const dummyThreatData = [
-    { id: 1, type: 'sql_injection', severity: 'high', timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), source: '192.168.1.100', description: 'SQL injection attempt detected' },
-    { id: 2, type: 'brute_force', severity: 'medium', timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(), source: '10.0.0.50', description: 'Brute force attack detected' },
-    { id: 3, type: 'xss_attempt', severity: 'high', timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(), source: '172.16.0.25', description: 'XSS payload detected' },
-    { id: 4, type: 'suspicious_activity', severity: 'medium', timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(), source: '203.0.113.1', description: 'Suspicious file upload' },
-    { id: 5, type: 'csrf_attempt', severity: 'low', timestamp: new Date(Date.now() - 1000 * 60 * 150).toISOString(), source: '198.51.100.5', description: 'CSRF token validation failed' }
-  ];
+  const chartColors = ['#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
   useEffect(() => {
-    fetchThreatData();
+    fetchNetworkThreats();
   }, []);
 
-  const fetchThreatData = async () => {
+  useEffect(() => {
+    applyFilters();
+  }, [threats, dateFilter, severityFilter, typeFilter, searchQuery]);
+  
+  useEffect(() => {
+    calculateAnalytics();
+  }, [filteredThreats]);
+
+  const fetchNetworkThreats = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      // Simulate API call
-      setTimeout(() => {
-        setThreatData(dummyThreatData);
-        // Generate insights automatically when data is loaded
-        generateInsights(dummyThreatData);
-        setLoading(false);
-      }, 1000);
+      const result = await apiService.getNetworkThreats(100);
+      if (result.success && result.threats) {
+        setThreats(result.threats);
+      } else {
+        throw new Error('Failed to fetch network threats');
+      }
     } catch (err) {
-      setError('Failed to load threat intelligence data');
+      console.error('Error fetching network threats:', err);
+      setError('Failed to load network threat data');
+    } finally {
       setLoading(false);
     }
   };
 
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => {
-      fetchThreatData();
-      setRefreshing(false);
-    }, 1500);
+    fetchNetworkThreats().finally(() => setRefreshing(false));
   };
-
-  const generateInsights = async (threats) => {
-    setInsightLoading(true);
     
-    try {
-      // Simulate AI insights generation
-      setTimeout(() => {
-        const mockInsights = {
-          summary: "Security posture shows moderate risk with several emerging threats detected. Recent malware activity suggests increased targeting of financial services sector. Suspicious login patterns indicate potential credential compromise attempts.",
-          recommendations: [
-            "Update intrusion detection signatures for emerging threats",
-            "Implement additional authentication factors for critical systems",
-            "Review and update firewall rules for known malicious IP ranges",
-            "Conduct targeted phishing awareness training"
-          ],
-          risk_score: 65,
-          trends: [
-            { label: "Malware Detections", value: 23, change: 15 },
-            { label: "Phishing Attempts", value: 42, change: -8 },
-            { label: "Unauthorized Access", value: 12, change: 5 },
-            { label: "Data Exfiltration", value: 4, change: -2 }
-          ],
-          top_threats: [
-            { name: "Emotet Variant", count: 12, severity: "high" },
-            { name: "Credential Stuffing", count: 18, severity: "medium" },
-            { name: "SQL Injection", count: 7, severity: "high" },
-            { name: "Zero-day Vulnerability", count: 3, severity: "critical" },
-            { name: "Ransomware", count: 5, severity: "critical" }
-          ]
-        };
-        
-        setInsightResult(mockInsights);
-        setInsightLoading(false);
-      }, 2000);
-    } catch (error) {
-      setInsightLoading(false);
+  const applyFilters = () => {
+    let filtered = [...threats];
+
+    // Date filter
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      filtered = filtered.filter(threat => {
+        const threatDate = new Date(threat.timestamp);
+        switch (dateFilter) {
+          case 'today':
+            return threatDate.toDateString() === now.toDateString();
+          case 'week':
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            return threatDate >= weekAgo;
+          case 'month':
+            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            return threatDate >= monthAgo;
+          default:
+            return true;
+        }
+      });
     }
+
+    // Severity filter
+    if (severityFilter !== 'all') {
+      filtered = filtered.filter(threat => threat.severity === severityFilter);
+    }
+
+    // Type filter
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(threat => threat.threat_type === typeFilter);
+    }
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(threat => 
+        threat.source_ip?.toLowerCase().includes(query) ||
+        threat.destination_ip?.toLowerCase().includes(query) ||
+        threat.threat_type?.toLowerCase().includes(query) ||
+        threat.threat_id?.toLowerCase().includes(query)
+      );
+    }
+
+    setFilteredThreats(filtered);
   };
 
+  const calculateAnalytics = () => {
+    const total = filteredThreats.length;
+    const high = filteredThreats.filter(t => t.severity === 'high').length;
+    const medium = filteredThreats.filter(t => t.severity === 'medium').length;
+    const low = filteredThreats.filter(t => t.severity === 'low').length;
+
+    // Top source IPs
+    const ipCounts = {};
+    filteredThreats.forEach(threat => {
+      ipCounts[threat.source_ip] = (ipCounts[threat.source_ip] || 0) + 1;
+    });
+    const topIPs = Object.entries(ipCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([ip, count]) => ({ ip, count }));
+
+    // Threats by type
+    const typeCounts = {};
+    filteredThreats.forEach(threat => {
+      typeCounts[threat.threat_type] = (typeCounts[threat.threat_type] || 0) + 1;
+    });
+
+    setAnalytics({
+      totalThreats: total,
+      highSeverity: high,
+      mediumSeverity: medium,
+      lowSeverity: low,
+      topSourceIPs: topIPs,
+      threatsByType: typeCounts,
+    });
+  };
+  
   const getSeverityColor = (severity) => {
     switch(severity) {
-      case 'low': return '#10B981';
-      case 'medium': return '#F59E0B';
-      case 'high': return '#EF4444';
-      case 'critical': return '#7C3AED';
-      default: return '#6B7280';
+      case 'low': return { bg: 'rgba(59, 130, 246, 0.1)', text: '#3b82f6' };
+      case 'medium': return { bg: 'rgba(245, 158, 11, 0.1)', text: '#f59e0b' };
+      case 'high': return { bg: 'rgba(239, 68, 68, 0.1)', text: '#ef4444' };
+      case 'critical': return { bg: 'rgba(168, 85, 247, 0.1)', text: '#a855f7' };
+      default: return { bg: 'rgba(107, 114, 128, 0.1)', text: '#6b7280' };
     }
   };
 
-  const getSeverityBgColor = (severity) => {
-    switch(severity) {
-      case 'low': return 'rgba(16, 185, 129, 0.1)';
-      case 'medium': return 'rgba(245, 158, 11, 0.1)';
-      case 'high': return 'rgba(239, 68, 68, 0.1)';
-      case 'critical': return 'rgba(124, 58, 237, 0.1)';
-      default: return 'rgba(107, 114, 128, 0.1)';
-    }
+  const getThreatTypes = () => {
+    const types = new Set(threats.map(t => t.threat_type));
+    return ['all', ...Array.from(types)];
   };
 
+  const clearFilters = () => {
+    setDateFilter('all');
+    setSeverityFilter('all');
+    setTypeFilter('all');
+    setSearchQuery('');
+  };
+  
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading AI insights...</Text>
+        <Text style={styles.loadingText}>Loading threat analytics...</Text>
       </View>
     );
   }
-
+  
   if (error) {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchThreatData}>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchNetworkThreats}>
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
       </View>
     );
   }
-
+  
   return (
     <ScrollView 
       style={styles.container}
@@ -145,140 +324,275 @@ const AIInsightsScreen = () => {
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>AI Security Insights</Text>
-          <Text style={styles.subtitle}>Advanced threat analysis and recommendations powered by AI</Text>
-          <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
-            <Text style={styles.refreshButtonText}>🔄 Refresh</Text>
-          </TouchableOpacity>
+          <Text style={styles.title}>Network Threat Analytics</Text>
+          <Text style={styles.subtitle}>AI-powered network threat analysis and visualization</Text>
         </View>
         
-        {/* Main Insights Dashboard */}
-        <View style={styles.insightsGrid}>
-          {/* Risk Score */}
-          <View style={styles.riskScoreCard}>
-            <Text style={styles.cardTitle}>Security Risk Score</Text>
-            <View style={styles.riskScoreContainer}>
-              <View style={styles.riskScoreCircle}>
-                <Text style={styles.riskScoreText}>
-                  {insightResult?.risk_score || 0}%
-                </Text>
-              </View>
-              <Text style={styles.riskScoreLabel}>
-                {insightResult?.risk_score > 75 ? 'High Risk' : 
-                 insightResult?.risk_score > 50 ? 'Moderate Risk' : 'Low Risk'}
-              </Text>
+        {/* Filters */}
+        <View style={styles.filtersCard}>
+          {/* Search */}
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterLabel}>Search (IP, Type, ID)</Text>
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search..."
+              placeholderTextColor="#9ca3af"
+              style={styles.filterInput}
+            />
+          </View>
+
+          {/* Date Filter */}
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterLabel}>Time Period</Text>
+            <View style={styles.filterButtonGroup}>
+              {['all', 'today', 'week', 'month'].map(filter => (
+                <TouchableOpacity
+                  key={filter}
+                  style={[styles.filterButton, dateFilter === filter && styles.filterButtonActive]}
+                  onPress={() => setDateFilter(filter)}
+                >
+                  <Text style={[styles.filterButtonText, dateFilter === filter && styles.filterButtonTextActive]}>
+                    {filter === 'all' ? 'All' : filter === 'today' ? 'Today' : filter === 'week' ? '7d' : '30d'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
-          
-          {/* Security Trends */}
-          <View style={styles.trendsCard}>
-            <Text style={styles.cardTitle}>Security Trends</Text>
-            <View style={styles.trendsContent}>
-              {insightResult?.trends.map((trend, index) => (
-                <View key={index} style={styles.trendItem}>
-                  <View style={styles.trendHeader}>
-                    <Text style={styles.trendLabel}>{trend.label}</Text>
-                    <Text style={styles.trendValue}>{trend.value}</Text>
-                  </View>
-                  <View style={styles.trendChange}>
-                    <Text style={[
-                      styles.trendChangeText,
-                      { color: trend.change > 0 ? '#EF4444' : '#10B981' }
-                    ]}>
-                      {trend.change > 0 ? '↗' : '↘'} {Math.abs(trend.change)}%
+
+          {/* Severity Filter */}
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterLabel}>Severity</Text>
+            <View style={styles.filterButtonGroup}>
+              {['all', 'low', 'medium', 'high'].map(filter => (
+                <TouchableOpacity
+                  key={filter}
+                  style={[styles.filterButton, severityFilter === filter && styles.filterButtonActive]}
+                  onPress={() => setSeverityFilter(filter)}
+                >
+                  <Text style={[styles.filterButtonText, severityFilter === filter && styles.filterButtonTextActive]}>
+                    {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Type Filter */}
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterLabel}>Threat Type</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.filterButtonGroup}>
+                {getThreatTypes().map(type => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[styles.filterButton, typeFilter === type && styles.filterButtonActive]}
+                    onPress={() => setTypeFilter(type)}
+                  >
+                    <Text style={[styles.filterButtonText, typeFilter === type && styles.filterButtonTextActive]}>
+                      {type === 'all' ? 'All' : type.toUpperCase().replace('_', ' ')}
                     </Text>
-                  </View>
-                </View>
-              ))}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Clear Filters */}
+          {(dateFilter !== 'all' || severityFilter !== 'all' || typeFilter !== 'all' || searchQuery) && (
+            <TouchableOpacity onPress={clearFilters} style={styles.clearFiltersButton}>
+              <Text style={styles.clearFiltersText}>✕ Clear all filters</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        
+        {/* Statistics Cards */}
+        <View style={styles.statsGrid}>
+          <View style={styles.statCard}>
+            <Text style={styles.statEmoji}>⚠️</Text>
+            <View>
+              <Text style={styles.statLabel}>Total Threats</Text>
+              <Text style={styles.statValue}>{analytics.totalThreats}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.statCard}>
+            <Text style={styles.statEmoji}>🔴</Text>
+            <View>
+              <Text style={styles.statLabel}>High Severity</Text>
+              <Text style={[styles.statValue, { color: '#ef4444' }]}>{analytics.highSeverity}</Text>
+            </View>
+          </View>
+          
+          <View style={styles.statCard}>
+            <Text style={styles.statEmoji}>🟡</Text>
+            <View>
+              <Text style={styles.statLabel}>Medium Severity</Text>
+              <Text style={[styles.statValue, { color: '#f59e0b' }]}>{analytics.mediumSeverity}</Text>
+            </View>
+          </View>
+
+          <View style={styles.statCard}>
+            <Text style={styles.statEmoji}>🔵</Text>
+            <View>
+              <Text style={styles.statLabel}>Low Severity</Text>
+              <Text style={[styles.statValue, { color: '#3b82f6' }]}>{analytics.lowSeverity}</Text>
             </View>
           </View>
         </View>
         
-        {/* Summary and Recommendations */}
-        <View style={styles.summarySection}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.cardTitle}>AI Analysis Summary</Text>
-            <Text style={styles.summaryText}>
-              {insightResult?.summary || 'No summary available'}
-            </Text>
-          </View>
-          
-          <View style={styles.recommendationsCard}>
-            <Text style={styles.cardTitle}>AI Recommendations</Text>
-            <View style={styles.recommendationsList}>
-              {insightResult?.recommendations.map((rec, index) => (
-                <View key={index} style={styles.recommendationItem}>
-                  <Text style={styles.recommendationNumber}>{index + 1}</Text>
-                  <Text style={styles.recommendationText}>{rec}</Text>
+        {/* Charts */}
+        {/* Threats by Type */}
+        <View style={styles.chartCard}>
+          <Text style={styles.chartTitle}>Threats by Type</Text>
+          {Object.keys(analytics.threatsByType).length === 0 ? (
+            <Text style={styles.noDataText}>No threat data available</Text>
+          ) : (
+            <View style={styles.chartContent}>
+              <PieChart
+                size={150}
+                innerRadius={55}
+                centerLabel={analytics.totalThreats.toString()}
+                subLabel="total"
+                data={Object.entries(analytics.threatsByType)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([type, count], idx) => ({
+                    label: (type || '').toUpperCase().replace(/_/g, ' '),
+                    value: count,
+                    color: chartColors[idx % chartColors.length]
+                  }))}
+              />
+              <View style={styles.chartLegend}>
+                {Object.entries(analytics.threatsByType)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([type, count], idx) => {
+                    const percentage = analytics.totalThreats > 0 ? (count / analytics.totalThreats * 100) : 0;
+                    const color = chartColors[idx % chartColors.length];
+                    return (
+                      <View key={type} style={styles.legendItem}>
+                        <View style={styles.legendLeft}>
+                          <View style={[styles.legendColor, { backgroundColor: color }]} />
+                          <Text style={styles.legendLabel} numberOfLines={1}>{(type || '').toUpperCase().replace(/_/g, ' ')}</Text>
+                        </View>
+                        <View style={styles.legendRight}>
+                          <Text style={styles.legendValue}>{count}</Text>
+                          <Text style={styles.legendPercentage}>{percentage.toFixed(1)}%</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Severity Distribution */}
+        <View style={styles.chartCard}>
+          <Text style={styles.chartTitle}>Severity Distribution</Text>
+          {analytics.totalThreats === 0 ? (
+            <Text style={styles.noDataText}>No threat data available</Text>
+          ) : (
+            <View style={styles.chartContent}>
+              <PieChart
+                size={150}
+                innerRadius={55}
+                centerLabel={analytics.totalThreats.toString()}
+                subLabel="threats"
+                data={[
+                  { label: 'HIGH', value: analytics.highSeverity, color: '#ef4444' },
+                  { label: 'MEDIUM', value: analytics.mediumSeverity, color: '#f59e0b' },
+                  { label: 'LOW', value: analytics.lowSeverity, color: '#3b82f6' }
+                ]}
+              />
+              <View style={styles.chartLegend}>
+                {[
+                  { label: 'HIGH', value: analytics.highSeverity, color: '#ef4444' },
+                  { label: 'MEDIUM', value: analytics.mediumSeverity, color: '#f59e0b' },
+                  { label: 'LOW', value: analytics.lowSeverity, color: '#3b82f6' }
+                ].map((item) => {
+                  const pct = analytics.totalThreats > 0 ? (item.value / analytics.totalThreats * 100) : 0;
+                  return (
+                    <View key={item.label} style={styles.legendItem}>
+                      <View style={styles.legendLeft}>
+                        <View style={[styles.legendColor, { backgroundColor: item.color }]} />
+                        <Text style={styles.legendLabel}>{item.label}</Text>
+                      </View>
+                      <View style={styles.legendRight}>
+                        <Text style={styles.legendValue}>{item.value}</Text>
+                        <Text style={styles.legendPercentage}>{pct.toFixed(1)}%</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+        </View>
+        
+        {/* Top Source IPs */}
+        <View style={styles.chartCard}>
+          <Text style={styles.chartTitle}>Top Source IPs</Text>
+          {analytics.topSourceIPs.length === 0 ? (
+            <Text style={styles.noDataText}>No source IP data available</Text>
+          ) : (
+            <View style={styles.ipList}>
+              {analytics.topSourceIPs.map((item, index) => {
+                const maxCount = analytics.topSourceIPs[0]?.count || 1;
+                const percentage = (item.count / maxCount * 100);
+                return (
+                  <View key={item.ip} style={styles.ipItem}>
+                    <View style={styles.ipHeader}>
+                      <Text style={styles.ipAddress}>{item.ip}</Text>
+                      <Text style={styles.ipCount}>{item.count} threats</Text>
+                    </View>
+                    <View style={styles.ipProgressBar}>
+                      <View style={[styles.ipProgressFill, { width: `${percentage}%` }]} />
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+        
+        {/* Filtered Threats Table */}
+        <View style={styles.tableCard}>
+          <Text style={styles.tableTitle}>Filtered Threats ({filteredThreats.length})</Text>
+          {filteredThreats.length === 0 ? (
+            <View style={styles.noThreatsContainer}>
+              <Text style={styles.noThreatsEmoji}>😊</Text>
+              <Text style={styles.noThreatsText}>No threats match the current filters</Text>
+            </View>
+          ) : (
+            <>
+              {filteredThreats.slice(0, 20).map((threat) => (
+                <View key={threat.threat_id} style={styles.threatRow}>
+                  <View style={styles.threatRowHeader}>
+                    <Text style={styles.threatId} numberOfLines={1}>{threat.threat_id}</Text>
+                    <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(threat.severity).bg }]}>
+                      <Text style={[styles.severityBadgeText, { color: getSeverityColor(threat.severity).text }]}>
+                        {threat.severity?.toUpperCase()}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.threatType}>{threat.threat_type?.toUpperCase()}</Text>
+                  <View style={styles.threatIps}>
+                    <Text style={styles.threatIp}>From: {threat.source_ip}</Text>
+                    <Text style={styles.threatIp}>To: {threat.destination_ip}</Text>
+                  </View>
+                  <View style={styles.threatFooter}>
+                    <Text style={styles.threatConfidence}>Confidence: {Math.round((threat.confidence || 0) * 100)}%</Text>
+                    <Text style={styles.threatTimestamp}>{new Date(threat.timestamp).toLocaleString()}</Text>
+                  </View>
                 </View>
               ))}
-            </View>
-          </View>
-        </View>
-        
-        {/* Top Threats */}
-        <View style={styles.threatsSection}>
-          <Text style={styles.sectionTitle}>Top Threats Analysis</Text>
-          <View style={styles.threatsList}>
-            {insightResult?.top_threats.map((threat, index) => (
-              <View key={index} style={[styles.threatCard, { backgroundColor: getSeverityBgColor(threat.severity) }]}>
-                <View style={styles.threatHeader}>
-                  <View style={styles.threatInfo}>
-                    <Text style={styles.threatName}>{threat.name}</Text>
-                    <Text style={styles.threatCount}>{threat.count} occurrences</Text>
-                  </View>
-                  <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(threat.severity) }]}>
-                    <Text style={styles.severityText}>{threat.severity.toUpperCase()}</Text>
-                  </View>
+              {filteredThreats.length > 20 && (
+                <View style={styles.showingMore}>
+                  <Text style={styles.showingMoreText}>Showing first 20 of {filteredThreats.length} threats</Text>
                 </View>
-                <View style={styles.threatIndicator}>
-                  <View 
-                    style={[
-                      styles.threatIndicatorFill,
-                      { 
-                        width: `${(threat.count / Math.max(...insightResult.top_threats.map(t => t.count))) * 100}%`,
-                        backgroundColor: getSeverityColor(threat.severity)
-                      }
-                    ]} 
-                  />
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-        
-        {/* Recent Threat Intelligence */}
-        <View style={styles.recentThreatsSection}>
-          <Text style={styles.sectionTitle}>Recent Security Events</Text>
-          <View style={styles.eventsList}>
-            {threatData.slice(0, 5).map((event) => (
-              <View key={event.id} style={[styles.eventCard, { backgroundColor: getSeverityBgColor(event.severity) }]}>
-                <View style={styles.eventHeader}>
-                  <View style={styles.eventInfo}>
-                    <Text style={styles.eventType}>{event.type.replace('_', ' ').toUpperCase()}</Text>
-                    <Text style={styles.eventSource}>{event.source}</Text>
-                  </View>
-                  <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(event.severity) }]}>
-                    <Text style={styles.severityText}>{event.severity.toUpperCase()}</Text>
-                  </View>
-                </View>
-                <Text style={styles.eventDescription}>{event.description}</Text>
-                <Text style={styles.eventTimestamp}>
-                  {new Date(event.timestamp).toLocaleDateString()}
-                </Text>
-              </View>
-            ))}
-          </View>
-          
-          <TouchableOpacity 
-            style={[styles.refreshInsightsButton, insightLoading && styles.refreshInsightsButtonDisabled]}
-            onPress={() => generateInsights(threatData)}
-            disabled={insightLoading}
-          >
-            <Text style={styles.refreshInsightsButtonText}>
-              {insightLoading ? 'Generating insights...' : '🔄 Refresh Insights'}
-            </Text>
-          </TouchableOpacity>
+              )}
+            </>
+          )}
         </View>
       </View>
     </ScrollView>
@@ -301,8 +615,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#111827',
   },
   loadingText: {
-    fontSize: 18,
-    color: '#9CA3AF',
+    fontSize: 16,
+    color: '#9ca3af',
   },
   errorContainer: {
     flex: 1,
@@ -312,292 +626,311 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   errorText: {
-    fontSize: 16,
-    color: '#EF4444',
+    fontSize: 14,
+    color: '#ef4444',
     textAlign: 'center',
-    marginBottom: 20,
-  },
-  retryButton: {
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  header: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#9CA3AF',
     marginBottom: 16,
   },
-  refreshButton: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+  retryButton: {
+    backgroundColor: '#ef4444',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
   },
-  refreshButtonText: {
-    color: '#3B82F6',
+  retryButtonText: {
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
   },
-  insightsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
+  header: {
+    marginBottom: 20,
   },
-  riskScoreCard: {
-    width: (width - 48) / 2,
-    backgroundColor: '#1F2937',
-    padding: 16,
-    borderRadius: 12,
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#f3f4f6',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#9ca3af',
+  },
+  filtersCard: {
+    backgroundColor: 'rgba(31, 41, 55, 0.5)',
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(55, 65, 81, 0.5)',
-  },
-  trendsCard: {
-    width: (width - 48) / 2,
-    backgroundColor: '#1F2937',
+    borderColor: '#374151',
     padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 65, 81, 0.5)',
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
     marginBottom: 16,
   },
-  riskScoreContainer: {
-    alignItems: 'center',
+  filterGroup: {
+    marginBottom: 16,
   },
-  riskScoreCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#3B82F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  riskScoreText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  riskScoreLabel: {
+  filterLabel: {
     fontSize: 12,
-    color: '#9CA3AF',
-    textAlign: 'center',
-  },
-  trendsContent: {
-    gap: 12,
-  },
-  trendItem: {
+    color: '#9ca3af',
     marginBottom: 8,
   },
-  trendHeader: {
+  filterInput: {
+    width: '100%',
+    padding: 10,
+    backgroundColor: '#374151',
+    borderWidth: 1,
+    borderColor: '#4b5563',
+    borderRadius: 8,
+    color: '#f3f4f6',
+    fontSize: 14,
+  },
+  filterButtonGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filterButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#374151',
+    borderWidth: 1,
+    borderColor: '#4b5563',
+    borderRadius: 6,
+  },
+  filterButtonActive: {
+    backgroundColor: '#06b6d4',
+    borderColor: '#06b6d4',
+  },
+  filterButtonText: {
+    fontSize: 12,
+    color: '#d1d5db',
+  },
+  filterButtonTextActive: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  clearFiltersButton: {
+    marginTop: 8,
+  },
+  clearFiltersText: {
+    fontSize: 14,
+    color: '#06b6d4',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+  },
+  statCard: {
+    width: (width - 52) / 2,
+    backgroundColor: 'rgba(31, 41, 55, 0.5)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#374151',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statEmoji: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  statLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#9ca3af',
+    marginBottom: 2,
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#f3f4f6',
+  },
+  chartCard: {
+    backgroundColor: 'rgba(31, 41, 55, 0.5)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#374151',
+    padding: 16,
+    marginBottom: 16,
+  },
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#f3f4f6',
+    marginBottom: 16,
+  },
+  noDataText: {
+    color: '#9ca3af',
+    textAlign: 'center',
+    padding: 20,
+  },
+  chartContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  chartLegend: {
+    flex: 1,
+    gap: 10,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  legendLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
+  },
+  legendColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+    marginRight: 8,
+  },
+  legendLabel: {
+    fontSize: 12,
+    color: '#d1d5db',
+    flex: 1,
+  },
+  legendRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  legendValue: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#f3f4f6',
+  },
+  legendPercentage: {
+    fontSize: 10,
+    color: '#9ca3af',
+  },
+  ipList: {
+    gap: 12,
+  },
+  ipItem: {
+    marginBottom: 8,
+  },
+  ipHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
-  trendLabel: {
+  ipAddress: {
     fontSize: 12,
-    color: '#FFFFFF',
-    flex: 1,
+    fontFamily: 'monospace',
+    color: '#d1d5db',
   },
-  trendValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#3B82F6',
-  },
-  trendChange: {
-    alignItems: 'flex-end',
-  },
-  trendChangeText: {
+  ipCount: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '500',
+    color: '#f3f4f6',
   },
-  summarySection: {
-    marginBottom: 24,
+  ipProgressBar: {
+    width: '100%',
+    backgroundColor: '#374151',
+    borderRadius: 4,
+    height: 8,
   },
-  summaryCard: {
-    backgroundColor: '#1F2937',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+  ipProgressFill: {
+    backgroundColor: '#ef4444',
+    height: 8,
+    borderRadius: 4,
+  },
+  tableCard: {
+    backgroundColor: 'rgba(31, 41, 55, 0.5)',
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(55, 65, 81, 0.5)',
-  },
-  summaryText: {
-    fontSize: 14,
-    color: '#D1D5DB',
-    lineHeight: 20,
-  },
-  recommendationsCard: {
-    backgroundColor: '#1F2937',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 65, 81, 0.5)',
-  },
-  recommendationsList: {
-    gap: 12,
-  },
-  recommendationItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  recommendationNumber: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#3B82F6',
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginRight: 12,
-  },
-  recommendationText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#D1D5DB',
-    lineHeight: 20,
-  },
-  threatsSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    borderColor: '#374151',
     marginBottom: 16,
   },
-  threatsList: {
-    gap: 12,
-  },
-  threatCard: {
-    backgroundColor: '#1F2937',
+  tableTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#f3f4f6',
     padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 65, 81, 0.5)',
+    borderBottomWidth: 1,
+    borderBottomColor: '#374151',
   },
-  threatHeader: {
+  noThreatsContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  noThreatsEmoji: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  noThreatsText: {
+    color: '#9ca3af',
+    fontSize: 14,
+  },
+  threatRow: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#374151',
+  },
+  threatRowHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  threatInfo: {
+  threatId: {
     flex: 1,
-  },
-  threatName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  threatCount: {
     fontSize: 12,
-    color: '#9CA3AF',
+    fontFamily: 'monospace',
+    color: '#9ca3af',
+    marginRight: 8,
   },
   severityBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
-  },
-  severityText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  threatIndicator: {
-    height: 4,
-    backgroundColor: '#374151',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  threatIndicatorFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  recentThreatsSection: {
-    marginBottom: 24,
-  },
-  eventsList: {
-    gap: 12,
-    marginBottom: 20,
-  },
-  eventCard: {
-    backgroundColor: '#1F2937',
-    padding: 16,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(55, 65, 81, 0.5)',
   },
-  eventHeader: {
+  severityBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  threatType: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#f3f4f6',
+    marginBottom: 8,
+  },
+  threatIps: {
+    marginBottom: 8,
+  },
+  threatIp: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    color: '#d1d5db',
+    marginBottom: 2,
+  },
+  threatFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  eventInfo: {
-    flex: 1,
-  },
-  eventType: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  eventSource: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  eventDescription: {
-    fontSize: 14,
-    color: '#D1D5DB',
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  eventTimestamp: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  refreshInsightsButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
     alignItems: 'center',
   },
-  refreshInsightsButtonDisabled: {
-    backgroundColor: '#6B7280',
-    opacity: 0.5,
+  threatConfidence: {
+    fontSize: 12,
+    color: '#d1d5db',
   },
-  refreshInsightsButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+  threatTimestamp: {
+    fontSize: 12,
+    color: '#9ca3af',
+  },
+  showingMore: {
+    padding: 16,
+    backgroundColor: 'rgba(55, 65, 81, 0.3)',
+    alignItems: 'center',
+  },
+  showingMoreText: {
+    fontSize: 12,
+    color: '#9ca3af',
   },
 });
 

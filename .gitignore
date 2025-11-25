@@ -34,6 +34,9 @@ infrastructure/*.tfstate
 infrastructure/*.tfstate.backup
 infrastructure/.terraform/
 
+#Python
+ai/.venv/
+
 # ML models (large files)
 ml-services/models/*.pkl
 ml-services/models/*.h5

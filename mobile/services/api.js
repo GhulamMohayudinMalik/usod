@@ -12,6 +12,13 @@ class ApiService {
     this.initializeNetwork();
   }
 
+  // Ensure token is loaded before making API calls
+  async ensureTokenLoaded() {
+    if (!this.token) {
+      await this.initializeToken();
+    }
+  }
+
   // Initialize network configuration
   async initializeNetwork() {
     // Network configuration is handled by getApiBaseURL()
@@ -544,6 +551,119 @@ class ApiService {
   }
 
 
+  // Network monitoring methods
+  async startNetworkMonitoring(networkInterface = 'auto', duration = 300) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/network/start-monitoring`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ interface: networkInterface, duration })
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error starting network monitoring:', error);
+      throw error;
+    }
+  }
+
+  async stopNetworkMonitoring() {
+    try {
+      const response = await fetch(`${this.baseURL}/api/network/stop-monitoring`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify({})
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error stopping network monitoring:', error);
+      throw error;
+    }
+  }
+
+  async getNetworkThreats(limit = 50) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/network/threats/history?limit=${limit}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching network threats:', error);
+      throw error;
+    }
+  }
+
+  async getNetworkStatus() {
+    try {
+      const response = await fetch(`${this.baseURL}/api/network/status`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching network status:', error);
+      throw error;
+    }
+  }
+
+  async uploadPcapFile(file) {
+    try {
+      const formData = new FormData();
+      formData.append('pcap', {
+        uri: file.uri,
+        type: 'application/octet-stream',
+        name: file.name
+      });
+
+      const headers = this.getHeaders();
+      delete headers['Content-Type']; // Let the browser set the correct Content-Type for FormData
+
+      const response = await fetch(`${this.baseURL}/api/network/upload-pcap`, {
+        method: 'POST',
+        headers: headers,
+        body: formData
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error uploading PCAP file:', error);
+      throw error;
+    }
+  }
+
+  async updateLogStatus(logId, status) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/logs/${logId}/status`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify({ status })
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error updating log status:', error);
+      throw error;
+    }
+  }
+
+  async getThreats(count = 100) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/data/security-events?count=${count}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching threats:', error);
+      throw error;
+    }
+  }
+
   // Check if user is authenticated
   isAuthenticated() {
     return !!this.token;
@@ -557,6 +677,129 @@ class ApiService {
     } catch (error) {
       console.error('Error getting current user:', error);
       return null;
+    }
+  }
+
+  // ============================================
+  // Blockchain Methods
+  // ============================================
+
+  async getBlockchainStatistics() {
+    try {
+      const response = await fetch(`${this.baseURL}/api/blockchain/statistics`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching blockchain statistics:', error);
+      return { success: false, message: error.message };
+    }
+  }
+
+  async getBlockchainThreats() {
+    try {
+      const response = await fetch(`${this.baseURL}/api/blockchain/threats`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching blockchain threats:', error);
+      return { success: false, message: error.message };
+    }
+  }
+
+  async verifyBlockchainThreat(logId) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/blockchain/threats/${logId}/verify`, {
+        method: 'POST',
+        headers: this.getHeaders()
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error verifying blockchain threat:', error);
+      return { error: error.message };
+    }
+  }
+
+  async getBlockchainThreatHistory(logId) {
+    try {
+      const response = await fetch(`${this.baseURL}/api/blockchain/threats/${logId}/history`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error fetching threat history:', error);
+      return [];
+    }
+  }
+
+  // Generic HTTP methods
+  async get(endpoint) {
+    try {
+      await this.ensureTokenLoaded();
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error(`Error in GET ${endpoint}:`, error);
+      throw error;
+    }
+  }
+
+  async post(endpoint, data) {
+    try {
+      await this.ensureTokenLoaded();
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(data)
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error(`Error in POST ${endpoint}:`, error);
+      throw error;
+    }
+  }
+
+  async put(endpoint, data) {
+    try {
+      await this.ensureTokenLoaded();
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        method: 'PUT',
+        headers: this.getHeaders(),
+        body: JSON.stringify(data)
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error(`Error in PUT ${endpoint}:`, error);
+      throw error;
+    }
+  }
+
+  async delete(endpoint) {
+    try {
+      await this.ensureTokenLoaded();
+      const response = await fetch(`${this.baseURL}${endpoint}`, {
+        method: 'DELETE',
+        headers: this.getHeaders()
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error(`Error in DELETE ${endpoint}:`, error);
+      throw error;
     }
   }
 }
