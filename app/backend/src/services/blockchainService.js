@@ -83,16 +83,20 @@ class BlockchainService {
 
   /**
    * Calculate SHA256 hash of threat data
+   * Uses only the 5 core fields for consistent hashing regardless of extra data
    */
   calculateHash(threatData) {
-    const dataString = JSON.stringify({
-      type: threatData.type,
-      severity: threatData.severity,
-      sourceIP: threatData.sourceIP,
-      destinationIP: threatData.destinationIP,
-      timestamp: threatData.timestamp
-    });
+    // Extract only the 5 core fields that are used for hashing
+    const coreData = {
+      type: threatData.type || threatData.action || 'unknown',
+      severity: threatData.severity || 'medium',
+      sourceIP: threatData.sourceIP || threatData.details?.sourceIP || 'unknown',
+      destinationIP: threatData.destinationIP || threatData.details?.destinationIP || 'unknown',
+      timestamp: threatData.timestamp || threatData.details?.timestamp || new Date().toISOString()
+    };
     
+    // Create JSON string with only these 5 fields
+    const dataString = JSON.stringify(coreData);
     return crypto.createHash('sha256').update(dataString).digest('hex');
   }
 
@@ -119,6 +123,7 @@ class BlockchainService {
         severity: threat.severity || 'medium',
         sourceIP: threat.details?.sourceIP || threat.details?.source_ip || 'unknown',
         destinationIP: threat.details?.destinationIP || threat.details?.destination_ip || 'unknown',
+        timestamp: threat.timestamp?.toISOString() || new Date().toISOString(), // ADD TIMESTAMP TO THREATDETAILS
         sourcePort: threat.details?.sourcePort || threat.details?.source_port || 0,
         destinationPort: threat.details?.destinationPort || threat.details?.destination_port || 0,
         protocol: threat.details?.protocol || 'UNKNOWN',
@@ -247,14 +252,27 @@ class BlockchainService {
     let gateway;
     
     try {
-      // Verifying threat integrity: ${logId}
+      console.log(`🔍 Verifying threat integrity: ${logId}`);
+      console.log(`📊 Raw input data:`, JSON.stringify(currentThreatData, null, 2));
 
       const result = await this.getContract();
       gateway = result.gateway;
       const contract = result.contract;
 
-      // Calculate current hash
-      const currentHash = this.calculateHash(currentThreatData);
+      // Reconstruct the threat data structure that was originally stored on blockchain
+      // This ensures we're comparing the same data structure
+      const reconstructedThreatData = this.reconstructThreatDataForVerification(currentThreatData);
+      
+      console.log(`📊 Reconstructed data:`, JSON.stringify(reconstructedThreatData, null, 2));
+      
+      // Calculate current hash using the reconstructed data
+      const currentHash = this.calculateHash(reconstructedThreatData);
+
+      console.log(`📊 Verification data:`, {
+        logId,
+        reconstructedData: reconstructedThreatData,
+        calculatedHash: currentHash
+      });
 
       // Verify on blockchain
       const response = await contract.evaluateTransaction(
@@ -265,7 +283,8 @@ class BlockchainService {
       
       const verification = JSON.parse(response.toString());
 
-      // Threat verification: ${logId} - ${verification.valid ? 'VALID' : 'TAMPERED'}
+      console.log(`🔍 Threat verification: ${logId} - ${verification.valid ? 'VALID' : 'TAMPERED'}`);
+      console.log(`📊 Blockchain response:`, verification);
       
       // Map chaincode response to frontend-expected format
       return {
@@ -274,7 +293,8 @@ class BlockchainService {
         originalHash: verification.storedHash,     // Blockchain hash
         currentHash: verification.providedHash,    // Recalculated hash
         logId: verification.logId,
-        timestamp: verification.timestamp
+        timestamp: verification.timestamp,
+        reconstructedData: reconstructedThreatData // For debugging
       };
 
     } catch (error) {
@@ -289,6 +309,24 @@ class BlockchainService {
         gateway.disconnect();
       }
     }
+  }
+
+  /**
+   * Reconstruct threat data for verification to match the original blockchain storage format
+   * The frontend now sends the full threat object, so we can access both threatDetails and timestamp
+   */
+  reconstructThreatDataForVerification(threatObject) {
+    // Extract the threatDetails and timestamp from the full threat object
+    const threatDetails = threatObject.threatDetails || threatObject;
+    const timestamp = threatObject.timestamp || threatDetails.timestamp || 'unknown';
+    
+    return {
+      type: threatDetails.type || 'unknown',
+      severity: threatDetails.severity || 'medium',
+      sourceIP: threatDetails.sourceIP || 'unknown',
+      destinationIP: threatDetails.destinationIP || 'unknown',
+      timestamp: timestamp
+    };
   }
 
   /**

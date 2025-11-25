@@ -588,6 +588,64 @@ router.post('/webhook', async (req, res) => {
 });
 
 /**
+ * @route POST /api/network/clear-threats
+ * @desc Clear all network threats from AI service and database
+ * @access Private
+ */
+router.post('/clear-threats', auth, async (req, res) => {
+  try {
+    console.log('🧹 Clearing all network threats...');
+    
+    // Clear threats from AI service
+    try {
+      const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+      const response = await fetch(`${aiServiceUrl}/api/clear-threats`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ AI service threats cleared:', result.message);
+      } else {
+        console.warn('⚠️ Failed to clear AI service threats:', response.statusText);
+      }
+    } catch (aiError) {
+      console.error('❌ Error clearing AI service threats:', aiError.message);
+    }
+    
+    // Clear threats from MongoDB
+    try {
+      const { SecurityLog } = await import('../models/SecurityLog.js');
+      
+      const deleteResult = await SecurityLog.deleteMany({
+        action: 'network_threat_detected'
+      });
+      
+      console.log(`✅ Cleared ${deleteResult.deletedCount} threats from MongoDB`);
+    } catch (dbError) {
+      console.error('❌ Error clearing MongoDB threats:', dbError.message);
+    }
+    
+    res.json({
+      success: true,
+      message: 'All network threats cleared successfully',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Error clearing threats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear threats',
+      error: error.message
+    });
+  }
+});
+
+/**
  * @route GET /api/network/stream
  * @desc Server-Sent Events endpoint for real-time threat streaming
  * @access Private

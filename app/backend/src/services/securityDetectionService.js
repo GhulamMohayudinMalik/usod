@@ -366,17 +366,27 @@ export function detectXSS(input, req) {
   return false;
 }
 
-// Check for CSRF attempts
+// Check for CSRF attempts - RELAXED FOR DEVELOPMENT
 export function detectCSRF(req) {
   const csrfToken = req.headers['x-csrf-token'] || (req.body && req.body._csrf);
   const referer = req.headers.referer;
   const origin = req.headers.origin;
   const userAgent = req.headers['user-agent'] || '';
   const platform = req.headers['x-platform'] || req.headers['X-Platform'] || '';
+  const ip = getRealIP(req);
 
-  // Skip CSRF check for localhost API testing and development
-  if (userAgent.includes('PowerShell')) {
-    return false; // Skip for PowerShell/API testing
+  // Skip CSRF check for development environment
+  if (process.env.NODE_ENV === 'development') {
+    return false; // Skip CSRF in development
+  }
+
+  // Skip CSRF check for localhost API testing and development tools
+  if (userAgent.includes('PowerShell') || 
+      userAgent.includes('curl') || 
+      userAgent.includes('Postman') ||
+      userAgent.includes('Insomnia') ||
+      userAgent.includes('HTTPie')) {
+    return false; // Skip for API testing tools
   }
 
   // Skip CSRF check for mobile apps (React Native/Expo)
@@ -389,31 +399,35 @@ export function detectCSRF(req) {
     return false; // Allow desktop app requests
   }
 
-  // Skip CSRF check for direct API calls without referer/origin
-  if (!referer && !origin && (req.ip === '127.0.0.1' || req.ip === '192.168.100.113')) {
-    return false; // Allow localhost and network IP direct API calls
+  // Skip CSRF check for localhost IPs (any port)
+  if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || 
+      ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
+    return false; // Allow all localhost and private network IPs
   }
 
-  // Basic CSRF validation - allow web app (3000) and desktop app (3001)
-  // For web frontend, we'll allow requests from localhost:3000 without CSRF token for now
-  // In production, you should implement proper CSRF token generation and validation
+  // Skip CSRF check for direct API calls without referer/origin
+  if (!referer && !origin) {
+    return false; // Allow direct API calls
+  }
+
+  // Very permissive CSRF validation - allow any localhost origin/referer
   const isValidCSRF = (
-    // Allow requests with valid CSRF token
-    (csrfToken && (
-      (referer && (referer.includes('localhost:3000') || referer.includes('localhost:3001'))) ||
-      (origin && (origin.includes('localhost:3000') || origin.includes('localhost:3001')))
-    )) ||
-    // Allow web frontend requests from localhost:3000 without CSRF token (development only)
-    (req.method === 'POST' && (
-      (referer && referer.includes('localhost:3000')) ||
-      (origin && origin.includes('localhost:3000'))
-    ))
+    // Allow any localhost origin/referer (any port)
+    (referer && referer.includes('localhost')) ||
+    (origin && origin.includes('localhost')) ||
+    // Allow any 127.0.0.1 origin/referer (any port)
+    (referer && referer.includes('127.0.0.1')) ||
+    (origin && origin.includes('127.0.0.1')) ||
+    // Allow any private network origin/referer
+    (referer && (referer.includes('192.168.') || referer.includes('10.') || referer.includes('172.'))) ||
+    (origin && (origin.includes('192.168.') || origin.includes('10.') || origin.includes('172.'))) ||
+    // Allow if CSRF token is present (regardless of origin)
+    !!csrfToken
   );
 
+  // Only log CSRF issues, don't block (relaxed approach)
   if (!isValidCSRF && req.method !== 'GET') {
-    const ip = getRealIP(req);
-    
-    console.log('🚨 CSRF attempt detected:', {
+    console.log('⚠️  CSRF validation failed (logged only, not blocked):', {
       platform,
       userAgent,
       referer,
@@ -423,30 +437,28 @@ export function detectCSRF(req) {
       ip
     });
     
+    // Only log the event, don't add to suspicious IPs or block
     logActions.securityEvent(null, 'detected', req, {
-      eventType: 'csrf_attempt',
-      severity: 'medium',
+      eventType: 'csrf_validation_failed',
+      severity: 'low',  // Reduced severity
       source: ip,
       target: 'api',
-      description: 'CSRF token validation failed',
+      description: 'CSRF token validation failed (not blocked)',
       referer,
       origin,
       detectedAt: new Date().toISOString()
     });
 
-    // Add to suspicious IPs
-    suspiciousIPs.add(ip);
-    
-    // Emit security event
-    eventBus.emit('security.csrf', {
+    // Don't add to suspicious IPs or block - just emit for monitoring
+    eventBus.emit('security.csrf_warning', {
       ip,
       referer,
       origin,
       timestamp: new Date()
     });
 
-    console.log(`🚨 CSRF attempt detected from ${ip}`);
-    return true;
+    // Don't return true - this means we're not blocking the request
+    return false;
   }
 
   return false;

@@ -104,7 +104,7 @@ async function logLogoutEvent(userId, req, details = {}) {
 }
 
 // Login endpoint
-router.post('/login', async (req, res) => {
+router.post('/login', performSecurityCheck, async (req, res) => {
   try {
     console.log('🔐 Login attempt:', { username: req.body.username, hasPassword: !!req.body.password });
     const { username, password } = req.body;
