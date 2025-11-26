@@ -32,7 +32,7 @@ export default function DashboardIndex() {
   const checkStatuses = async () => {
     try {
       // Check blockchain status
-      const bcRes = await fetch('http://localhost:5000/api/blockchain/health');
+      const bcRes = await fetch('http://13.203.160.209:5000/api/blockchain/health');
       if (bcRes.ok) {
         const bcData = await bcRes.json();
         const isConnected = bcData.status === 'connected';
