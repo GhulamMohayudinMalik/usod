@@ -1,4 +1,4 @@
-import { SecurityLog } from '../models/SecurityLog.js';
+import { SecurityLog } from '../models/securityLog.js';
 import mongoose from 'mongoose';
 
 export const logController = {

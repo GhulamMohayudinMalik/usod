@@ -497,7 +497,7 @@ router.get('/threats/history', auth, async (req, res) => {
     const limitNum = Math.min(parseInt(limit) || 50, 100);
 
     // Query SecurityLog for network threat actions
-    const { SecurityLog } = await import('../models/SecurityLog.js');
+    const { SecurityLog } = await import('../models/securityLog.js');
     
     const threats = await SecurityLog.find({
       action: 'network_threat_detected'
@@ -618,7 +618,7 @@ router.post('/clear-threats', auth, async (req, res) => {
     
     // Clear threats from MongoDB
     try {
-      const { SecurityLog } = await import('../models/SecurityLog.js');
+      const { SecurityLog } = await import('../models/securityLog.js');
       
       const deleteResult = await SecurityLog.deleteMany({
         action: 'network_threat_detected'

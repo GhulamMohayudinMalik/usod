@@ -1,6 +1,6 @@
 import express from 'express';
 import { apiKeyAuth } from '../middleware/apiKeyAuth.js';
-import { SecurityLog } from '../models/SecurityLog.js';
+import { SecurityLog } from '../models/securityLog.js';
 import { eventBus } from '../services/eventBus.js';
 import { performSecurityCheck } from '../services/securityDetectionService.js';
 

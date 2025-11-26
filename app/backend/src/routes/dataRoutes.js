@@ -1,5 +1,5 @@
 import express from 'express';
-import { SecurityLog } from '../models/SecurityLog.js';
+import { SecurityLog } from '../models/securityLog.js';
 import { User } from '../models/User.js';
 
 const router = express.Router();
