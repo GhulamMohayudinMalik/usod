@@ -4,9 +4,16 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "start": "node src/server.js",
+    "start": "NODE_ENV=production node src/server.js",
     "dev": "node --watch src/server.js",
-    "seed": "node src/scripts/seedUsers.js"
+    "seed": "node src/scripts/seedUsers.js",
+    "docker:build": "docker build -t usod-backend .",
+    "docker:run": "docker run -p 5000:5000 --env-file .env usod-backend",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f backend",
+    "validate:env": "node src/scripts/validateEnv.js",
+    "health": "curl http://localhost:5000/api/health"
   },
   "keywords": [],
   "author": "",

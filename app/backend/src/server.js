@@ -115,19 +115,33 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
+    // Build allowed origins list from environment
     const allowedOrigins = [
       process.env.FRONTEND_URL || 'http://localhost:3000', // Web app
-      'http://localhost:3001', // Desktop app (Electron)
-      'http://localhost:19006', // Expo development server
-      'exp://localhost:19000', // Expo development
-      'exp://192.168.1.100:19000', // Expo on local network
-      'exp://192.168.100.113:19000', // Expo on your network
-      'exp://192.168.100.113:8081', // Expo alternative port
+      process.env.DESKTOP_APP_URL || 'http://localhost:3001', // Desktop app (Electron)
     ];
+    
+    // Add additional allowed origins from env (comma-separated)
+    if (process.env.ALLOWED_ORIGINS) {
+      const additionalOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
+      allowedOrigins.push(...additionalOrigins);
+    }
+    
+    // Development mode: allow local expo and network origins
+    if (process.env.NODE_ENV !== 'production') {
+      allowedOrigins.push(
+        'http://localhost:19006', // Expo development server
+        'exp://localhost:19000', // Expo development
+      );
+    }
     
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      // In production, log rejected origins for security monitoring
+      if (process.env.NODE_ENV === 'production') {
+        console.warn(`CORS blocked request from origin: ${origin}`);
+      }
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -219,7 +233,36 @@ app.get('/legacy', (req, res) => {
   res.send(html);
 });
 
-// Health check endpoint
+// JSON health check endpoint for AWS load balancers
+app.get('/api/health', (req, res) => {
+  const isMongoConnected = mongoose.connection.readyState === 1;
+  const status = isMongoConnected ? 'healthy' : 'unhealthy';
+  const statusCode = isMongoConnected ? 200 : 503;
+  
+  res.status(statusCode).json({
+    status,
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    services: {
+      database: {
+        status: isMongoConnected ? 'connected' : 'disconnected',
+        name: mongoose.connection.name || 'unknown'
+      },
+      api: {
+        status: 'online',
+        port: port
+      }
+    },
+    memory: {
+      used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+      unit: 'MB'
+    }
+  });
+});
+
+// HTML health check endpoint (legacy)
 app.get('/health', (req, res) => {
   const mongoStatus = mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected';
   const html = `
@@ -304,21 +347,73 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!', message: err.message });
 });
 
+// Graceful shutdown handler
+const gracefulShutdown = async (signal) => {
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
+  
+  // Stop accepting new connections
+  if (server) {
+    server.close(async () => {
+      console.log('HTTP server closed');
+      
+      try {
+        // Close MongoDB connection
+        await mongoose.connection.close();
+        console.log('MongoDB connection closed');
+        
+        console.log('Graceful shutdown completed');
+        process.exit(0);
+      } catch (error) {
+        console.error('Error during shutdown:', error);
+        process.exit(1);
+      }
+    });
+    
+    // Force shutdown after 30 seconds
+    setTimeout(() => {
+      console.error('Forced shutdown after timeout');
+      process.exit(1);
+    }, 30000);
+  } else {
+    process.exit(0);
+  }
+};
+
+// Register shutdown handlers
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle uncaught errors
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  gracefulShutdown('UNHANDLED_REJECTION');
+});
+
 // Start server
+let server;
 const startServer = async () => {
   try {
     await connectMongoDB();
-    app.listen(port, '0.0.0.0', () => {
-      console.log(`Server is running on port ${port}`);
-      console.log(`Server accessible at:`);
-      console.log(`  - http://localhost:${port}`);
-      console.log(`  - http://192.168.100.113:${port}`);
-      console.log(`CORS enabled for: ${corsOptions.origin}`);
-// Start session cleanup service
-startSessionCleanup();
-
-      // Live generator disabled to use real logs
+    
+    server = app.listen(port, '0.0.0.0', () => {
+      console.log(`🚀 Server is running on port ${port}`);
+      console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🌐 Server accessible at: http://localhost:${port}`);
+      console.log(`✅ Health check: http://localhost:${port}/api/health`);
+      
+      // Start session cleanup service
+      startSessionCleanup();
     });
+    
+    // Set keep-alive timeout (AWS ALB uses 60s, set higher)
+    server.keepAliveTimeout = 65000;
+    server.headersTimeout = 66000;
+    
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
