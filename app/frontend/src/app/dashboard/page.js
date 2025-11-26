@@ -32,7 +32,7 @@ export default function DashboardIndex() {
   const checkStatuses = async () => {
     try {
       // Check blockchain status
-      const bcRes = await fetch('http://api.glitchmorse.tech/api/blockchain/health');
+      const bcRes = await fetch('https://api.glitchmorse.tech/api/blockchain/health');
       if (bcRes.ok) {
         const bcData = await bcRes.json();
         const isConnected = bcData.status === 'connected';
