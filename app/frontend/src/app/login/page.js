@@ -18,7 +18,8 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch('https://api.glitchmorse.tech/api/auth/login', {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${baseUrl}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

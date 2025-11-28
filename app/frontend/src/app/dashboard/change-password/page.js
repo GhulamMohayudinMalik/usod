@@ -33,7 +33,8 @@ export default function ChangePasswordPage() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('https://api.glitchmorse.tech/api/users/change-password', {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${baseUrl}/api/users/change-password`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

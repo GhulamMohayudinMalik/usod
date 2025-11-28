@@ -26,9 +26,10 @@ export default function BackupPage() {
         return;
       }
 
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
       console.log('Fetching backups with token:', token.substring(0, 20) + '...');
       
-      const response = await fetch('http://localhost:5000/api/backup/list', {
+      const response = await fetch(`${baseUrl}/api/backup/list`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -79,7 +80,8 @@ export default function BackupPage() {
         return; // Skip stats if no token
       }
 
-      const response = await fetch('http://localhost:5000/api/backup/stats', {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${baseUrl}/api/backup/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -112,15 +114,16 @@ export default function BackupPage() {
       const token = localStorage.getItem('token');
       let endpoint = '';
       
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
       switch (backupType) {
         case 'security_logs':
-          endpoint = 'http://localhost:5000/api/backup/security-logs';
+          endpoint = `${baseUrl}/api/backup/security-logs`;
           break;
         case 'users':
-          endpoint = 'http://localhost:5000/api/backup/users';
+          endpoint = `${baseUrl}/api/backup/users`;
           break;
         case 'full':
-          endpoint = 'http://localhost:5000/api/backup/full';
+          endpoint = `${baseUrl}/api/backup/full`;
           break;
         default:
           throw new Error('Invalid backup type');
@@ -163,7 +166,8 @@ export default function BackupPage() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/backup/restore/${selectedBackup.name}`, {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${baseUrl}/api/backup/restore/${selectedBackup.name}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -202,7 +206,8 @@ export default function BackupPage() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/backup/cleanup', {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${baseUrl}/api/backup/cleanup`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

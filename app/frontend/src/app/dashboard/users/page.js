@@ -25,7 +25,15 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/users/users', {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      
+      if (!token) {
+        setError('Please log in to access user management.');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${baseUrl}/api/users/users`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -33,19 +41,26 @@ export default function UsersPage() {
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          setError('Your session has expired. Please log in again.');
+          localStorage.removeItem('token');
+          return;
+        }
         if (response.status === 403) {
           // User doesn't have permission to view users
           setError('You do not have permission to view user management. This feature is restricted to administrators.');
           setUsers([]);
           return;
         }
-        throw new Error('Failed to fetch users');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to fetch users');
       }
 
       const data = await response.json();
       setUsers(data.users);
+      setError(''); // Clear any previous errors on success
     } catch (err) {
-      setError('Failed to load users');
+      setError(`Failed to load users: ${err.message}`);
       console.error('Error fetching users:', err);
     } finally {
       setLoading(false);
@@ -61,7 +76,8 @@ export default function UsersPage() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/users/create', {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${baseUrl}/api/users/create`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -99,7 +115,8 @@ export default function UsersPage() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/users/users/${selectedUser._id || selectedUser.id}`, {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${baseUrl}/api/users/users/${selectedUser._id || selectedUser.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -137,7 +154,8 @@ export default function UsersPage() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/users/users/${selectedUser._id || selectedUser.id}/role`, {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${baseUrl}/api/users/users/${selectedUser._id || selectedUser.id}/role`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

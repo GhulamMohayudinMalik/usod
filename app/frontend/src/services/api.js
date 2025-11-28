@@ -1,7 +1,17 @@
 export async function getData(path) {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
   const res = await fetch(`${baseUrl}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     cache: 'no-store'
   });
   if (!res.ok) {
