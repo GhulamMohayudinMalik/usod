@@ -238,27 +238,6 @@ export default function ThreatAnalysis() {
         </div>
       </div>
       
-      {/* Input Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">AI-Powered Threat Detection</h2>
-        <div className="space-y-4">
-          <textarea
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            rows={6}
-            placeholder="Enter text to analyze for potential threats..."
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-          ></textarea>
-          <button
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={handleAnalyze}
-            disabled={isAnalyzing || !inputText.trim()}
-          >
-            {isAnalyzing ? 'Analyzing...' : 'Analyze Text'}
-          </button>
-        </div>
-      </div>
-      
       {/* Analysis Result */}
       {analysisResult && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">

@@ -1,5 +1,5 @@
 export async function getData(path) {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   
   const headers = {
@@ -22,7 +22,7 @@ export async function getData(path) {
 }
 
 export async function postData(path, data) {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
   const token = localStorage.getItem('token');
   
   const headers = {
@@ -48,7 +48,7 @@ export async function postData(path, data) {
 }
 
 export async function updateLogStatus(logId, status) {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
   const token = localStorage.getItem('token');
   
   const headers = {
