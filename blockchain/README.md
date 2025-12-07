@@ -16,20 +16,24 @@ This directory contains a **fully operational Hyperledger Fabric blockchain** fo
 
 ```
 blockchain/
-├── bin/                    # Hyperledger Fabric binaries
-│   ├── cryptogen.exe      # Crypto material generation
-│   ├── configtxgen.exe    # Channel & genesis block generation
-│   └── peer.exe           # Peer CLI tool
+├── bin/                       # Hyperledger Fabric binaries (v2.5)
+│   ├── cryptogen.exe          # Crypto material generation
+│   ├── configtxgen.exe        # Channel & genesis block generation
+│   └── peer.exe               # Peer CLI tool
 │
-├── hyperledger/           # ACTIVE BLOCKCHAIN IMPLEMENTATION
+├── hyperledger/               # ACTIVE BLOCKCHAIN IMPLEMENTATION
 │   ├── network/
 │   │   ├── docker-compose.yaml      # Container definitions
 │   │   ├── configtx.yaml            # Channel configuration
 │   │   ├── crypto-config.yaml       # Organization structure
 │   │   ├── scripts/
-│   │   │   ├── start.ps1            # Start network
+│   │   │   ├── start-persistent.ps1 # Start network (with persistence)
+│   │   │   ├── stop.ps1             # Stop network (preserves data)
+│   │   │   ├── reset.ps1            # Full reset (wipes all data)
 │   │   │   ├── deploy-chaincode.ps1 # Deploy chaincode
-│   │   │   └── stop.ps1             # Stop network
+│   │   │   ├── setup-wallet.ps1     # Setup admin wallet
+│   │   │   ├── backup-blockchain.ps1    # Backup data
+│   │   │   └── restore-backup.ps1       # Restore from backup
 │   │   ├── crypto-config/           # Generated certificates
 │   │   └── channel-artifacts/       # Genesis block, channel tx
 │   │
@@ -38,8 +42,13 @@ blockchain/
 │           ├── index.js             # Smart contract (10 functions)
 │           └── package.json         # Dependencies
 │
-├── README.md              # This file
-└── ENHANCEMENT.md         # Refactoring & improvement guide
+├── wallets/                   # Admin identity for backend
+│   └── admin.id               # Admin credentials (Fabric SDK format)
+│
+├── README.md                  # This file
+├── ENHANCEMENT.md             # Future improvements guide
+├── HASHING_VERIFICATION_SYSTEM.md  # Hash verification documentation
+└── CLOUD_DEPLOYMENT.md        # Cloud deployment guide
 ```
 
 ---
@@ -51,44 +60,32 @@ blockchain/
 - PowerShell
 - Windows 10/11 or WSL2
 
-### 1. Start the Blockchain Network
+### 1. First Time Setup
 ```powershell
 cd blockchain/hyperledger/network
-.\scripts\start.ps1
+.\scripts\start-persistent.ps1    # Creates channel, generates crypto
+.\scripts\deploy-chaincode.ps1    # Deploys smart contract
+.\scripts\setup-wallet.ps1        # Creates admin identity for backend
 ```
 
-**Expected Output:**
-- ✅ Crypto materials generated
-- ✅ Genesis block created
-- ✅ Channel `usod-channel` created
-- ✅ Peer joined to channel
-
-### 2. Deploy Chaincode
+### 2. Normal Start/Stop (Data Preserved)
 ```powershell
-.\scripts\deploy-chaincode.ps1
+.\scripts\stop.ps1               # Stop - keeps all data!
+.\scripts\start-persistent.ps1   # Restart - data intact!
 ```
 
-**Expected Output:**
-- ✅ Chaincode packaged
-- ✅ Installed on peer
-- ✅ Approved and committed
-- ✅ Docker container running: `dev-peer0.org1.usod.com-threat-logger_1.0-...`
-
-### 3. Test the Blockchain
+### 3. Full Reset (Wipe Everything)
 ```powershell
-# Initialize with sample data
-docker exec cli peer chaincode invoke -C usod-channel -n threat-logger -c '{"function":"InitLedger","Args":[]}'
-
-# Query all threats
-docker exec cli peer chaincode query -C usod-channel -n threat-logger -c '{"function":"GetAllThreats","Args":[]}'
-
-# Create a new threat log
-docker exec cli peer chaincode invoke -C usod-channel -n threat-logger -c '{"function":"CreateThreatLog","Args":["TEST001","network_threat","{\"type\":\"port_scan\",\"severity\":\"high\"}","hash123","2025-10-23T12:00:00Z","AI_DETECTOR"]}'
+.\scripts\reset.ps1              # WARNING: Deletes all blockchain data
+.\scripts\start-persistent.ps1   # Fresh start
+.\scripts\deploy-chaincode.ps1   # Redeploy chaincode
+.\scripts\setup-wallet.ps1       # Regenerate wallet
 ```
 
-### 4. Stop the Network
+### 4. Verify Network Status
 ```powershell
-.\scripts\stop.ps1
+docker ps --format "table {{.Names}}\t{{.Status}}"
+docker exec cli peer channel list  # Should show: usod-channel
 ```
 
 ---
@@ -161,16 +158,10 @@ docker ps --format "table {{.Names}}\t{{.Status}}"
 
 ## 📝 Important Notes
 
-### Windows Path Fix
-After starting the network, always run:
-```powershell
-Get-ChildItem -Path crypto-config -Recurse -Filter "config.yaml" | ForEach-Object { 
-    $content = Get-Content $_.FullName -Raw 
-    $content = $content -replace '\\', '/' 
-    Set-Content -Path $_.FullName -Value $content -NoNewline 
-}
-```
-This fixes Windows backslash paths that `cryptogen.exe` generates.
+### Data Persistence
+- **`stop.ps1`** - Stops network but **preserves all data**
+- **`reset.ps1`** - **WIPES all data** (use with caution)
+- Data is stored in Docker volumes: `orderer_data`, `peer0_ledger`, `peer0_chaincode`
 
 ### Chaincode Updates
 To update chaincode:
@@ -181,29 +172,10 @@ To update chaincode:
 
 ---
 
-## 🎯 Success Criteria (All Met ✅)
-
-- [x] Network starts without errors
-- [x] Channel created and peer joined
-- [x] Chaincode deployed successfully
-- [x] Chaincode container running
-- [x] InitLedger returns status:200
-- [x] GetAllThreats returns data
-- [x] CreateThreatLog stores new threats
-- [x] Data persists across queries
-- [x] Immutable ledger verified
-
----
-
-## 📚 Documentation
-
-- **ENHANCEMENT.md** - Refactoring guide and improvement strategies
-- **hyperledger/network/scripts/** - Automated deployment scripts
-- **hyperledger/chaincode/threat-logger/index.js** - Smart contract source code
-
----
-
 ## ⚠️ Troubleshooting
+
+**Issue:** "channel does not exist" errors  
+**Fix:** Run `.\scripts\reset.ps1` then full setup again
 
 **Issue:** Chaincode container not starting  
 **Fix:** Check `docker logs <chaincode-container-name>`
@@ -214,23 +186,15 @@ To update chaincode:
 **Issue:** Port conflicts  
 **Fix:** Ensure ports 7050, 7051, 7052 are available
 
-**Issue:** Windows path errors  
-**Fix:** Run the path fix command above
+---
+
+## 📚 Documentation
+
+- **ENHANCEMENT.md** - Future improvements guide
+- **HASHING_VERIFICATION_SYSTEM.md** - Hash verification explained
+- **CLOUD_DEPLOYMENT.md** - Cloud hosting guide
 
 ---
 
-## 🏆 Project Status
-
-**Blockchain Component: 100% COMPLETE**
-
-✅ Traditional Hyperledger Fabric deployment  
-✅ Working on Windows with Docker Desktop  
-✅ All 10 chaincode functions operational  
-✅ Immutable threat log storage verified  
-✅ Ready for backend integration  
-
----
-
-**Last Updated:** October 23, 2025  
-**Deployment Method:** Traditional Docker-based chaincode (CCaaS abandoned)  
-**Status:** Production-ready for FYP demonstration
+**Last Updated:** December 2025  
+**Status:** Production-ready with full data persistence
