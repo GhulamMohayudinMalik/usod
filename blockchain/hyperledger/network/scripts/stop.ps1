@@ -1,25 +1,18 @@
 #!/usr/bin/env pwsh
 
-Write-Host "Stopping USOD Blockchain network..."
+Write-Host "================================================"
+Write-Host "  Stopping USOD Blockchain Network"
+Write-Host "================================================"
 
 Set-Location $PSScriptRoot\..
 
-# Stop and remove containers, networks, volumes
-docker-compose down -v
+# Stop containers but PRESERVE volumes (keeps blockchain data!)
+Write-Host "`nStopping containers (preserving data)..."
+docker-compose down
 
-# Remove chaincode containers
-Write-Host "Removing chaincode containers..."
-docker ps -a | Select-String "dev-peer0.org1.usod.com-threat-logger" | ForEach-Object {
-    $containerId = ($_ -split '\s+')[0]
-    docker rm -f $containerId 2>&1 | Out-Null
-}
-
-# Remove chaincode images
-Write-Host "Removing chaincode images..."
-docker images | Select-String "dev-peer0.org1.usod.com-threat-logger" | ForEach-Object {
-    $imageId = ($_ -split '\s+')[2]
-    docker rmi -f $imageId 2>&1 | Out-Null
-}
-
-Write-Host "Network stopped successfully!"
+Write-Host "`n================================================"
+Write-Host "  Network stopped - Data preserved!"
+Write-Host "================================================"
+Write-Host "`nTo restart: .\scripts\start-persistent.ps1"
+Write-Host "To WIPE all data: .\scripts\reset.ps1"
 

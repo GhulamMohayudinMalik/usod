@@ -22,6 +22,8 @@ services:
       - ./channel-artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
       - ./crypto-config/ordererOrganizations/usod.com/orderers/orderer.usod.com/msp:/var/hyperledger/orderer/msp
       - ./crypto-config/ordererOrganizations/usod.com/orderers/orderer.usod.com/tls:/var/hyperledger/orderer/tls
+      # PERSISTENT VOLUME FOR ORDERER DATA (channel configs, blocks)
+      - orderer_data:/var/hyperledger/production/orderer
     ports:
       - 7050:7050
     networks:
@@ -56,6 +58,9 @@ services:
       - /var/run/docker.sock:/host/var/run/docker.sock
       - ./crypto-config/peerOrganizations/org1.usod.com/peers/peer0.org1.usod.com/msp:/etc/hyperledger/fabric/msp
       - ./crypto-config/peerOrganizations/org1.usod.com/peers/peer0.org1.usod.com/tls:/etc/hyperledger/fabric/tls
+      # PERSISTENT VOLUMES FOR BLOCKCHAIN DATA
+      - peer0_ledger:/var/hyperledger/production
+      - peer0_chaincode:/var/hyperledger/chaincode
     ports:
       - 7051:7051
       - 7052:7052
@@ -90,4 +95,13 @@ services:
       - peer0.org1.usod.com
     networks:
       - usod
+
+# PERSISTENT VOLUMES FOR BLOCKCHAIN DATA
+volumes:
+  orderer_data:
+    driver: local
+  peer0_ledger:
+    driver: local
+  peer0_chaincode:
+    driver: local
 
