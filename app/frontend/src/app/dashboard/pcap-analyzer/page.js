@@ -320,6 +320,9 @@ export default function PCAPAnalyzerPage() {
                         <div>
                           <h4 className="text-gray-100 font-medium">{threat.threat_type?.toUpperCase() || 'Unknown Threat'}</h4>
                           <p className="text-sm text-gray-400">{threat.threat_id}</p>
+                          {threat.predicted_class && threat.predicted_class !== threat.threat_type && (
+                            <p className="text-xs text-cyan-400">ML Prediction: {threat.predicted_class}</p>
+                          )}
                         </div>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getSeverityColor(threat.severity)}`}>
@@ -329,22 +332,29 @@ export default function PCAPAnalyzerPage() {
                     
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <p className="text-gray-400">Source IP</p>
-                        <p className="text-gray-100 font-mono">{threat.source_ip}</p>
+                        <p className="text-gray-400">Source</p>
+                        <p className="text-gray-100 font-mono">{threat.source_ip}:{threat.source_port || '?'}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400">Destination IP</p>
-                        <p className="text-gray-100 font-mono">{threat.destination_ip}</p>
+                        <p className="text-gray-400">Destination</p>
+                        <p className="text-gray-100 font-mono">{threat.destination_ip}:{threat.destination_port || '?'}</p>
                       </div>
                       <div>
                         <p className="text-gray-400">Confidence</p>
                         <p className="text-gray-100">{Math.round((threat.confidence || 0) * 100)}%</p>
                       </div>
                       <div>
-                        <p className="text-gray-400">Timestamp</p>
-                        <p className="text-gray-100">{new Date(threat.timestamp).toLocaleString()}</p>
+                        <p className="text-gray-400">Protocol</p>
+                        <p className="text-gray-100">{threat.protocol || 'Unknown'}</p>
                       </div>
                     </div>
+                    {threat.details && (
+                      <div className="mt-3 pt-3 border-t border-gray-600 text-xs text-gray-400">
+                        <span className="mr-4">Model: {threat.details.model_used || 'XGBoost'}</span>
+                        <span className="mr-4">Fwd Pkts: {threat.details.forward_packets || 0}</span>
+                        <span>Bwd Pkts: {threat.details.backward_packets || 0}</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

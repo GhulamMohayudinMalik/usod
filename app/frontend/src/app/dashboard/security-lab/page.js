@@ -207,10 +207,10 @@ export default function SecurityLabPage() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'running': return 'text-yellow-600 bg-yellow-100';
-      case 'completed': return 'text-green-600 bg-green-100';
-      case 'error': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'running': return 'text-yellow-400 bg-yellow-900/30 border border-yellow-500/30';
+      case 'completed': return 'text-green-400 bg-green-900/30 border border-green-500/30';
+      case 'error': return 'text-red-400 bg-red-900/30 border border-red-500/30';
+      default: return 'text-gray-400 bg-gray-700/30 border border-gray-500/30';
     }
   };
 
@@ -223,14 +223,23 @@ export default function SecurityLabPage() {
     ];
     
     if (securityActions.includes(action)) {
-      return 'text-red-600 bg-red-100';
+      return 'text-red-400 bg-red-900/30 border border-red-500/30';
     } else if (action.includes('login') || action.includes('logout')) {
-      return 'text-blue-600 bg-blue-100';
+      return 'text-blue-400 bg-blue-900/30 border border-blue-500/30';
     } else if (action.includes('user_') || action.includes('role_')) {
-      return 'text-purple-600 bg-purple-100';
+      return 'text-purple-400 bg-purple-900/30 border border-purple-500/30';
     } else {
-      return 'text-gray-600 bg-gray-100';
+      return 'text-gray-400 bg-gray-700/30 border border-gray-500/30';
     }
+  };
+
+  // Get consistent attack button styling
+  const getAttackButtonStyle = (attackKey, isActive) => {
+    const baseStyle = 'p-4 border-2 rounded-lg transition-all text-left';
+    if (isActive) {
+      return `${baseStyle} border-emerald-500 bg-emerald-900/20`;
+    }
+    return `${baseStyle} border-gray-600 bg-gray-800/50 hover:border-gray-500`;
   };
 
   // Attack definitions with examples
@@ -438,19 +447,15 @@ export default function SecurityLabPage() {
             <button
               key={key}
               onClick={() => setActiveTest(activeTest === key ? null : key)}
-              className={`p-4 border-2 rounded-lg transition-all text-left ${
-                activeTest === key 
-                  ? `border-${attack.color}-500 bg-${attack.color}-50 dark:bg-${attack.color}-900/20` 
-                  : `border-gray-200 dark:border-gray-700 hover:border-${attack.color}-300`
-              }`}
+              className={getAttackButtonStyle(key, activeTest === key)}
             >
               <div className="flex items-center mb-2">
                 <span className="text-2xl mr-2">{attack.icon}</span>
-                <h4 className={`font-semibold text-${attack.color}-800 dark:text-${attack.color}-200`}>
+                <h4 className="font-semibold text-gray-100">
                   {attack.name}
                 </h4>
               </div>
-              <p className={`text-sm text-${attack.color}-600 dark:text-${attack.color}-400`}>
+              <p className="text-sm text-gray-400">
                 {attack.description}
               </p>
             </button>
@@ -533,8 +538,8 @@ export default function SecurityLabPage() {
               <div key={result.id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      result.status === 'blocked' ? 'text-red-600 bg-red-100' : 'text-green-600 bg-green-100'
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
+                      result.status === 'blocked' ? 'text-red-400 bg-red-900/30 border-red-500/30' : 'text-green-400 bg-green-900/30 border-green-500/30'
                     }`}>
                       {result.status === 'blocked' ? '🚫 BLOCKED' : '✅ EXECUTED'}
                     </span>
@@ -607,10 +612,10 @@ export default function SecurityLabPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        log.status === 'detected' ? 'text-red-600 bg-red-100' :
-                        log.status === 'success' ? 'text-green-600 bg-green-100' :
-                        'text-yellow-600 bg-yellow-100'
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
+                        log.status === 'detected' ? 'text-red-400 bg-red-900/30 border-red-500/30' :
+                        log.status === 'success' ? 'text-green-400 bg-green-900/30 border-green-500/30' :
+                        'text-yellow-400 bg-yellow-900/30 border-yellow-500/30'
                       }`}>
                         {log.status.toUpperCase()}
                       </span>

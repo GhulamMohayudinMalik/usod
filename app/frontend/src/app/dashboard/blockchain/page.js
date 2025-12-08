@@ -71,32 +71,35 @@ export default function BlockchainPage() {
     try {
       const token = localStorage.getItem('token');
       
-      const threat = threats.find(t => t.logId === logId);
-      if (!threat || !threat.threatDetails) {
-        setVerification({ success: false, error: 'Threat data not found' });
-        setVerifying(false);
-        return;
-      }
-      
+      // Only send logId - backend fetches from MongoDB and compares with blockchain
       const res = await fetch(`http://localhost:5000/api/blockchain/threats/${logId}/verify`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          currentData: threat // Send the full threat object, not just threatDetails
-        })
+        body: JSON.stringify({}) // No data needed - backend fetches from MongoDB
       });
       
       if (res.ok) {
         const data = await res.json();
-        setVerification(data);
+        const mappedData = {
+          ...data,
+          // Map backend field names to what the modal expects
+          originalHash: data.originalHash || data.blockchainHash || null,
+          currentHash: data.currentHash || data.mongoHash || null,
+        };
+        setVerification(mappedData);
       } else {
-        setVerification({ success: false, error: 'Verification failed' });
+        const errorData = await res.json().catch(() => ({}));
+        setVerification({ 
+          success: false, 
+          error: errorData.error || 'Verification failed',
+          tamperStatus: errorData.tamperStatus || 'error'
+        });
       }
     } catch (err) {
-      setVerification({ success: false, error: err.message });
+      setVerification({ success: false, error: err.message, tamperStatus: 'error' });
     }
     setVerifying(false);
   };
