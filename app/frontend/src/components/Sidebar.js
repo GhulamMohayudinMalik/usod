@@ -142,7 +142,8 @@ const navigation = [
 
 function Sidebar({ className = '' }) {
   const pathname = usePathname();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true); // Default collapsed
+  const [isMobile, setIsMobile] = useState(false);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -150,11 +151,24 @@ function Sidebar({ className = '' }) {
     if (userData) {
       setUser(JSON.parse(userData));
     }
+    
+    // Check if mobile and handle resize
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setIsCollapsed(true); // Always collapsed on mobile
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   return (
-    <div className="relative">
-      <nav className={`flex flex-col ${isCollapsed ? 'w-16' : 'w-64'} p-4 bg-gray-800/80 backdrop-blur-xl border-r border-gray-700/50 h-screen transition-all duration-300 ${className}`}>
+    <div className="relative h-screen flex-shrink-0">
+      <nav className={`flex flex-col ${isCollapsed ? 'w-16' : 'w-64'} p-4 bg-gray-800/80 backdrop-blur-xl border-r border-gray-700/50 h-full max-h-screen overflow-y-auto transition-all duration-300 ${className}`}>
       <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-center'} p-4 mb-6`}>
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/25">
@@ -204,12 +218,13 @@ function Sidebar({ className = '' }) {
       </div>
       </nav>
       
-      {/* Toggle Button - Positioned outside sidebar */}
-      <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute top-1/2 -right-3 transform -translate-y-1/2 w-6 h-6 bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/90 transition-all duration-300 shadow-lg z-10"
-        title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
+      {/* Toggle Button - Hidden on mobile */}
+      {!isMobile && (
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="absolute top-1/2 -right-3 transform -translate-y-1/2 w-6 h-6 bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/90 transition-all duration-300 shadow-lg z-10"
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
         <svg 
           className="w-3 h-3 transition-transform duration-300" 
           fill="none" 
@@ -223,6 +238,7 @@ function Sidebar({ className = '' }) {
           )}
         </svg>
       </button>
+      )}
     </div>
   );
 }
