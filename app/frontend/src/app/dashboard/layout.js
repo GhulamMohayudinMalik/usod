@@ -4,18 +4,38 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
+import { isTokenExpired } from "@/services/api";
 
 export default function DashboardLayout({ children }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-    } else {
+    // Check if token exists and is valid
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      if (!token || isTokenExpired()) {
+        // Clear any stale data and redirect
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        router.push('/login');
+        return false;
+      }
+      return true;
+    };
+
+    if (checkAuth()) {
       setLoading(false);
     }
+
+    // Periodically check token expiration (every 30 seconds)
+    const interval = setInterval(() => {
+      if (!checkAuth()) {
+        clearInterval(interval);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [router]);
 
   if (loading) {
