@@ -294,7 +294,8 @@ function categorizeLogType(action) {
 }
 
 // Determine severity based on action and status
-function determineSeverity(action, status) {
+// Exported for use in verification
+export function determineSeverity(action, status) {
   // Failed authentication/security = high severity
   if (status === 'failed') {
     if (action.includes('login') || action.includes('session') || action.includes('token')) {

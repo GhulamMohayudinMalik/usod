@@ -14,6 +14,7 @@ import networkRoutes from './routes/networkRoutes.js';
 import blockchainRoutes from './routes/blockchainRoutes.js';
 import apiDocsRoutes from './routes/apiDocsRoutes.js';
 import { startSessionCleanup } from './services/sessionService.js';
+import { initBlockedIPsCache } from './services/securityDetectionService.js';
 
 // Load env
 dotenv.config();
@@ -112,13 +113,16 @@ app.set('trust proxy', true);
 // CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin (mobile apps, curl, Postman, etc.)
     if (!origin) return callback(null, true);
     
     // Build allowed origins list from environment
     const allowedOrigins = [
       process.env.FRONTEND_URL || 'http://localhost:3000', // Web app
       process.env.DESKTOP_APP_URL || 'http://localhost:3001', // Desktop app (Electron)
+      'https://glitchmorse.tech', // Production frontend
+      'https://www.glitchmorse.tech', // Production frontend with www
+      'https://api.glitchmorse.tech', // Production API (self-referential)
     ];
     
     // Add additional allowed origins from env (comma-separated)
@@ -127,22 +131,35 @@ const corsOptions = {
       allowedOrigins.push(...additionalOrigins);
     }
     
-    // Development mode: allow local expo and network origins
+    // Development mode: allow all localhost and network origins
     if (process.env.NODE_ENV !== 'production') {
-      allowedOrigins.push(
-        'http://localhost:19006', // Expo development server
-        'exp://localhost:19000', // Expo development
-      );
+      // Allow any localhost origin (any port)
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+      // Allow private network IPs (for mobile testing on LAN)
+      if (origin.match(/^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/)) {
+        return callback(null, true);
+      }
+      // Allow Expo development origins
+      if (origin.startsWith('exp://') || origin.includes(':19000') || origin.includes(':19006') || origin.includes(':8081')) {
+        return callback(null, true);
+      }
     }
     
+    // Check against allowed origins list
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      // In production, log rejected origins for security monitoring
+      // Log rejected origins for monitoring (but don't block in dev)
       if (process.env.NODE_ENV === 'production') {
         console.warn(`CORS blocked request from origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      } else {
+        // In development, allow all origins but log them
+        console.log(`CORS allowing unlisted origin in dev: ${origin}`);
+        callback(null, true);
       }
-      callback(new Error('Not allowed by CORS'));
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -399,6 +416,9 @@ let server;
 const startServer = async () => {
   try {
     await connectMongoDB();
+    
+    // Initialize blocked IPs cache from database
+    await initBlockedIPsCache();
     
     server = app.listen(port, '0.0.0.0', () => {
       console.log(`🚀 Server is running on port ${port}`);

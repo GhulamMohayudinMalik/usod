@@ -432,7 +432,7 @@ router.get('/security/stats', authenticateToken, requireRole(['admin']), async (
 // Get blocked IPs
 router.get('/security/blocked-ips', authenticateToken, requireRole(['admin']), async (req, res) => {
   try {
-    const blockedIPs = getBlockedIPs();
+    const blockedIPs = await getBlockedIPs();
     res.json({
       message: 'Blocked IPs retrieved',
       blockedIPs
@@ -452,7 +452,7 @@ router.post('/security/block-ip', authenticateToken, requireRole(['admin']), asy
       return res.status(400).json({ message: 'IP address required' });
     }
 
-    blockIP(ip, reason);
+    await blockIP(ip, reason);
     
     // Log the action with network threat details if available
     try {
@@ -490,7 +490,7 @@ router.post('/security/unblock-ip', authenticateToken, requireRole(['admin']), a
       return res.status(400).json({ message: 'IP address required' });
     }
 
-    unblockIP(ip, reason);
+    await unblockIP(ip, reason);
     
     res.json({
       message: 'IP address unblocked successfully',

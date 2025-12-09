@@ -1,8 +1,9 @@
 import { logActions } from './loggingService.js';
 import { eventBus } from './eventBus.js';
+import { BlockedIP } from '../models/BlockedIP.js';
 
-// IP blocking system
-const blockedIPs = new Set();
+// IP blocking system - in-memory cache (synced with MongoDB)
+const blockedIPsCache = new Set();
 const ipAttempts = new Map(); // Track failed attempts per IP
 const suspiciousIPs = new Set(); // Track suspicious IPs
 
@@ -221,66 +222,132 @@ export function getRealIP(req) {
   return ip;
 }
 
-// Check if IP is blocked
+// Initialize blocked IPs cache from MongoDB on startup
+export async function initBlockedIPsCache() {
+  try {
+    const blockedIPs = await BlockedIP.getAllBlocked();
+    blockedIPsCache.clear();
+    blockedIPs.forEach(blocked => blockedIPsCache.add(blocked.ip));
+    console.log(`✅ Loaded ${blockedIPsCache.size} blocked IPs from database`);
+  } catch (error) {
+    console.error('Failed to load blocked IPs from database:', error);
+  }
+}
+
+// Check if IP is blocked (uses cache for performance, with DB fallback)
 export function isIPBlocked(ip) {
-  return blockedIPs.has(ip);
+  return blockedIPsCache.has(ip);
 }
 
-// Block an IP address
-export function blockIP(ip, reason = 'security_violation') {
-  blockedIPs.add(ip);
+// Async check for IP block status (checks DB directly)
+export async function isIPBlockedAsync(ip) {
+  // First check cache
+  if (blockedIPsCache.has(ip)) return true;
+  // Then check DB
+  const isBlocked = await BlockedIP.isBlocked(ip);
+  if (isBlocked) blockedIPsCache.add(ip);
+  return isBlocked;
+}
+
+// Block an IP address (persists to MongoDB with 30-day expiry)
+export async function blockIP(ip, reason = 'security_violation', metadata = {}) {
+  // Add to cache immediately for fast blocking
+  blockedIPsCache.add(ip);
   
-  // Log IP blocking event
-  logActions.securityEvent(null, 'detected', { 
-    get: () => null, 
-    headers: { 'x-forwarded-for': ip } 
-  }, {
-    eventType: 'ip_blocked',
-    severity: 'high',
-    source: ip,
-    description: `IP address blocked: ${reason}`,
-    blockedAt: new Date().toISOString()
-  });
+  try {
+    // Persist to MongoDB with 30-day expiry
+    await BlockedIP.blockIP(ip, reason, {
+      eventType: metadata.eventType || reason,
+      severity: metadata.severity || 'high',
+      description: metadata.description || `IP blocked: ${reason}`,
+      attemptCount: metadata.attemptCount || 1
+    }, 30); // 30 days expiry
+    
+    // Log IP blocking event
+    logActions.securityEvent(null, 'detected', { 
+      get: () => null, 
+      headers: { 'x-forwarded-for': ip } 
+    }, {
+      eventType: 'ip_blocked',
+      severity: 'high',
+      source: ip,
+      description: `IP address blocked: ${reason}`,
+      blockedAt: new Date().toISOString(),
+      expiresIn: '30 days'
+    });
 
-  // Emit IP blocked event
-  eventBus.emit('ip.blocked', {
-    ip,
-    reason,
-    timestamp: new Date()
-  });
+    // Emit IP blocked event
+    eventBus.emit('ip.blocked', {
+      ip,
+      reason,
+      timestamp: new Date()
+    });
 
-  console.log(`🚫 IP ${ip} has been blocked: ${reason}`);
+    console.log(`🚫 IP ${ip} has been blocked for 30 days: ${reason}`);
+  } catch (error) {
+    console.error('Failed to persist blocked IP to database:', error);
+  }
 }
 
-// Unblock an IP address
-export function unblockIP(ip, reason = 'manual_unblock') {
-  blockedIPs.delete(ip);
+// Unblock an IP address (removes from MongoDB)
+export async function unblockIP(ip, reason = 'manual_unblock') {
+  // Remove from cache immediately
+  blockedIPsCache.delete(ip);
   
-  // Log IP unblocking event
-  logActions.securityEvent(null, 'detected', { 
-    get: () => null, 
-    headers: { 'x-forwarded-for': ip } 
-  }, {
-    eventType: 'ip_unblocked',
-    severity: 'low',
-    source: ip,
-    description: `IP address unblocked: ${reason}`,
-    unblockedAt: new Date().toISOString()
-  });
+  try {
+    // Remove from MongoDB
+    await BlockedIP.unblockIP(ip);
+    
+    // Log IP unblocking event
+    logActions.securityEvent(null, 'detected', { 
+      get: () => null, 
+      headers: { 'x-forwarded-for': ip } 
+    }, {
+      eventType: 'ip_unblocked',
+      severity: 'low',
+      source: ip,
+      description: `IP address unblocked: ${reason}`,
+      unblockedAt: new Date().toISOString()
+    });
 
-  // Emit IP unblocked event
-  eventBus.emit('ip.unblocked', {
-    ip,
-    reason,
-    timestamp: new Date()
-  });
+    // Emit IP unblocked event
+    eventBus.emit('ip.unblocked', {
+      ip,
+      reason,
+      timestamp: new Date()
+    });
 
-  console.log(`✅ IP ${ip} has been unblocked: ${reason}`);
+    console.log(`✅ IP ${ip} has been unblocked: ${reason}`);
+  } catch (error) {
+    console.error('Failed to remove blocked IP from database:', error);
+  }
 }
 
-// Get list of blocked IPs
-export function getBlockedIPs() {
-  return Array.from(blockedIPs);
+// Get list of blocked IPs (from MongoDB with full details)
+export async function getBlockedIPs() {
+  try {
+    const blockedIPs = await BlockedIP.getAllBlocked();
+    return blockedIPs.map(blocked => ({
+      ip: blocked.ip,
+      reason: blocked.reason,
+      blockedAt: blocked.blockedAt,
+      expiresAt: blocked.expiresAt,
+      metadata: blocked.metadata
+    }));
+  } catch (error) {
+    console.error('Failed to get blocked IPs from database:', error);
+    // Fallback to cache
+    return Array.from(blockedIPsCache).map(ip => ({ ip, reason: 'unknown', blockedAt: null }));
+  }
+}
+
+// Get blocked IPs count
+export async function getBlockedIPsCount() {
+  try {
+    return await BlockedIP.getBlockedCount();
+  } catch (error) {
+    return blockedIPsCache.size;
+  }
 }
 
 // Check for SQL injection attempts
@@ -410,8 +477,22 @@ export function detectCSRF(req) {
     return false; // Allow direct API calls
   }
 
-  // Very permissive CSRF validation - allow any localhost origin/referer
+  // Production domain allowlist
+  const allowedProductionDomains = [
+    'glitchmorse.tech',
+    'www.glitchmorse.tech',
+    'api.glitchmorse.tech'
+  ];
+  
+  // Check if origin/referer is from production domain
+  const isProductionOrigin = allowedProductionDomains.some(domain => 
+    (origin && origin.includes(domain)) || (referer && referer.includes(domain))
+  );
+  
+  // Very permissive CSRF validation
   const isValidCSRF = (
+    // Allow production origins
+    isProductionOrigin ||
     // Allow any localhost origin/referer (any port)
     (referer && referer.includes('localhost')) ||
     (origin && origin.includes('localhost')) ||
@@ -425,42 +506,27 @@ export function detectCSRF(req) {
     !!csrfToken
   );
 
-  // Only log CSRF issues, don't block (relaxed approach)
-  if (!isValidCSRF && req.method !== 'GET') {
-    console.log('⚠️  CSRF validation failed (logged only, not blocked):', {
+  // Skip logging for trusted sources
+  const isLocalhost = ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || 
+                      ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.');
+  
+  // Skip CSRF logging entirely - we're being very permissive and it just creates noise
+  // Only log if it's a truly suspicious request (no valid origin AND not from known clients)
+  const isTrustedClient = platform === 'mobile' || platform === 'desktop' || 
+                          isLocalhost || isProductionOrigin || !origin;
+  
+  if (!isValidCSRF && req.method !== 'GET' && !isTrustedClient) {
+    // Only log truly suspicious requests - unknown origin from untrusted source
+    console.log('⚠️  CSRF validation warning:', {
       platform,
-      userAgent,
-      referer,
       origin,
-      csrfToken: !!csrfToken,
       method: req.method,
       ip
     });
-    
-    // Only log the event, don't add to suspicious IPs or block
-    logActions.securityEvent(null, 'detected', req, {
-      eventType: 'csrf_validation_failed',
-      severity: 'low',  // Reduced severity
-      source: ip,
-      target: 'api',
-      description: 'CSRF token validation failed (not blocked)',
-      referer,
-      origin,
-      detectedAt: new Date().toISOString()
-    });
-
-    // Don't add to suspicious IPs or block - just emit for monitoring
-    eventBus.emit('security.csrf_warning', {
-      ip,
-      referer,
-      origin,
-      timestamp: new Date()
-    });
-
-    // Don't return true - this means we're not blocking the request
-    return false;
+    // Don't persist to database - just console log for monitoring
   }
 
+  // Never block - CSRF is informational only in this implementation
   return false;
 }
 
