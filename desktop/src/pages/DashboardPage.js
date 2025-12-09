@@ -163,7 +163,7 @@ const DashboardPage = () => {
                 {stats.systemHealth}%
               </div>
               <div style={{ color: '#9ca3af', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                Overall security posture
+                Resolved threats percentage
               </div>
             </div>
             <div style={{
@@ -191,7 +191,7 @@ const DashboardPage = () => {
                 {stats.totalThreats}
               </div>
               <div style={{ color: '#9ca3af', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                Threats requiring attention
+                Escalated threats count
               </div>
             </div>
             <div style={{
@@ -244,12 +244,12 @@ const DashboardPage = () => {
           <h2 style={{ color: 'white', fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>
             Recent Threats
           </h2>
-          <button 
-            style={{ 
-              color: '#60a5fa', 
-              fontSize: '0.875rem', 
-              background: 'none', 
-              border: 'none', 
+          <button
+            style={{
+              color: '#60a5fa',
+              fontSize: '0.875rem',
+              background: 'none',
+              border: 'none',
               cursor: 'pointer',
               textDecoration: 'underline'
             }}
@@ -258,7 +258,7 @@ const DashboardPage = () => {
             View All
           </button>
         </div>
-        
+
         {recentThreats && recentThreats.length > 0 ? (
           <div style={{
             display: 'grid',
@@ -337,10 +337,10 @@ const DashboardPage = () => {
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <h3 style={{ 
-                          color: colors.text, 
-                          fontSize: '1rem', 
-                          fontWeight: '600', 
+                        <h3 style={{
+                          color: colors.text,
+                          fontSize: '1rem',
+                          fontWeight: '600',
                           margin: 0,
                           textTransform: 'capitalize'
                         }}>
@@ -388,11 +388,11 @@ const DashboardPage = () => {
           <h3 style={{ color: '#e5e7eb', fontSize: '0.875rem', fontWeight: '500', margin: 0 }}>
             AI-Powered Threat Analysis
           </h3>
-          <button style={{ 
-            color: '#60a5fa', 
-            fontSize: '0.75rem', 
-            background: 'none', 
-            border: 'none', 
+          <button style={{
+            color: '#60a5fa',
+            fontSize: '0.75rem',
+            background: 'none',
+            border: 'none',
             cursor: 'pointer'
           }}>
             Run Analysis
@@ -402,7 +402,7 @@ const DashboardPage = () => {
           <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
             Analyze text or network traffic for potential security threats using advanced AI detection.
           </p>
-          <textarea 
+          <textarea
             style={{
               width: '100%',
               height: '6rem',

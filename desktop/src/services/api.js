@@ -1,13 +1,38 @@
 // API Service for Desktop App
-// Step 1: Basic file structure
+// =============================================================================
+// API CONFIGURATION
+// =============================================================================
+// Production API URL - used in production builds
+const PRODUCTION_API_URL = 'https://api.glitchmorse.tech';
 
-const API_BASE_URL = 'http://localhost:5000';
+// Local development URL - used when testing with local backend
+const LOCAL_API_URL = 'http://localhost:5000';
+
+// Set to true to use local backend, false for production
+// In production builds (process.env.NODE_ENV === 'production'), always uses production URL
+const USE_LOCAL_IN_DEV = false;
+
+// Determine which URL to use
+const getApiUrl = () => {
+  // Check if we're in a production build
+  if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production') {
+    return PRODUCTION_API_URL;
+  }
+  // In development, check the toggle
+  return USE_LOCAL_IN_DEV ? LOCAL_API_URL : PRODUCTION_API_URL;
+};
+
+const API_BASE_URL = getApiUrl();
+// =============================================================================
 
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
     this.csrfToken = null;
-    console.log('API Service initialized with base URL:', this.baseURL);
+    console.log('🔌 API Service initialized with base URL:', this.baseURL);
+    console.log('   Production URL:', PRODUCTION_API_URL);
+    console.log('   Local URL:', LOCAL_API_URL);
+    console.log('   Mode:', USE_LOCAL_IN_DEV ? 'LOCAL DEV' : 'PRODUCTION');
   }
 
   // Test method to verify the service is working

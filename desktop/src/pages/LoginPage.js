@@ -55,7 +55,7 @@ const LoginPage = ({ onLogin }) => {
   };
 
   const demoAccounts = [
-    { username: 'GhulamMohayudin', password: 'gm123', role: 'Security Admin' },
+    { username: 'GhulamMohayudin', password: 'gm1234', role: 'Security Admin' },
     { username: 'Ali', password: 'ali123', role: 'Security Analyst' }
   ];
 
