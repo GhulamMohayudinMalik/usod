@@ -134,13 +134,13 @@ export default function SecurityPage() {
 
       {/* Messages */}
       {successMessage && (
-        <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+        <div className="mb-4 p-4 bg-green-900/30 border border-green-500/30 text-green-400 rounded">
           {successMessage}
         </div>
       )}
       
       {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="mb-4 p-4 bg-red-900/30 border border-red-500/30 text-red-400 rounded">
           {error}
         </div>
       )}
@@ -254,21 +254,36 @@ export default function SecurityPage() {
           {blockedIPs.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400 text-center py-4">No IPs are currently blocked</p>
           ) : (
-            <div className="space-y-2">
-              {blockedIPs.map((ip, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
-                  <div className="flex items-center">
-                    <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
-                    <span className="font-mono text-sm text-gray-900 dark:text-white">{ip}</span>
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {blockedIPs.map((blocked, index) => {
+                // Handle both old format (string) and new format (object)
+                const ipAddress = typeof blocked === 'string' ? blocked : blocked.ip;
+                const reason = typeof blocked === 'object' ? blocked.reason : 'unknown';
+                const expiresAt = typeof blocked === 'object' && blocked.expiresAt ? new Date(blocked.expiresAt) : null;
+                
+                return (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-700/50 rounded-md">
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
+                        <span className="font-mono text-sm text-white">{ipAddress}</span>
+                      </div>
+                      <div className="ml-5 text-xs text-gray-400 mt-1">
+                        <span className="capitalize">{reason.replace(/_/g, ' ')}</span>
+                        {expiresAt && (
+                          <span className="ml-2">• Expires: {expiresAt.toLocaleDateString()}</span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleUnblockIP(ipAddress)}
+                      className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                    >
+                      Unblock
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleUnblockIP(ip)}
-                    className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-                  >
-                    Unblock
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
