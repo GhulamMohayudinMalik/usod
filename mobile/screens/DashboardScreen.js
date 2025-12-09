@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
   RefreshControl,
-  Dimensions 
+  Dimensions
 } from 'react-native';
 import apiService from '../services/api';
 
@@ -102,7 +102,7 @@ const DashboardScreen = ({ user }) => {
   }
 
   return (
-    <ScrollView 
+    <ScrollView
       style={styles.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -117,19 +117,19 @@ const DashboardScreen = ({ user }) => {
             <Text style={styles.refreshButtonText}>🔄 Refresh</Text>
           </TouchableOpacity>
         </View>
-        
+
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{stats.securityScore}%</Text>
             <Text style={styles.statLabel}>Security Score</Text>
-            <Text style={styles.statChange}>Overall security posture</Text>
+            <Text style={styles.statChange}>Resolved threats percentage</Text>
           </View>
-          
+
           <View style={styles.statCard}>
             <Text style={[styles.statNumber, { color: '#F59E0B' }]}>{stats.activeThreats}</Text>
             <Text style={styles.statLabel}>Active Threats</Text>
-            <Text style={styles.statChange}>Threats requiring attention</Text>
+            <Text style={styles.statChange}>Escalated threats count</Text>
           </View>
         </View>
 
@@ -139,14 +139,14 @@ const DashboardScreen = ({ user }) => {
             <Text style={styles.statLabel}>Protected Users</Text>
             <Text style={styles.statChange}>Users with security policies</Text>
           </View>
-          
+
           <View style={styles.statCard}>
             <Text style={[styles.statNumber, { color: '#8B5CF6' }]}>{recentThreats.length}</Text>
             <Text style={styles.statLabel}>Recent Events</Text>
             <Text style={styles.statChange}>Latest security events</Text>
           </View>
         </View>
-        
+
         {/* Recent Threats Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -155,7 +155,7 @@ const DashboardScreen = ({ user }) => {
               <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>
           </View>
-          
+
           {recentThreats.length > 0 ? (
             recentThreats.map((threat) => (
               <View key={threat.id} style={[styles.threatCard, { backgroundColor: getSeverityBgColor(threat.severity) }]}>
