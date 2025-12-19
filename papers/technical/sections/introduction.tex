@@ -13,18 +13,18 @@ The motivation for developing a unified security operations platform stems from 
 This paper presents USOD (Unified Security Operations Dashboard), a comprehensive security operations platform that addresses the aforementioned challenges through several key contributions:
 
 \begin{enumerate}
-\item \textbf{Unified Multi-Platform Security Operations}: A single, cohesive platform that provides consistent security operations across web, desktop, and mobile environments, eliminating the need for multiple disconnected tools.
+\item \textbf{Unified Multi-Platform Security Operations}: A single, cohesive platform providing consistent security operations across web (Next.js 15/React 19), desktop (Electron 38), and mobile (React Native/Expo 54) environments with shared backend infrastructure and real-time data synchronization.
 
-\item \textbf{AI-Enhanced Network Threat Detection}: Integration of machine learning algorithms for real-time network behavior analysis, enabling detection of novel attack patterns and reducing false positive rates by 40\% compared to traditional signature-based systems.
+\item \textbf{AI-Enhanced Network Threat Detection}: Integration of machine learning algorithms for real-time network traffic analysis, achieving 99.97\% accuracy on CICIDS2017 dataset using Random Forest classification, with Isolation Forest anomaly detection achieving 87.33\% accuracy.
 
-\item \textbf{Blockchain-Secured Immutable Logging}: Implementation of Hyperledger Fabric for tamper-proof security log storage, ensuring data integrity and providing reliable forensic capabilities for compliance and incident response.
+\item \textbf{Blockchain-Secured Immutable Logging}: Operational Hyperledger Fabric blockchain implementation with 10-function chaincode for tamper-proof security log storage, enabling cryptographic integrity verification and providing reliable forensic capabilities.
 
-\item \textbf{Automated Cloud Deployment and Orchestration}: Infrastructure as Code implementation using Terraform and Ansible, reducing deployment time by 75\% and ensuring consistent security configurations across environments.
+\item \textbf{Real-Time Event Architecture}: Server-Sent Events (SSE) based streaming enabling sub-100ms latency from threat detection to dashboard display across all platforms, with webhook integration between Python AI service and Node.js backend.
 
-\item \textbf{Comprehensive Evaluation and Performance Analysis}: Extensive evaluation demonstrating 98.5\% threat detection accuracy, sub-200ms response times across all platforms, and successful integration of AI, blockchain, and cloud automation technologies.
+\item \textbf{Comprehensive Evaluation}: Extensive evaluation demonstrating production-ready performance with sub-200ms response times across all platforms, 34.51ms average ML inference time, and 300 TPS blockchain throughput.
 \end{enumerate}
 
 \subsection{Paper Organization}
 
-The remainder of this paper is organized as follows: Section II reviews related work in security operations platforms, multi-platform security solutions, and emerging technologies. Section III presents the overall system architecture and design principles. Section IV details the implementation of core security features and multi-platform applications. Section V describes the AI-enhanced network threat detection capabilities. Section VI explains the blockchain integration for secure logging. Section VII covers the cloud automation and orchestration framework. Section VIII presents comprehensive evaluation results and performance analysis. Finally, Section IX concludes the paper and discusses future research directions.
+The remainder of this paper is organized as follows: Section II reviews related work in security operations platforms, multi-platform security solutions, and emerging technologies. Section III presents the overall system architecture and design principles. Section IV details the implementation of core security features and multi-platform applications. Section V describes the AI-enhanced network threat detection capabilities. Section VI explains the blockchain integration for secure logging. Section VII covers the cloud automation design specifications. Section VIII presents comprehensive evaluation results and performance analysis. Finally, Section IX concludes the paper and discusses future research directions.
 

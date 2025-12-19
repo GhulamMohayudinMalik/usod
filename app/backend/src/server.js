@@ -118,7 +118,7 @@ const corsOptions = {
     
     // Build allowed origins list from environment
     const allowedOrigins = [
-      process.env.FRONTEND_URL || 'http://localhost:3000', // Web app
+      'http://localhost:3000', // Web app
       process.env.DESKTOP_APP_URL || 'http://localhost:3001', // Desktop app (Electron)
       'https://glitchmorse.tech', // Production frontend
       'https://www.glitchmorse.tech', // Production frontend with www

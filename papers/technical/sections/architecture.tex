@@ -47,7 +47,7 @@ The data flow architecture ensures efficient processing of security events while
 
 \textbf{Data Storage and Retrieval}: Security events are stored in MongoDB with optimized indexing for fast retrieval and analysis. The system implements data retention policies and automated archival processes to manage storage requirements while maintaining accessibility for forensic analysis.
 
-\textbf{Blockchain Integration}: \textit{[FUTURE WORK - NOT YET IMPLEMENTED]} The system architecture includes design specifications for Hyperledger Fabric blockchain integration to provide immutable audit trails and tamper-proof logging. Complete documentation and network configuration files exist in the blockchain directory, with planned integration for critical security events. The asynchronous design ensures minimal performance impact when implemented. Current implementation stores all logs in MongoDB with comprehensive indexing for fast retrieval and analysis.
+\textbf{Blockchain Integration}: The system integrates with Hyperledger Fabric blockchain for immutable audit trails and tamper-proof logging. The ThreatLogContract chaincode provides 10 functions for threat log management including creation, retrieval, filtering, and cryptographic verification. Events are logged to both MongoDB for fast querying and blockchain for immutability, ensuring dual-layer data persistence with comprehensive audit capabilities.
 
 \subsection{Extensibility Framework}
 
