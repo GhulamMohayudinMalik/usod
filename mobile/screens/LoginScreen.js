@@ -121,16 +121,7 @@ const LoginScreen = ({ onLogin }) => {
             </TouchableOpacity>
 
           </View>
-
-          {/* Demo Accounts */}
-          <View style={styles.demoSection}>
-            <Text style={styles.demoTitle}>Available Accounts:</Text>
-            <View style={styles.demoAccounts}>
-              <Text style={styles.demoText}>Admins: GhulamMohayudin/gm1234, Ali/ali123</Text>
-              <Text style={styles.demoText}>Users: Zuhaib/zuhaib123, GhulamMohayudin/user123</Text>
-              <Text style={styles.demoText}>More: AliSami/user123, ZuhaibIqbal/user123</Text>
-            </View>
-          </View>
+          
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
