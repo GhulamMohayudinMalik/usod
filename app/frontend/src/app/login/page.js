@@ -122,25 +122,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          {/* Demo Accounts */}
-          <div className="mt-8 pt-6 border-t border-gray-700/50">
-            <p className="text-sm text-gray-400 mb-3">Available Accounts:</p>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-gray-300">Admins:</span>
-                <span className="text-gray-400">GhulamMohayudin/gm1234, Ali/ali123</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-300">Users:</span>
-                <span className="text-gray-400">Zuhaib/zuhaib123, GhulamMohayudin/user123</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-300">More Users:</span>
-                <span className="text-gray-400">AliSami/user123, ZuhaibIqbal/user123</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
