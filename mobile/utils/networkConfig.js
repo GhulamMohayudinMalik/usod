@@ -15,7 +15,7 @@ const LOCAL_API_URL = 'http://192.168.100.120:5000'; // Your LAN IP
 // const LOCAL_API_URL = 'http://localhost:5000';       // Android emulator (use 10.0.2.2)
 
 // Set to true to use local backend in development, false to use production
-const USE_LOCAL_IN_DEV = true;
+const USE_LOCAL_IN_DEV = false;
 // =============================================================================
 
 export const getApiBaseURL = () => {

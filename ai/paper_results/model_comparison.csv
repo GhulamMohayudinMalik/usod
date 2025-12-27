@@ -1,0 +1,7 @@
+Model,Accuracy,Precision,Recall,F1-Score
+Random Forest,99.82%,99.80%,99.82%,99.81%
+Extra Trees,99.13%,99.11%,99.13%,99.06%
+XGBoost,99.88%,99.88%,99.88%,99.88%
+LightGBM,81.36%,89.18%,81.36%,83.67%
+CatBoost,99.81%,99.79%,99.81%,99.79%
+Isolation Forest,81.22%,52.66%,45.22%,48.66%

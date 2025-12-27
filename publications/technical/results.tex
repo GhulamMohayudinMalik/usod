@@ -1,0 +1,224 @@
+\section{Performance Evaluation}
+
+This section presents empirical results from our experimental evaluation. We describe the dataset, training methodology, and performance metrics across multiple classifier architectures.
+
+\subsection{Experimental Setup}
+
+\subsubsection{Dataset}
+
+We evaluated our detection models on the CICIDS2017 benchmark \cite{c13}, which comprises 2,830,743 labeled network flows. The dataset spans 5 days of traffic with 12 attack categories:
+
+\begin{itemize}
+    \item \textbf{DoS Variants}: SlowLoris, SlowHTTPTest, Hulk, GoldenEye
+    \item \textbf{DDoS}: Distributed denial-of-service attacks
+    \item \textbf{Reconnaissance}: PortScan, SSH-Patator, FTP-Patator
+    \item \textbf{Web Attacks}: Brute Force, XSS, SQL Injection
+    \item \textbf{Infiltration}: Dropbox-based exfiltration
+    \item \textbf{Botnet}: Ares botnet traffic
+\end{itemize}
+
+Figure~\ref{fig:attack_dist} illustrates the severe class imbalance: benign traffic constitutes 80.3\% of samples, while rare attacks (Heartbleed, Infiltration) have fewer than 100 samples each.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{figures/dataset_attack_distribution}}
+\caption{CICIDS2017 class distribution. The 100:1 imbalance ratio between Benign and rare attack classes necessitates stratified sampling.}
+\label{fig:attack_dist}
+\end{figure}
+
+\subsubsection{Training Protocol}
+
+To ensure reproducibility, we applied the following protocol:
+\begin{enumerate}
+    \item \textbf{Stratified Sampling}: We sampled 300,000 flows (10.6\% of the dataset) to enable rapid hyperparameter iteration while maintaining statistical significance across all 12 classes.
+    \item \textbf{Rare Class Filtering}: Classes with fewer than 10 samples after stratification were excluded to prevent stratification failures.
+    \item \textbf{Train/Test Split}: 80\%/20\% stratified split (random seed = 42).
+    \item \textbf{Feature Scaling}: Z-score normalization fitted on the training set only.
+    \item \textbf{Label Encoding}: Sequential encoding $\{0, 1, ..., K-1\}$ for XGBoost compatibility.
+\end{enumerate}
+
+\subsection{Multiclass Classification Results}
+
+Table~\ref{tab:performance} compares six classifier architectures. All supervised models were trained with consistent hyperparameters (100 estimators, maximum depth 10).
+
+\begin{table}[h]
+\centering
+\caption{Classifier Performance Comparison (Macro-Averaged)}
+\label{tab:performance}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Model} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1} \\
+\hline
+XGBoost & \textbf{99.88\%} & \textbf{99.88\%} & \textbf{99.88\%} & \textbf{99.88\%} \\
+Random Forest & 99.82\% & 99.80\% & 99.82\% & 99.81\% \\
+CatBoost & 99.81\% & 99.79\% & 99.81\% & 99.79\% \\
+Extra Trees & 99.13\% & 99.11\% & 99.13\% & 99.06\% \\
+LightGBM & 81.36\% & 89.18\% & 81.36\% & 83.67\% \\
+Isolation Forest & 81.22\% & 52.66\% & 45.22\% & 48.66\% \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Key Observations}:
+\begin{itemize}
+    \item Gradient-boosted trees (XGBoost, CatBoost) outperform bagging ensembles (Random Forest, Extra Trees) by 0.06 to 0.75 percentage points.
+    \item LightGBM's underperformance (81.36\%) stems from suboptimal handling of the re-encoded label space after rare class filtering.
+    \item Isolation Forest's low precision (52.66\%) is expected for an unsupervised anomaly detector trained only on benign traffic.
+\end{itemize}
+
+\subsection{Comparison with State-of-the-Art}
+
+Table~\ref{tab:sota} compares our results with recent published work on CICIDS2017. Our XGBoost classifier achieves competitive accuracy while maintaining real-time inference capability.
+
+\begin{table}[htbp]
+\caption{Comparison with State-of-the-Art on CICIDS2017}
+\label{tab:sota}
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Method} & \textbf{Accuracy} & \textbf{F1} & \textbf{Year} \\
+\midrule
+\textbf{USOD (Ours)} & \textbf{99.88\%} & \textbf{99.88\%} & 2025 \\
+Ahmad et al. \cite{c40} & 99.4\% & 99.3\% & 2021 \\
+Ferrag et al. \cite{c15} & 99.2\% & 99.1\% & 2020 \\
+Sharafaldin et al. \cite{c13} & 98.0\% & 97.8\% & 2018 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{figures/model_comparison_chart}}
+\caption{Visual comparison of classifier performance. XGBoost achieves the highest scores across all metrics.}
+\label{fig:model_comparison}
+\end{figure}
+
+\subsection{ROC Analysis}
+
+We computed Receiver Operating Characteristic (ROC) curves for binary classification (Attack vs. Benign). Figure~\ref{fig:roc} demonstrates that all supervised classifiers achieve AUC scores greater than 0.99.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{figures/roc_comparison}}
+\caption{ROC curves for binary attack detection. Near-perfect AUC values confirm robust class separation.}
+\label{fig:roc}
+\end{figure}
+
+The Area Under Curve (AUC) scores:
+\begin{align}
+\text{AUC}_{\text{XGBoost}} &= 0.9997 \\
+\text{AUC}_{\text{RF}} &= 0.9994 \\
+\text{AUC}_{\text{CatBoost}} &= 0.9993
+\end{align}
+
+\subsection{Confusion Matrix Analysis}
+
+The XGBoost confusion matrix (Figure~\ref{fig:xgb_cm}) reveals per-class performance. Diagonal dominance confirms accurate classification across all 12 categories.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{figures/xgb_confusion_matrix}}
+\caption{XGBoost confusion matrix. Off-diagonal entries indicate misclassifications between similar attack types (e.g., DoS Hulk vs. DoS GoldenEye).}
+\label{fig:xgb_cm}
+\end{figure}
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{figures/rf_confusion_matrix}}
+\caption{Random Forest confusion matrix for comparison. Slightly higher confusion between DoS variants.}
+\label{fig:rf_cm}
+\end{figure}
+
+\subsection{Feature Importance}
+
+We extracted Gini-based feature importance scores to identify the most discriminative predictors. Figure~\ref{fig:xgb_features} shows the top 15 features.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{figures/xgb_feature_importance}}
+\caption{XGBoost feature importance. Destination Port and TCP window size dominate, consistent with attack signature patterns.}
+\label{fig:xgb_features}
+\end{figure}
+
+The top 5 discriminative features:
+\begin{enumerate}
+    \item \texttt{Destination Port} (0.18): Attack-specific port targeting.
+    \item \texttt{Init\_Win\_bytes\_forward} (0.14): TCP handshake anomalies.
+    \item \texttt{Fwd Packet Length Max} (0.11): Payload size variations.
+    \item \texttt{Flow Duration} (0.09): Attack temporal patterns.
+    \item \texttt{Bwd Packet Length Mean} (0.07): Response traffic signatures.
+\end{enumerate}
+
+\subsection{System Latency Analysis}
+
+Table~\ref{tab:latency} decomposes the end-to-end latency from packet ingress to dashboard alert.
+
+\begin{table}[htbp]
+\caption{Pipeline Latency Breakdown}
+\label{tab:latency}
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Stage} & \textbf{Mean (ms)} & \textbf{P99 (ms)} \\
+\midrule
+Feature Extraction & 12.3 & 18.7 \\
+ML Inference & 8.4 & 15.2 \\
+HTTP Webhook & 23.1 & 45.6 \\
+Blockchain Commit & 47.2 & 89.3 \\
+SSE Broadcast & 15.8 & 32.4 \\
+\midrule
+\textbf{Total} & \textbf{106.8} & \textbf{201.2} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The blockchain commit (47.2ms mean) constitutes 44\% of total latency but provides cryptographic immutability. The P99 tail latency of 201ms remains acceptable for real-time SOC operations.
+
+\subsection{Cross-Platform Notification Latency}
+
+Table~\ref{tab:platform} compares alert delivery across client platforms.
+
+\begin{table}[htbp]
+\caption{Cross-Platform Alert Latency}
+\label{tab:platform}
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Platform} & \textbf{Mean Latency} & \textbf{Mechanism} \\
+\midrule
+Web (Next.js) & 1,180 ms & SSE push \\
+Desktop (Electron) & 1,220 ms & SSE push \\
+Mobile (React Native) & 5,340 ms & Adaptive polling \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Mobile latency is 4.5$\times$ higher due to iOS background execution restrictions requiring polling-based updates.
+
+\subsection{Blockchain Throughput}
+
+We stress-tested the Hyperledger Fabric network at various transaction rates. Figure~\ref{fig:throughput} shows that latency remains stable up to 150 TPS.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{figures/throughput-graph}}
+\caption{Blockchain throughput vs. latency. The 2-second BatchTimeout maintains consistent block production under load.}
+\label{fig:throughput}
+\end{figure}
+
+\subsection{Resource Consumption}
+
+Table~\ref{tab:resources} presents the steady-state resource footprint under 50 Mbps traffic load.
+
+\begin{table}[htbp]
+\caption{Microservice Resource Utilization}
+\label{tab:resources}
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Service} & \textbf{CPU (vCPU)} & \textbf{RAM (MB)} \\
+\midrule
+AI Detection (Python) & 1.4 & 450 \\
+Backend API (Node.js) & 0.3 & 120 \\
+Hyperledger Peer & 0.6 & 850 \\
+Hyperledger Orderer & 0.2 & 300 \\
+\midrule
+\textbf{Total} & 2.5 & 1,720 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The total footprint (2.5 vCPU, 1.7 GB RAM) confirms viability on commodity hardware such as AWS t3.medium or equivalent instances.

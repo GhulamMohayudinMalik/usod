@@ -201,24 +201,24 @@ const SECURITY_CONFIG = {
 
 // Helper function to get real IP address
 export function getRealIP(req) {
-  let ip = req.headers['x-forwarded-for'] || 
-           req.headers['x-real-ip'] || 
-           req.connection.remoteAddress || 
-           req.socket.remoteAddress ||
-           (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
-           req.ip ||
-           '0.0.0.0';
-  
+  let ip = req.headers['x-forwarded-for'] ||
+    req.headers['x-real-ip'] ||
+    req.connection.remoteAddress ||
+    req.socket.remoteAddress ||
+    (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+    req.ip ||
+    '0.0.0.0';
+
   // Handle IPv6 localhost
   if (ip === '::1' || ip === '::ffff:127.0.0.1') {
     ip = '127.0.0.1';
   }
-  
+
   // Handle comma-separated IPs
   if (ip.includes(',')) {
     ip = ip.split(',')[0].trim();
   }
-  
+
   return ip;
 }
 
@@ -253,7 +253,7 @@ export async function isIPBlockedAsync(ip) {
 export async function blockIP(ip, reason = 'security_violation', metadata = {}) {
   // Add to cache immediately for fast blocking
   blockedIPsCache.add(ip);
-  
+
   try {
     // Persist to MongoDB with 30-day expiry
     await BlockedIP.blockIP(ip, reason, {
@@ -262,11 +262,11 @@ export async function blockIP(ip, reason = 'security_violation', metadata = {}) 
       description: metadata.description || `IP blocked: ${reason}`,
       attemptCount: metadata.attemptCount || 1
     }, 30); // 30 days expiry
-    
+
     // Log IP blocking event
-    logActions.securityEvent(null, 'detected', { 
-      get: () => null, 
-      headers: { 'x-forwarded-for': ip } 
+    logActions.securityEvent(null, 'detected', {
+      get: () => null,
+      headers: { 'x-forwarded-for': ip }
     }, {
       eventType: 'ip_blocked',
       severity: 'high',
@@ -293,15 +293,15 @@ export async function blockIP(ip, reason = 'security_violation', metadata = {}) 
 export async function unblockIP(ip, reason = 'manual_unblock') {
   // Remove from cache immediately
   blockedIPsCache.delete(ip);
-  
+
   try {
     // Remove from MongoDB
     await BlockedIP.unblockIP(ip);
-    
+
     // Log IP unblocking event
-    logActions.securityEvent(null, 'detected', { 
-      get: () => null, 
-      headers: { 'x-forwarded-for': ip } 
+    logActions.securityEvent(null, 'detected', {
+      get: () => null,
+      headers: { 'x-forwarded-for': ip }
     }, {
       eventType: 'ip_unblocked',
       severity: 'low',
@@ -354,13 +354,13 @@ export async function getBlockedIPsCount() {
 export function detectSQLInjection(input, req) {
   if (!input || typeof input !== 'string') return false;
 
-  const hasSQLInjection = SECURITY_PATTERNS.SQL_INJECTION.some(pattern => 
+  const hasSQLInjection = SECURITY_PATTERNS.SQL_INJECTION.some(pattern =>
     pattern.test(input)
   );
 
   if (hasSQLInjection) {
     const ip = getRealIP(req);
-    
+
     logActions.securityEvent(null, 'detected', req, {
       eventType: 'sql_injection_attempt',
       severity: 'high',
@@ -374,10 +374,10 @@ export function detectSQLInjection(input, req) {
 
     // Add to suspicious IPs
     suspiciousIPs.add(ip);
-    
+
     // BLOCK the IP for SQL injection attempts
     blockIP(ip, 'sql_injection_attempt');
-    
+
     // Emit security event
     eventBus.emit('security.sql_injection', {
       ip,
@@ -396,13 +396,13 @@ export function detectSQLInjection(input, req) {
 export function detectXSS(input, req) {
   if (!input || typeof input !== 'string') return false;
 
-  const hasXSS = SECURITY_PATTERNS.XSS.some(pattern => 
+  const hasXSS = SECURITY_PATTERNS.XSS.some(pattern =>
     pattern.test(input)
   );
 
   if (hasXSS) {
     const ip = getRealIP(req);
-    
+
     logActions.securityEvent(null, 'detected', req, {
       eventType: 'xss_attempt',
       severity: 'high',
@@ -415,10 +415,10 @@ export function detectXSS(input, req) {
 
     // Add to suspicious IPs
     suspiciousIPs.add(ip);
-    
+
     // BLOCK the IP for XSS attempts
     blockIP(ip, 'xss_attempt');
-    
+
     // Emit security event
     eventBus.emit('security.xss', {
       ip,
@@ -448,11 +448,11 @@ export function detectCSRF(req) {
   }
 
   // Skip CSRF check for localhost API testing and development tools
-  if (userAgent.includes('PowerShell') || 
-      userAgent.includes('curl') || 
-      userAgent.includes('Postman') ||
-      userAgent.includes('Insomnia') ||
-      userAgent.includes('HTTPie')) {
+  if (userAgent.includes('PowerShell') ||
+    userAgent.includes('curl') ||
+    userAgent.includes('Postman') ||
+    userAgent.includes('Insomnia') ||
+    userAgent.includes('HTTPie')) {
     return false; // Skip for API testing tools
   }
 
@@ -467,8 +467,8 @@ export function detectCSRF(req) {
   }
 
   // Skip CSRF check for localhost IPs (any port)
-  if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || 
-      ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
+  if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' ||
+    ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
     return false; // Allow all localhost and private network IPs
   }
 
@@ -483,12 +483,12 @@ export function detectCSRF(req) {
     'www.glitchmorse.tech',
     'api.glitchmorse.tech'
   ];
-  
+
   // Check if origin/referer is from production domain
-  const isProductionOrigin = allowedProductionDomains.some(domain => 
+  const isProductionOrigin = allowedProductionDomains.some(domain =>
     (origin && origin.includes(domain)) || (referer && referer.includes(domain))
   );
-  
+
   // Very permissive CSRF validation
   const isValidCSRF = (
     // Allow production origins
@@ -507,14 +507,14 @@ export function detectCSRF(req) {
   );
 
   // Skip logging for trusted sources
-  const isLocalhost = ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || 
-                      ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.');
-  
+  const isLocalhost = ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' ||
+    ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.');
+
   // Skip CSRF logging entirely - we're being very permissive and it just creates noise
   // Only log if it's a truly suspicious request (no valid origin AND not from known clients)
-  const isTrustedClient = platform === 'mobile' || platform === 'desktop' || 
-                          isLocalhost || isProductionOrigin || !origin;
-  
+  const isTrustedClient = platform === 'mobile' || platform === 'desktop' ||
+    isLocalhost || isProductionOrigin || !origin;
+
   if (!isValidCSRF && req.method !== 'GET' && !isTrustedClient) {
     // Only log truly suspicious requests - unknown origin from untrusted source
     console.log('⚠️  CSRF validation warning:', {
@@ -534,20 +534,20 @@ export function detectCSRF(req) {
 export function trackFailedLogin(ip, username, req) {
   const now = Date.now();
   const key = `${ip}:${username}`;
-  
+
   if (!ipAttempts.has(key)) {
     ipAttempts.set(key, []);
   }
-  
+
   const attempts = ipAttempts.get(key);
   attempts.push(now);
-  
+
   // Clean old attempts outside the window
-  const recentAttempts = attempts.filter(time => 
+  const recentAttempts = attempts.filter(time =>
     now - time < SECURITY_CONFIG.BRUTE_FORCE_WINDOW
   );
   ipAttempts.set(key, recentAttempts);
-  
+
   // Check for brute force
   if (recentAttempts.length >= SECURITY_CONFIG.BRUTE_FORCE_THRESHOLD) {
     logActions.securityEvent(null, 'detected', req, {
@@ -563,7 +563,7 @@ export function trackFailedLogin(ip, username, req) {
 
     // Block IP for brute force
     blockIP(ip, 'brute_force_attack');
-    
+
     // Emit security event
     eventBus.emit('security.brute_force', {
       ip,
@@ -575,7 +575,7 @@ export function trackFailedLogin(ip, username, req) {
     console.log(`🚨 Brute force attack detected from ${ip} targeting ${username}`);
     return true;
   }
-  
+
   // Check for suspicious activity
   if (recentAttempts.length >= SECURITY_CONFIG.SUSPICIOUS_THRESHOLD) {
     logActions.securityEvent(null, 'detected', req, {
@@ -591,7 +591,7 @@ export function trackFailedLogin(ip, username, req) {
 
     // Add to suspicious IPs
     suspiciousIPs.add(ip);
-    
+
     // Emit security event
     eventBus.emit('security.suspicious', {
       ip,
@@ -613,12 +613,12 @@ export function detectSuspiciousActivity(input, req) {
 
   // Skip suspicious activity detection for localhost in development
   const ip = getRealIP(req);
-  if (process.env.NODE_ENV === 'development' && 
-      (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1')) {
+  if (process.env.NODE_ENV === 'development' &&
+    (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1')) {
     return false;
   }
 
-  const hasSuspiciousPattern = SECURITY_PATTERNS.SUSPICIOUS.some(pattern => 
+  const hasSuspiciousPattern = SECURITY_PATTERNS.SUSPICIOUS.some(pattern =>
     pattern.test(input)
   );
 
@@ -634,7 +634,7 @@ export function detectSuspiciousActivity(input, req) {
 
     // Add to suspicious IPs
     suspiciousIPs.add(ip);
-    
+
     // Emit security event
     eventBus.emit('security.suspicious_activity', {
       ip,
@@ -653,13 +653,13 @@ export function detectSuspiciousActivity(input, req) {
 export function detectLDAPInjection(input, req) {
   if (!input || typeof input !== 'string') return false;
 
-  const hasLDAPInjection = SECURITY_PATTERNS.LDAP_INJECTION.some(pattern => 
+  const hasLDAPInjection = SECURITY_PATTERNS.LDAP_INJECTION.some(pattern =>
     pattern.test(input)
   );
 
   if (hasLDAPInjection) {
     const ip = getRealIP(req);
-    
+
     logActions.securityEvent(null, 'detected', req, {
       eventType: 'ldap_injection_attempt',
       severity: 'high',
@@ -672,7 +672,7 @@ export function detectLDAPInjection(input, req) {
 
     // Add to suspicious IPs
     suspiciousIPs.add(ip);
-    
+
     // Emit security event
     eventBus.emit('security.ldap_injection', {
       ip,
@@ -691,13 +691,13 @@ export function detectLDAPInjection(input, req) {
 export function detectNoSQLInjection(input, req) {
   if (!input || typeof input !== 'string') return false;
 
-  const hasNoSQLInjection = SECURITY_PATTERNS.NOSQL_INJECTION.some(pattern => 
+  const hasNoSQLInjection = SECURITY_PATTERNS.NOSQL_INJECTION.some(pattern =>
     pattern.test(input)
   );
 
   if (hasNoSQLInjection) {
     const ip = getRealIP(req);
-    
+
     logActions.securityEvent(null, 'detected', req, {
       eventType: 'nosql_injection_attempt',
       severity: 'high',
@@ -710,7 +710,7 @@ export function detectNoSQLInjection(input, req) {
 
     // Add to suspicious IPs
     suspiciousIPs.add(ip);
-    
+
     // Emit security event
     eventBus.emit('security.nosql_injection', {
       ip,
@@ -729,13 +729,13 @@ export function detectNoSQLInjection(input, req) {
 export function detectCommandInjection(input, req) {
   if (!input || typeof input !== 'string') return false;
 
-  const hasCommandInjection = SECURITY_PATTERNS.COMMAND_INJECTION.some(pattern => 
+  const hasCommandInjection = SECURITY_PATTERNS.COMMAND_INJECTION.some(pattern =>
     pattern.test(input)
   );
 
   if (hasCommandInjection) {
     const ip = getRealIP(req);
-    
+
     logActions.securityEvent(null, 'detected', req, {
       eventType: 'command_injection_attempt',
       severity: 'critical',
@@ -748,7 +748,7 @@ export function detectCommandInjection(input, req) {
 
     // Block IP immediately for command injection
     blockIP(ip, 'command_injection_attempt');
-    
+
     // Emit security event
     eventBus.emit('security.command_injection', {
       ip,
@@ -767,13 +767,13 @@ export function detectCommandInjection(input, req) {
 export function detectPathTraversal(input, req) {
   if (!input || typeof input !== 'string') return false;
 
-  const hasPathTraversal = SECURITY_PATTERNS.PATH_TRAVERSAL.some(pattern => 
+  const hasPathTraversal = SECURITY_PATTERNS.PATH_TRAVERSAL.some(pattern =>
     pattern.test(input)
   );
 
   if (hasPathTraversal) {
     const ip = getRealIP(req);
-    
+
     logActions.securityEvent(null, 'detected', req, {
       eventType: 'path_traversal_attempt',
       severity: 'high',
@@ -786,7 +786,7 @@ export function detectPathTraversal(input, req) {
 
     // Add to suspicious IPs
     suspiciousIPs.add(ip);
-    
+
     // Emit security event
     eventBus.emit('security.path_traversal', {
       ip,
@@ -805,13 +805,13 @@ export function detectPathTraversal(input, req) {
 export function detectSSRF(input, req) {
   if (!input || typeof input !== 'string') return false;
 
-  const hasSSRF = SECURITY_PATTERNS.SSRF.some(pattern => 
+  const hasSSRF = SECURITY_PATTERNS.SSRF.some(pattern =>
     pattern.test(input)
   );
 
   if (hasSSRF) {
     const ip = getRealIP(req);
-    
+
     logActions.securityEvent(null, 'detected', req, {
       eventType: 'ssrf_attempt',
       severity: 'high',
@@ -824,7 +824,7 @@ export function detectSSRF(input, req) {
 
     // Add to suspicious IPs
     suspiciousIPs.add(ip);
-    
+
     // Emit security event
     eventBus.emit('security.ssrf', {
       ip,
@@ -843,13 +843,13 @@ export function detectSSRF(input, req) {
 export function detectXXE(input, req) {
   if (!input || typeof input !== 'string') return false;
 
-  const hasXXE = SECURITY_PATTERNS.XXE.some(pattern => 
+  const hasXXE = SECURITY_PATTERNS.XXE.some(pattern =>
     pattern.test(input)
   );
 
   if (hasXXE) {
     const ip = getRealIP(req);
-    
+
     logActions.securityEvent(null, 'detected', req, {
       eventType: 'xxe_attempt',
       severity: 'high',
@@ -862,7 +862,7 @@ export function detectXXE(input, req) {
 
     // Add to suspicious IPs
     suspiciousIPs.add(ip);
-    
+
     // Emit security event
     eventBus.emit('security.xxe', {
       ip,
@@ -886,20 +886,20 @@ export function detectInformationDisclosure(input, req) {
     const parsed = JSON.parse(input);
     if (parsed && typeof parsed === 'object') {
       // Check if this looks like a legitimate form submission
-      const hasFormFields = ['username', 'password', 'email', 'currentPassword', 'newPassword'].some(field => 
+      const hasFormFields = ['username', 'password', 'email', 'currentPassword', 'newPassword'].some(field =>
         parsed.hasOwnProperty(field)
       );
-      
+
       if (hasFormFields) {
         // Only check for patterns in values, not field names
         const values = Object.values(parsed).join(' ');
-        const hasInfoDisclosure = SECURITY_PATTERNS.INFORMATION_DISCLOSURE.some(pattern => 
+        const hasInfoDisclosure = SECURITY_PATTERNS.INFORMATION_DISCLOSURE.some(pattern =>
           pattern.test(values) && !pattern.test(JSON.stringify(parsed))
         );
-        
+
         if (hasInfoDisclosure) {
           const ip = getRealIP(req);
-          
+
           logActions.securityEvent(null, 'detected', req, {
             eventType: 'information_disclosure_attempt',
             severity: 'low',
@@ -912,7 +912,7 @@ export function detectInformationDisclosure(input, req) {
 
           // Add to suspicious IPs
           suspiciousIPs.add(ip);
-          
+
           // Emit security event
           eventBus.emit('security.information_disclosure', {
             ip,
@@ -930,13 +930,13 @@ export function detectInformationDisclosure(input, req) {
     // If not JSON, continue with original logic
   }
 
-  const hasInfoDisclosure = SECURITY_PATTERNS.INFORMATION_DISCLOSURE.some(pattern => 
+  const hasInfoDisclosure = SECURITY_PATTERNS.INFORMATION_DISCLOSURE.some(pattern =>
     pattern.test(input)
   );
 
   if (hasInfoDisclosure) {
     const ip = getRealIP(req);
-    
+
     logActions.securityEvent(null, 'detected', req, {
       eventType: 'information_disclosure_attempt',
       severity: 'low',
@@ -949,7 +949,7 @@ export function detectInformationDisclosure(input, req) {
 
     // Add to suspicious IPs
     suspiciousIPs.add(ip);
-    
+
     // Emit security event
     eventBus.emit('security.information_disclosure', {
       ip,
@@ -967,7 +967,7 @@ export function detectInformationDisclosure(input, req) {
 // Comprehensive security check for all inputs
 export function performSecurityCheck(req, res, next) {
   const ip = getRealIP(req);
-  
+
   // Check if IP is blocked
   if (isIPBlocked(ip)) {
     return res.status(403).json({
@@ -979,7 +979,7 @@ export function performSecurityCheck(req, res, next) {
   // Check request body for malicious patterns
   if (req.body) {
     const bodyString = JSON.stringify(req.body);
-    
+
     // Check for SQL injection
     if (detectSQLInjection(bodyString, req)) {
       return res.status(400).json({
@@ -987,7 +987,7 @@ export function performSecurityCheck(req, res, next) {
         code: 'SQL_INJECTION_DETECTED'
       });
     }
-    
+
     // Check for XSS
     if (detectXSS(bodyString, req)) {
       return res.status(400).json({
@@ -995,7 +995,7 @@ export function performSecurityCheck(req, res, next) {
         code: 'XSS_DETECTED'
       });
     }
-    
+
     // Check for LDAP injection
     if (detectLDAPInjection(bodyString, req)) {
       return res.status(400).json({
@@ -1003,7 +1003,7 @@ export function performSecurityCheck(req, res, next) {
         code: 'LDAP_INJECTION_DETECTED'
       });
     }
-    
+
     // Check for NoSQL injection
     if (detectNoSQLInjection(bodyString, req)) {
       return res.status(400).json({
@@ -1011,7 +1011,7 @@ export function performSecurityCheck(req, res, next) {
         code: 'NOSQL_INJECTION_DETECTED'
       });
     }
-    
+
     // Check for command injection
     if (detectCommandInjection(bodyString, req)) {
       return res.status(400).json({
@@ -1019,7 +1019,7 @@ export function performSecurityCheck(req, res, next) {
         code: 'COMMAND_INJECTION_DETECTED'
       });
     }
-    
+
     // Check for path traversal
     if (detectPathTraversal(bodyString, req)) {
       return res.status(400).json({
@@ -1027,7 +1027,7 @@ export function performSecurityCheck(req, res, next) {
         code: 'PATH_TRAVERSAL_DETECTED'
       });
     }
-    
+
     // Check for SSRF
     if (detectSSRF(bodyString, req)) {
       return res.status(400).json({
@@ -1035,7 +1035,7 @@ export function performSecurityCheck(req, res, next) {
         code: 'SSRF_DETECTED'
       });
     }
-    
+
     // Check for XXE
     if (detectXXE(bodyString, req)) {
       return res.status(400).json({
@@ -1043,7 +1043,7 @@ export function performSecurityCheck(req, res, next) {
         code: 'XXE_DETECTED'
       });
     }
-    
+
     // Check for information disclosure
     if (detectInformationDisclosure(bodyString, req)) {
       return res.status(400).json({
@@ -1051,7 +1051,7 @@ export function performSecurityCheck(req, res, next) {
         code: 'INFORMATION_DISCLOSURE_DETECTED'
       });
     }
-    
+
     // Check for suspicious activity (temporarily disabled for testing)
     if (false && detectSuspiciousActivity(bodyString, req)) {
       return res.status(400).json({
@@ -1075,10 +1075,10 @@ export function performSecurityCheck(req, res, next) {
 // Get security statistics
 export function getSecurityStats() {
   return {
-    blockedIPs: blockedIPs.size,
+    blockedIPs: blockedIPsCache.size,
     suspiciousIPs: suspiciousIPs.size,
     totalAttempts: Array.from(ipAttempts.values()).reduce((sum, attempts) => sum + attempts.length, 0),
-    activeThreats: suspiciousIPs.size + blockedIPs.size
+    activeThreats: suspiciousIPs.size + blockedIPsCache.size
   };
 }
 

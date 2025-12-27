@@ -1,0 +1,89 @@
+\section{Implementation Challenges and Solutions}
+
+\subsection{Blockchain Throughput Tuning}
+
+The default settings of Hyperledger Fabric use throughput at the expense of latency frequently adding a 2-second block cutting delay. In the case of USOD, when intrusion alert should be sustained nearly in real-time, we adjusted the ordering service settings in the configuration file named \texttt{configtx.yaml}. Our \texttt{BatchTimeout} value was 2 seconds and most importantly the \texttt{MaxMessageCount} was set to 10. This constrains the Raft leader to trim a block whenever a 10 threat logs have build up, or 2 seconds pass which occurs first to trade network jitter with audit timeliness.
+
+\subsection{Mobile State Synchronization}
+React Native background process limitations on iOS posed a significant hurdle for real-time awareness, as the OS suspends WebSocket connections in background states. To guarantee alert delivery without battery drain, we implemented an adaptive polling mechanism. The client calculates a dynamic polling interval $T_p$ based on the \texttt{AppState}: 
+
+Background process capabilities and restrictions of React Native on iOS were a major obstacle to real-time awareness because this operating system blocks WebSocket connections when the app is not being used. We used an adaptive polling mechanism in order to ensure that it delivers alerts without draining the batteries. The client computes a moving polling time $T_p$ pertaining to the \texttt{AppState}: a 5 second an active poll ($T_{active} = 5s$) is activated and it changes to a background fetch strategy where allowed.
+
+\begin{lstlisting}[language=JavaScript, caption=Adaptive Polling Logic]
+useEffect(() => {
+  let intervalId;
+  const poll = () => {
+    fetchThreats().then(setThreats);
+  };
+  poll(); // Initial fetch
+  intervalId = setInterval(poll, 5000); // Active polling
+  return () => clearInterval(intervalId);
+}, []);
+\end{lstlisting}
+This stateless method was found to be stronger than having weak persistent links using the cellular networks.
+
+\subsection{Desktop Focus Injection}
+Programmatic focus shifting is interfered with by Electron security sandbox. So as to permit Critical alerts to preempt the user activity, we loaded a special preload script into the renderer process:
+\begin{lstlisting}[language=JavaScript, caption=Electron Focus Context Isolation Bypass]
+mainWindow.webContents.executeJavaScript(`
+  document.addEventListener('security-alert', (e) => {
+    if (e.detail.severity === 'CRITICAL') {
+       window.focus(); // Force window to foreground
+    }
+  });
+`);
+\end{lstlisting}
+
+\subsection{Continuous Integration and Deployment}
+The delivery pipeline will be automated through GitHub Actions in order to achieve code integrity on the polyglot stack. It has three strict validation stages performed by the workflow:
+\begin{enumerate}
+    \item \textbf{Static Analysis}: Linting of Javascript (ESLint) and Python (Flake8).
+    \item \textbf{Container Build}: Docker Compose stores the images of the Dockerfiles: \texttt{backend}, \texttt{ai-service}, and \texttt{blockchain-peer}, making sure that the images were created.
+    \item \textbf{Regression Testing}: A script will execute the entire boot sequence and ensure the Hyperledger Orderer reaches a quorum before the API layer will make any attempts to connect.
+\end{enumerate}
+
+\subsection{RESTful API Design}
+
+The backend has a RESTful interface meeting the specifications of OpenAPI. Table \ref{tab:api}  is a summary of the key groups of routes. We have intentionally avoided the use of GraphQL whose choice of query format makes it harder to rate limit and opens up denial-of-service vectors through deeply nested queries.
+
+\begin{table}[htbp]
+\caption{Backend API Route Summary}
+\label{tab:api}
+\centering
+\begin{tabular}{lcp{4.5cm}}
+\toprule
+\textbf{Route Prefix} & \textbf{Count} & \textbf{Purpose} \\
+\midrule
+/api/auth & 10 & Authentication, JWT refresh \\
+/api/network & 12 & Monitoring, threat retrieval \\
+/api/blockchain & 6 & Ledger health, verification \\
+/api/backup & 7 & Create, restore backups \\
+/api/users & 8 & CRUD, role assignment \\
+/api/data & 4 & Dashboard statistics \\
+/api/stream & 1 & SSE real-time alerts \\
+\midrule
+\textbf{Total} & \textbf{48} & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Centralized Security Logging}
+
+All security-related successes and failures are recorded in MongoDB according to the schema presented in listing 3. The field \texttt{action} is an enumerated field with 40+ categories of events (e.g. \texttt{network intrusion}, \texttt{ip\_blocked}, \texttt{user\_created}). The granularity allows post incident filtering (without parsing unstructured text) to occur.
+
+\begin{lstlisting}[language=JavaScript, caption=SecurityLog Schema]
+{
+  userId: ObjectId,
+  username: String,
+  action: String (enum: 40+ types),
+  status: "success" | "failure",
+  ipAddress: String,
+  userAgent: String,
+  details: Object,
+  timestamp: Date (indexed)
+}
+\end{lstlisting}
+
+Indexes on the \texttt{(timestamp, action)} are compound indexes in order to support the following typical query request: ``give me all IP blocks that occurred in the past 24 hours. In the absence of these indexes '', the log viewer of a dashboard would reach the performance of multi-second response in load testing.
+
+

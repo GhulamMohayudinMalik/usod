@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USOD Technical Paper Diagrams</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #111;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #00d4ff;
+        }
+
+        /* Main container - the part you screenshot */
+        .diagram-container {
+            background: white;
+            margin: 30px auto;
+            padding: 40px;
+            border-radius: 0;
+            max-width: 900px;
+            border: 3px solid #1e293b;
+            box-shadow: none;
+        }
+
+        /* Hide title and instructions when screenshotting - they are outside the diagram area */
+        .diagram-header {
+            background: #1e293b;
+            color: white;
+            padding: 15px 25px;
+            margin-bottom: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: 2px solid #0f172a;
+        }
+
+        .diagram-header span {
+            color: #5eead4;
+            font-size: 13px;
+            margin-left: 10px;
+        }
+
+        .instructions {
+            background: #fef3c7;
+            border: 2px solid #d97706;
+            padding: 12px 15px;
+            margin-bottom: 25px;
+            color: #78350f;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* The actual diagram part - this is what gets exported */
+        .diagram-content {
+            padding: 25px;
+            border: 2px solid #334155;
+            background: #fafafa;
+        }
+
+        /* ========== DIAGRAM 1: System Architecture ========== */
+        .architecture {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .arch-layer {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            position: relative;
+        }
+
+        .arch-layer-title {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: white;
+            padding: 0 10px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .arch-components {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .arch-component {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            text-align: center;
+            min-width: 120px;
+            font-size: 13px;
+        }
+
+        .arch-component.detection {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .arch-component.aggregation {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .arch-component.persistence {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .arch-component.blockchain {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .arch-arrow {
+            text-align: center;
+            font-size: 24px;
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        /* ========== DIAGRAM 2: STRIDE Threat Model ========== */
+        .stride-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .stride-item {
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .stride-item h4 {
+            color: #dc2626;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .stride-item .threat {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 8px;
+            color: #7f1d1d;
+        }
+
+        .stride-item .mitigation {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #166534;
+        }
+
+        .stride-item .mitigation::before {
+            content: "✓ ";
+            font-weight: bold;
+        }
+
+        /* ========== DIAGRAM 3: Blockchain Transaction Flow ========== */
+        .blockchain-flow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .bf-step {
+            background: #f8fafc;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .bf-step h4 {
+            color: #1e40af;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .bf-step p {
+            font-size: 11px;
+            color: #334155;
+        }
+
+        .bf-arrow {
+            font-size: 20px;
+            color: #1e40af;
+            font-weight: bold;
+        }
+
+        .bf-step.highlight {
+            background: #dbeafe;
+            border-color: #3b82f6;
+        }
+
+        /* ========== DIAGRAM 4: Throughput Graph ========== */
+        .throughput-chart {
+            position: relative;
+            height: 250px;
+            border-left: 2px solid #334155;
+            border-bottom: 2px solid #334155;
+            margin: 20px 30px 30px 50px;
+        }
+
+        .y-label {
+            position: absolute;
+            left: -45px;
+            transform: rotate(-90deg);
+            transform-origin: center;
+            font-size: 12px;
+            color: #1e293b;
+            top: 50%;
+            font-weight: 600;
+        }
+
+        .x-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        .chart-line {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .chart-line svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #1e293b;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 3px;
+        }
+
+        .legend-color.latency {
+            background: #3b82f6;
+        }
+
+        .legend-color.throughput {
+            background: #10b981;
+        }
+
+        /* ========== DIAGRAM 5: Cross-Platform Sync ========== */
+        .platform-sync {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .platform-backend {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .sse-arrows {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+        }
+
+        .sse-arrow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 12px;
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        .sse-arrow .arrow-line {
+            width: 2px;
+            height: 40px;
+            background: #3b82f6;
+            position: relative;
+        }
+
+        .sse-arrow .arrow-line::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -4px;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 8px solid #3b82f6;
+        }
+
+        .platform-clients {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        .platform-client {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px 25px;
+            text-align: center;
+        }
+
+        .platform-client h4 {
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #1e293b;
+        }
+
+        .platform-client p {
+            font-size: 11px;
+            color: #334155;
+        }
+
+        .platform-client.web {
+            border-color: #3b82f6;
+        }
+
+        .platform-client.desktop {
+            border-color: #8b5cf6;
+        }
+
+        .platform-client.mobile {
+            border-color: #10b981;
+        }
+
+        /* ========== DIAGRAM 6: Data Flow Pipeline ========== */
+        .data-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .df-node {
+            background: #f1f5f9;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 12px 18px;
+            text-align: center;
+            font-size: 12px;
+            color: #1e293b;
+        }
+
+        .df-node.input {
+            background: #dbeafe;
+            border-color: #3b82f6;
+        }
+
+        .df-node.process {
+            background: #fef3c7;
+            border-color: #f59e0b;
+        }
+
+        .df-node.output {
+            background: #d1fae5;
+            border-color: #10b981;
+        }
+
+        .df-node.storage {
+            background: #ede9fe;
+            border-color: #8b5cf6;
+        }
+
+        .df-arrow {
+            color: #334155;
+            font-size: 16px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>📊 USOD Technical Paper Diagrams</h1>
+    <p style="text-align: center; margin-bottom: 40px; color: #94a3b8;">
+        Export each diagram as PNG at 300 DPI for print quality. Recommended: Use browser screenshot or print-to-PDF.
+    </p>
+
+    <!-- DIAGRAM 1: System Architecture -->
+    <div class="diagram-container">
+        <div class="diagram-title">
+            Figure 1: USOD 4-Layer System Architecture
+            <span>→ system_architecture.tex</span>
+        </div>
+        <div class="instructions">
+            📁 Save as: <strong>figures/architecture-diagram.png</strong>
+        </div>
+        <div class="architecture">
+            <div class="arch-layer">
+                <span class="arch-layer-title" style="color: #667eea;">PRESENTATION LAYER</span>
+                <div class="arch-components">
+                    <div class="arch-component">Web<br><small>Next.js 15</small></div>
+                    <div class="arch-component">Desktop<br><small>Electron 38</small></div>
+                    <div class="arch-component">Mobile<br><small>React Native</small></div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕ REST / SSE</div>
+            <div class="arch-layer">
+                <span class="arch-layer-title" style="color: #4facfe;">AGGREGATION LAYER</span>
+                <div class="arch-components">
+                    <div class="arch-component aggregation">Node.js Backend<br><small>Express 5.1.0</small></div>
+                    <div class="arch-component aggregation">JWT Auth<br><small>RBAC</small></div>
+                    <div class="arch-component aggregation">SSE Event Bus<br><small>Real-time</small></div>
+                </div>
+            </div>
+            <div class="arch-arrow">↕ HTTP Webhook / Fabric SDK</div>
+            <div style="display: flex; gap: 15px;">
+                <div class="arch-layer" style="flex: 1;">
+                    <span class="arch-layer-title" style="color: #f5576c;">DETECTION LAYER</span>
+                    <div class="arch-components">
+                        <div class="arch-component detection">Python AI<br><small>FastAPI</small></div>
+                        <div class="arch-component detection">Scapy<br><small>Capture</small></div>
+                    </div>
+                </div>
+                <div class="arch-layer" style="flex: 1.5;">
+                    <span class="arch-layer-title" style="color: #43e97b;">PERSISTENCE LAYER</span>
+                    <div class="arch-components">
+                        <div class="arch-component persistence">MongoDB<br><small>Mutable</small></div>
+                        <div class="arch-component blockchain">Hyperledger<br><small>Immutable</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DIAGRAM 2: STRIDE Threat Model -->
+    <div class="diagram-container">
+        <div class="diagram-title">
+            Figure 2: STRIDE Threat Model Analysis
+            <span>→ security_analysis.tex</span>
+        </div>
+        <div class="instructions">
+            📁 Save as: <strong>figures/stride-threat-model.png</strong>
+        </div>
+        <div class="stride-grid">
+            <div class="stride-item">
+                <h4>S - Spoofing</h4>
+                <div class="threat">Identity fabrication via rogue clients</div>
+                <div class="mitigation">X.509 certificates (fabric-ca)</div>
+            </div>
+            <div class="stride-item">
+                <h4>T - Tampering</h4>
+                <div class="threat">Post-detection log modification</div>
+                <div class="mitigation">SHA-256 hash on blockchain</div>
+            </div>
+            <div class="stride-item">
+                <h4>R - Repudiation</h4>
+                <div class="threat">Denial of administrative actions</div>
+                <div class="mitigation">Immutable audit trail + JWT userId</div>
+            </div>
+            <div class="stride-item">
+                <h4>I - Info Disclosure</h4>
+                <div class="threat">Packet payload leakage</div>
+                <div class="mitigation">Only flow statistics stored</div>
+            </div>
+            <div class="stride-item">
+                <h4>D - Denial of Service</h4>
+                <div class="threat">API resource exhaustion</div>
+                <div class="mitigation">Rate limiting (100 req/15min/IP)</div>
+            </div>
+            <div class="stride-item">
+                <h4>E - Elevation of Privilege</h4>
+                <div class="threat">Stolen admin token abuse</div>
+                <div class="mitigation">24h expiry + server-side invalidation</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DIAGRAM 3: Blockchain Transaction Flow (EOV) -->
+    <div class="diagram-container">
+        <div class="diagram-title">
+            Figure 3: Hyperledger Fabric Execute-Order-Validate (EOV) Flow
+            <span>→ methodology.tex</span>
+        </div>
+        <div class="instructions">
+            📁 Save as: <strong>figures/blockchain-eov-flow.png</strong>
+        </div>
+        <div class="blockchain-flow">
+            <div class="bf-step">
+                <h4>1. PROPOSE</h4>
+                <p>Client signs transaction proposal with CreateThreatLog</p>
+            </div>
+            <span class="bf-arrow">→</span>
+            <div class="bf-step highlight">
+                <h4>2. EXECUTE</h4>
+                <p>Peer simulates against world state, returns RW-set</p>
+            </div>
+            <span class="bf-arrow">→</span>
+            <div class="bf-step">
+                <h4>3. ORDER</h4>
+                <p>Raft leader batches into block (2s timeout / 10 msgs)</p>
+            </div>
+            <span class="bf-arrow">→</span>
+            <div class="bf-step highlight">
+                <h4>4. VALIDATE</h4>
+                <p>MVCC checks, endorsement policy, commit to ledger</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- DIAGRAM 4: Throughput vs Latency -->
+    <div class="diagram-container">
+        <div class="diagram-title">
+            Figure 4: Blockchain Throughput vs. Commit Latency
+            <span>→ results.tex</span>
+        </div>
+        <div class="instructions">
+            📁 Save as: <strong>figures/throughput-graph.png</strong>
+        </div>
+        <div class="throughput-chart">
+            <span class="y-label">Latency (ms)</span>
+            <span class="x-label">Transactions Per Second (TPS)</span>
+            <div class="chart-line">
+                <svg viewBox="0 0 400 200" preserveAspectRatio="none">
+                    <!-- Latency line (stays flat then rises) -->
+                    <polyline fill="none" stroke="#3b82f6" stroke-width="3"
+                        points="0,160 80,155 160,150 240,140 320,100 400,40" />
+                    <!-- Throughput line (linear increase) -->
+                    <polyline fill="none" stroke="#10b981" stroke-width="3" stroke-dasharray="8,4"
+                        points="0,180 80,150 160,120 240,90 320,60 400,30" />
+                    <!-- Threshold line at 200ms -->
+                    <line x1="0" y1="50" x2="400" y2="50" stroke="#ef4444" stroke-width="1" stroke-dasharray="4,4" />
+                    <text x="405" y="55" fill="#ef4444" font-size="10">200ms threshold</text>
+                </svg>
+            </div>
+        </div>
+        <div class="chart-legend">
+            <div class="legend-item">
+                <div class="legend-color latency"></div>
+                <span>Commit Latency</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color throughput" style="border: 1px dashed #10b981; background: transparent;"></div>
+                <span>Throughput</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- DIAGRAM 5: Cross-Platform State Sync -->
+    <div class="diagram-container">
+        <div class="diagram-title">
+            Figure 5: Cross-Platform Real-Time State Synchronization
+            <span>→ implementation.tex or discussion.tex</span>
+        </div>
+        <div class="instructions">
+            📁 Save as: <strong>figures/cross-platform-sync.png</strong>
+        </div>
+        <div class="platform-sync">
+            <div class="platform-backend">Node.js Backend (SSE Event Bus)</div>
+            <div class="sse-arrows">
+                <div class="sse-arrow">
+                    <span>SSE</span>
+                    <div class="arrow-line"></div>
+                    <span>~1.2s</span>
+                </div>
+                <div class="sse-arrow">
+                    <span>SSE</span>
+                    <div class="arrow-line"></div>
+                    <span>~1.2s</span>
+                </div>
+                <div class="sse-arrow">
+                    <span>Polling</span>
+                    <div class="arrow-line" style="background: #10b981;"></div>
+                    <span>~5.3s</span>
+                </div>
+            </div>
+            <div class="platform-clients">
+                <div class="platform-client web">
+                    <h4>🌐 Web</h4>
+                    <p>Next.js 15<br>Server-Sent Events</p>
+                </div>
+                <div class="platform-client desktop">
+                    <h4>🖥️ Desktop</h4>
+                    <p>Electron 38<br>Server-Sent Events</p>
+                </div>
+                <div class="platform-client mobile">
+                    <h4>📱 Mobile</h4>
+                    <p>React Native<br>Adaptive Polling (5s)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DIAGRAM 6: Data Flow Pipeline -->
+    <div class="diagram-container">
+        <div class="diagram-title">
+            Figure 6: End-to-End Data Flow Pipeline
+            <span>→ system_architecture.tex or methodology.tex</span>
+        </div>
+        <div class="instructions">
+            📁 Save as: <strong>figures/data-flow-pipeline.png</strong>
+        </div>
+        <div class="data-flow">
+            <div class="df-node input">📦 Raw Packets<br><small>NIC Buffer</small></div>
+            <span class="df-arrow">→</span>
+            <div class="df-node process">🔍 Scapy<br><small>Capture</small></div>
+            <span class="df-arrow">→</span>
+            <div class="df-node process">📊 Feature<br><small>Extraction</small></div>
+            <span class="df-arrow">→</span>
+            <div class="df-node process">🤖 ML<br><small>Inference</small></div>
+            <span class="df-arrow">→</span>
+            <div class="df-node output">⚠️ Threat<br><small>Alert</small></div>
+            <span class="df-arrow">→</span>
+            <div class="df-node storage">🔗 Blockchain<br><small>Hash</small></div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 50px; color: #64748b;">
+        <p>Total Diagrams: <strong>6</strong></p>
+        <p>Recommended for an 8-10 page technical paper</p>
+        <p style="margin-top: 20px;">
+            <strong>Export Instructions:</strong><br>
+            1. Open this file in Chrome/Edge<br>
+            2. Right-click each diagram → "Inspect" → Select the .diagram-container<br>
+            3. Right-click → "Capture node screenshot"<br>
+            4. Or use a browser extension like "GoFullPage" for clean exports
+        </p>
+    </div>
+</body>
+
+</html>

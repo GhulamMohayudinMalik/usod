@@ -1,0 +1,39 @@
+\section{Discussion}
+
+Building USOD taught us that theory and practice in security operations often diverge. This section reflects on the engineering reality of coupling AI with blockchain, highlighting what worked, what failed, and what surprised us.
+
+\subsection{Engineering Insights}
+
+\subsubsection{The Payload Problem}
+
+One of our earliest architectural mistakes was attempting to store full packet payloads on the blockchain. It seemed like a good idea for forensic completeness: immutability for the entire crime scene. In practice, it was a disaster. Transaction sizes ballooned to over 50KB, and the Raft consensus layer began corrupting under a load of just 30 transactions per second.
+
+The fix was recognizing that we did not need the \textit{data} on-chain, only the \textit{proof} of the data. By stripping the payload and storing only its SHA-256 hash (approximately 600 bytes), we saw throughput increase to over 100 TPS with zero dropped blocks. The lesson is simple but critical: keep the ledger lean. Use it for validation, not storage.
+
+\subsubsection{Why Two Models Are Better Than One}
+
+We initially hoped that a single Random Forest classifier would suffice. With 99.82\% accuracy, why add complexity? However, during testing with synthetic zero-day traffic, supervised models were confidently wrong: they forced novel attacks into familiar categories.
+
+Adding the Isolation Forest created a safety net. It generated more noise (flagging unusual but benign administrative traffic), but in a SOC context, silence is worse than noise. The operators who tested the system preferred dealing with a few false positives over the terrifying possibility of silent failure. The hybrid approach trades a small amount of automation for a large gain in coverage.
+
+\subsubsection{The Reality of Mobile Background Tasks}
+
+Mobile operating systems are hostile to persistent connections. Our WebSocket implementation, which ran perfectly on Android, would silently die on iOS after approximately 30 seconds of background time. There were no error messages and no socket close events, just silent data loss. We had to pivot to an adaptive polling mechanism for iOS, which feels less elegant but actually delivers the alerts. It is a reminder that defensive security tools operate at the mercy of OS power management policies.
+
+\subsection{Known Limitations}
+
+We are transparent about what USOD cannot do yet:
+
+\begin{enumerate}
+    \item \textbf{Single-organization network.} Our Hyperledger setup uses one MSP (Membership Service Provider). Real-world value emerges when multiple organizations (e.g., an ISP and a bank) share a ledger to cross-validate threats. That requires complex governance mechanisms that we have not yet implemented.
+    
+    \item \textbf{Encrypted traffic is a blind spot.} We analyze flow statistics, not payload content. If malware wraps its command-and-control traffic in TLS and mimics the timing of legitimate streaming, we may miss it. This is a fundamental limitation of flow-based detection.
+    
+    \item \textbf{The dataset is aging.} CICIDS2017 is an excellent benchmark, but attack tradecraft evolves rapidly. Fileless malware and subtle supply-chain injections are not well-represented in our training data. The model requires a continuous diet of fresh samples to remain relevant.
+    
+    \item \textbf{10 Gbps is the ceiling.} At extremely high data rates, the Python capture layer begins dropping packets. For carrier-grade deployment, the ingestion engine would need to be rewritten in C++ or Rust, likely using DPDK for kernel bypass.
+\end{enumerate}
+
+\subsection{Deployment Recommendations}
+
+For practitioners considering deploying a similar system: position your sensor where it observes all traffic (network egress points are ideal). Isolate your blockchain peers from your API server; if the API is compromised, you do not want the attacker pivoting to the ledger. And critically, retrain your models regularly. A static model in a dynamic threat landscape is simply a legacy system waiting to fail.

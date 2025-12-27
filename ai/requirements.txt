@@ -41,5 +41,10 @@ pytest-asyncio==0.21.1
 black==23.11.0
 flake8==6.1.0
 
+# Machine Learning Libraries
+xgboost==3.1.2
+lightgbm==4.6.0
+catboost==1.2.8
+
 # Windows-specific (for packet capture)
 # Note: Npcap must be installed separately from https://npcap.com/

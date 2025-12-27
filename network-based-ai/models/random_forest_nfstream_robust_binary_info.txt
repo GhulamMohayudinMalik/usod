@@ -1,0 +1,5 @@
+Model: NFStream Robust Binary
+Trained: 2025-12-23 23:53
+Accuracy: 0.7710
+FPR: 0.0638
+Training data: CICIDS2017 + User traffic

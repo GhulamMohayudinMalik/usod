@@ -33,6 +33,13 @@ infrastructure/.terraform/
 
 #Python
 ai/.venv/
+ai/venv/
+ai/models/
+ai/data/
+network-based-ai/.venv/
+network-based-ai/venv/
+network-based-ai/models/*.joblib
+network-based-ai/*.pcap
 
 # ML models (large files)
 ml-services/models/*.pkl

@@ -1,0 +1,125 @@
+\section{Security Analysis}
+
+We analyze the security posture of USOD through the devised threat model referred to as STRIDE \cite{c30} about attacks surfaces in a uniform way of attack identification and assessment of vulnerability to attacks, c30. In the case of every threat category, we indicate the attack vehicle, compromised element and the countermeasure that has been taken.
+
+\subsection{Threat Model Assumptions}
+
+We assume the following adversary capabilities:
+\begin{itemize}
+    \item \textbf{Network Position}: The attacker is able to monitor and inject traffic in a monitored segment of the network.
+    \item \textbf{Credential Theft}: The intruder can get valid user credentials by phishing or stealing databases.
+    \item \textbf{Partial System Access}: It is possible that the attacker obtains shell access to the MongoDB server or backend API, but not to $> \frac{N}{2}$ blockchain peers simultaneously.
+\end{itemize}
+
+We rule out adversaries of the nation-state that can break SHA-256 (or ESDA) because doing so would violate the cryptographic keys of modern security infrastructure.
+\subsection{Spoofing: Identity Fabrication}
+
+\textbf{Attack Vector}: Through masquerading as the AI detection service, an adversary tries to send artificial threat logs.
+
+\textbf{Mitigation}: Hyperledger Fabric's identity layer enforces mutual TLS (mTLS) and X.509 certificate validation. Each transaction proposal must be signed with a private key corresponding to a certificate enrolled in \texttt{USODOrgMSP}. We validated this control by submitting 1,000 unsigned transaction proposals; all returned \texttt{ACCESS\_DENIED} at the peer gateway.
+
+The identity layer of Hyperledger Fabric follows the validation of mutual TLS (mTLS) and X.509 license. Every transaction proposal shall be signed using a private key relating to a certificate registered in \texttt{USODrgMSP}. We have checked this check by including 1,000 non-singed transaction proposal, and all were \texttt{ACCESS\_DENIED} at the peer gateway.
+
+\textbf{Formal Guarantee}: Let $\mathcal{K}_{ca}$ be the CA's signing key. When the attacker lacks the knowledge of the key $\mathcal{K}_{ca}$, he can never forge a valid certificate, provided that ECDSA is secure. The acceptance of transaction involves:
+\begin{equation}
+\textsc{Verify}(\sigma_{tx}, pk_{enrolled}) = \texttt{true} \land pk_{enrolled} \in \mathcal{MSP}
+\end{equation}
+
+\subsection{Tampering: Log Modification}
+
+\textbf{Attack Vector}: A persistent attacker exploited with root privileges in MongoDB changes a list entry $L_i \rightarrow L'_i$ to hide the traces of an intrusion.
+
+\textbf{Mitigation}: SHA-256 Hashed every threat record is anchored on-chain upon creation. Post-hoc modification can be detected due to the following reasons:
+\begin{equation}
+\Pr[\textsc{SHA256}(L'_i) = \textsc{SHA256}(L_i) \mid L'_i \neq L_i] < 2^{-128}
+\end{equation}
+
+In order to effectively procure tampering without being detected, the attacker needs to:
+\begin{enumerate}
+    \item Locate Sha256 collision ( computationally infeasible: $2^{128}$ way to do it)
+    \item Corrupt $> \frac{N}{2}$ Raft peers to create redundant data Halve the blockchain history (physically infeasible with network isolation).
+\end{enumerate}
+
+\textbf{Verification Complexity}: Checks of integrity take the same amount of time as a single hash calculation and a visit to a ledger, $O(1)$.
+
+\subsection{Repudiation: Denial of Actions}
+
+\textbf{Attack Vector}: A malicious operator refuses to do an administrative act (e.g, I never blocked that IP).
+
+\textbf{Mitigation}: Any administrative activity is cryptographically identified:
+\begin{equation}
+\text{AuditEntry} = \langle \text{action}, \text{userId}, \text{IP}, \text{userAgent}, \text{timestamp}, H(\cdot) \rangle
+\end{equation}
+
+The JWT token is signed with HMAC-SHA256 and the \texttt{userId} is obtained after extracting the token. The forgery of tokens will need knowledge of the environment variables with the \texttt{JWT\_SECRET}, which are not accessible to the application during its execution.
+
+\subsection{Information Disclosure: Data Leakage}
+
+\textbf{Attack Vector}: An attacker steals sensitive payload of packets of the logging database.
+
+\textbf{Mitigation}: USOD always leaves raw payloads to be omitted. The statistic aggregates are calculated and the packet bytes are discarded immediately in the feature extraction layer:
+\begin{equation}
+\text{Extract}: \text{PCAP} \rightarrow \mathbb{R}^{78} \quad (\text{raw bytes} \rightarrow \emptyset)
+\end{equation}
+
+The records on-chain only have hashes, which cannot be computationally reversed. The attacker that has full access to ledgers knows nothing about the original traffic content.
+
+\subsection{Denial of Service: Resource Exhaustion}
+
+\textbf{Attack Vector}: An attacker overloads the API with requests in order to impair availability.
+
+\textbf{Mitigation}: Defense-in-depth across multiple layers:
+\begin{enumerate}
+    \item \textbf{Rate Limiting}: \texttt{express-rate-limit} Each Middleware imposes 100 requests on each IP within every 15 minutes.
+    \item \textbf{Architectural Isolation}: The Python capture service and node API are operated in different containers. A SYN-flood of port 80 has no impact on network interface packet capture.
+    \item \textbf{Queue Modeling}: To absorb burst traffic on a request queue, we sized the request queue using the Little Law ($L = \lambda W$):
+    \begin{equation}
+    Q_{max} = \lambda_{peak} \cdot W_{avg} = 100 \text{ req/s} \cdot 0.05\text{s} = 5 \text{ requests}
+    \end{equation}
+\end{enumerate}
+
+With experimental flooding (10k requests/sec 50 IPs), success rate of legitimate clients was still at 99.8\%.
+
+\subsection{Elevation of Privilege: Unauthorized Access}
+
+\textbf{Attack Vector}: The attacker intercepts a valid JWT and tries to execute insecure actions involved in the administration.
+
+\textbf{Mitigation}: Multiple temporal and contextual controls:
+\begin{itemize}
+    \item \textbf{Token Expiry}: JWTs expire after 24 hours (\texttt{JWT\_EXPIRES\_IN}).
+    \item \textbf{Server-Side Revocation}: The \texttt{/api/auth/logout} endpoint adds the token's \texttt{jti} (JWT ID) to a Redis blacklist, checked by \texttt{authMiddleware} on every request.
+    \item \textbf{Password Cascade}: Individual password transformation declines the totality of all the issued tokens that preceded the operation through the comparison of \texttt{iat} (issued-at) claims.
+\end{itemize}
+
+\textbf{Token Lifecycle}:
+\begin{equation}
+\text{Valid}(token) = (\text{exp} > \text{now}) \land (\text{jti} \notin \mathcal{B}) \land (\text{iat} > \text{pwdChangedAt})
+\end{equation}
+where $\mathcal{B}$ is the revocation blacklist.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{figures/stride-threat-model}}
+\caption{STRIDE threat surface mapping. Each USOD component is annotated with applicable threats (red) and corresponding mitigations (green shields).}
+\label{fig:stride}
+\end{figure}
+
+\subsection{Security Properties Summary}
+
+Table~\ref{tab:security} summarizes the security guarantees provided by USOD.
+
+\begin{table}[htbp]
+\caption{Security Properties and Guarantees}
+\label{tab:security}
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Property} & \textbf{Mechanism} & \textbf{Strength} \\
+\midrule
+Authenticity & X.509/mTLS & CA-rooted trust \\
+Integrity & SHA-256 + Blockchain & $2^{128}$ collision bound \\
+Non-repudiation & On-chain audit trail & Raft consensus \\
+Confidentiality & No payload storage & Data minimization \\
+Availability & Rate limiting + isolation & 99.8\% under attack \\
+\bottomrule
+\end{tabular}
+\end{table}

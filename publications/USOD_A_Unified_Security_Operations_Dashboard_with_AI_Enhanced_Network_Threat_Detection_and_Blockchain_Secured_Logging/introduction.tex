@@ -1,0 +1,33 @@
+\section{Introduction}
+
+All Security Operations Centers operate on two wagers: their detection device has been able to get what counts, and that the logs that inform them as to what occurred remains in place. Random Forests and neural networks are now able to reach 99 percent and higher accuracy on standard benchmark First bets have become safer \cite{c6, c15}, that would have been the nonsense ten years ago. But the second bet? That is the one that makes incident responders have to work at night.
+
+The troubling fact is as follows: a hacker with root privileges may remove the traces of his/her actions. SQL logs are truncated, syslog files disappear, timestamps are modified back. The crime scene is cleaned by the time a team of forensics arrives\cite{c2}. This is a recurring problem in courts and with auditors, what do you do to prove what transpired, when not even the books can be trusted?
+
+USOD tackles this head-on. When our system identifies some threat, it is not merely recording this to a data base somewhere. Rather, the detection and the recording occur as a single atom operation. The instant when the AI detects something suspicious, a cryptographic fingerprint of the detection is recorded in an authorized blockchain. An attacker cannot reverse what the distributed ledger has already logged even after him/her compromises the whole server.
+
+\subsection{The Question We Set Out to Answer}
+
+Blockchains are slow. Inference processes by machine learning are quick. Real-time alerting: Can you wire them together at all?
+
+This was our research question of interest. The concern was that consensus delays At least in cases where an alert does not emerge on the screen of an analyst, the attack may well be past by the time it does. Our initial hypothesis, which the evaluation part will test, was that maintaining the blockchain at a small size (selling only hashes, but not payloads) would allow maintaining latency.
+
+\subsection{What This Paper Contributes}
+
+We built USOD from scratch, and this paper describes what we learned along the way:
+
+\begin{enumerate}
+    \item \textbf{Detection meets immutability.} We paired one of the Random Forest classifiers (accuracy: 99.88 with IDS CICIDS2017) and Hyperledger Fabric operating on Raft. Detection and anchoring evidences occur not in two but in one transaction.
+    
+    \item \textbf{A scoring function that fights alert fatigue.} SOC analysts are overwhelmed with messages. Our Adaptive Threat Priority Score increases the relevance of what is important (SSS port attacks, etc.) and suppresses repetitive noise of repeaters.
+    
+    \item \textbf{Catching zero-days.} Only what they previously saw is known to supervised classifiers. We have added an Isolation Forest layer where we mark the traffic, as only looks suspicious, but is not a familiar signature.
+    
+    \item \textbf{Alerts everywhere, fast.} Web dashboards, desktop apps, mobile phones, all of them see new threats within about a second via Server-Sent Events.
+    
+    \item \textbf{Trust but verify.} Data in off-chain is queryable and integrity is determined on-chain by hashes. In case a user of MongoDB is compromised, we know about it.
+\end{enumerate}
+
+\subsection{Roadmap}
+
+In section II, the background of previous research in the area of intrusion detection and blockchain logging will be discussed. Section III takes a stroll in the architecture. A description of our methodology, the ML models, the scoring function, the chaincode is found in Section IV. Part V deals with details of implementation. VI section includes display of performance figures. Our security analysis is section VII. Part VIII dwells upon what was effective and what not. Section IX wraps up.

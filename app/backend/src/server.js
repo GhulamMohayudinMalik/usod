@@ -110,61 +110,23 @@ const port = process.env.PORT || 5000;
 // Trust proxy for accurate IP addresses and headers
 app.set('trust proxy', true);
 
-// CORS configuration
+// CORS configuration - Allow all origins for cloud deployment
+// This enables desktop, mobile, and web apps to access the API without restrictions
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    // Build allowed origins list from environment
-    const allowedOrigins = [
-      'http://localhost:3000', // Web app
-      process.env.DESKTOP_APP_URL || 'http://localhost:3001', // Desktop app (Electron)
-      'https://glitchmorse.tech', // Production frontend
-      'https://www.glitchmorse.tech', // Production frontend with www
-      'https://api.glitchmorse.tech', // Production API (self-referential)
-    ];
-    
-    // Add additional allowed origins from env (comma-separated)
-    if (process.env.ALLOWED_ORIGINS) {
-      const additionalOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
-      allowedOrigins.push(...additionalOrigins);
-    }
-    
-    // Development mode: allow all localhost and network origins
-    if (process.env.NODE_ENV !== 'production') {
-      // Allow any localhost origin (any port)
-      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-        return callback(null, true);
-      }
-      // Allow private network IPs (for mobile testing on LAN)
-      if (origin.match(/^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/)) {
-        return callback(null, true);
-      }
-      // Allow Expo development origins
-      if (origin.startsWith('exp://') || origin.includes(':19000') || origin.includes(':19006') || origin.includes(':8081')) {
-        return callback(null, true);
-      }
-    }
-    
-    // Check against allowed origins list
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      // Log rejected origins for monitoring (but don't block in dev)
-      if (process.env.NODE_ENV === 'production') {
-        console.warn(`CORS blocked request from origin: ${origin}`);
-        callback(new Error('Not allowed by CORS'));
-      } else {
-        // In development, allow all origins but log them
-        console.log(`CORS allowing unlisted origin in dev: ${origin}`);
-        callback(null, true);
-      }
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'X-API-Key', 'X-Platform'],
-  credentials: true,
+  origin: '*', // Allow all origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'x-api-key',
+    'X-API-Key',
+    'X-Platform',
+    'Accept',
+    'Origin',
+    'X-Requested-With'
+  ],
+  exposedHeaders: ['Content-Length', 'X-Request-Id'],
+  maxAge: 86400, // Cache preflight requests for 24 hours
 };
 
 // Middleware

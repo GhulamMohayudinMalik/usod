@@ -1,0 +1,29 @@
+\section{Introduction}
+
+Security Operations Centers rely on two fundamental assumptions: that their intrusion detection systems can identify threats with high fidelity, and that the resulting audit logs will remain intact for post-incident forensics. Modern machine learning has largely addressed the first assumption. Random Forests and neural networks now routinely achieve greater than 99\% accuracy on benchmark datasets \cite{c6, c15}, a level of performance that would have seemed implausible a decade ago. However, the second assumption remains architecturally flawed. An attacker who gains root access can scrub database logs, truncate syslog files, or corrupt timestamped entries, effectively erasing the forensic chain of custody \cite{c2}. This vulnerability renders even the most accurate detection model legally inadmissible in audits or court proceedings.
+
+USOD (Unified Security Operations Dashboard) addresses this integrity failure by engineering a system where detection and immutable recording occur as a single atomic operation. The output of a machine learning inference engine is piped directly into a permissioned blockchain network, creating a tamper-proof audit trail that persists independently of operating system compromises.
+
+\subsection{Research Question}
+
+Our central research question is: \textit{Can a hybrid system couple probabilistic machine learning inference with deterministic distributed ledger commits without introducing latency that degrades operational utility?} The concern was that consensus delays would accumulate, and by the time an alert appeared on an analyst's screen, the attack would already be over. Our hypothesis, tested in Section VI, was that by limiting the blockchain's role to storing only cryptographic hashes rather than full payloads, the consensus overhead could be absorbed within acceptable alerting thresholds.
+
+\subsection{Contributions}
+
+This paper makes the following contributions:
+
+\begin{enumerate}
+    \item \textbf{Detection meets immutability.} We coupled an XGBoost classifier achieving 99.88\% accuracy on CICIDS2017 with Hyperledger Fabric running Raft consensus. Detection and evidence anchoring occur in a single transaction, not two.
+    
+    \item \textbf{A scoring function that fights alert fatigue.} SOC analysts are overwhelmed by notifications. Our Adaptive Threat Priority Score amplifies critical threats (such as attacks on SSH ports) while dampening repetitive noise from repeat offenders.
+    
+    \item \textbf{Catching zero-day attacks.} Supervised classifiers only recognize patterns they have seen before. We added an Isolation Forest layer to flag traffic that appears anomalous, even when it does not match a known signature.
+    
+    \item \textbf{Real-time cross-platform alerts.} Web dashboards, desktop applications, and mobile phones all receive new threat notifications within approximately one second via Server-Sent Events.
+    
+    \item \textbf{Trust but verify.} Off-chain data remains queryable, but its integrity is validated against on-chain hashes. If someone tampers with MongoDB, the system detects it immediately.
+\end{enumerate}
+
+\subsection{Paper Organization}
+
+The remainder of this paper is organized as follows. Section II surveys related work in network intrusion detection and blockchain-based audit systems. Section III describes the system architecture. Section IV presents the detection and logging methodology. Section V discusses implementation challenges and solutions. Section VI evaluates system performance. Section VII analyzes security properties. Section VIII discusses limitations and lessons learned. Section IX concludes with future directions.

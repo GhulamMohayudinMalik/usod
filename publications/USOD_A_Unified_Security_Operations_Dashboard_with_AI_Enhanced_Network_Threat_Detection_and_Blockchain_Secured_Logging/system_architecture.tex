@@ -1,0 +1,55 @@
+\section{System Architecture}
+
+The architecture provides a rigid isolation of computing processes between computationally intensive packet analysis and user interaction at a low latency. The system graph is composed of four known sub-systems namely Detection, Aggregation, Persistence and Presentation.
+
+\subsection{Detection: The Python Subsystem}
+
+The software to engage in the process of network traffic analysis will require access to low-level access to NIC buffers, which means it will require a Python setting to run \texttt{Scapy} \cite{c9}. This layer is not synchronous: It logs incomplete packets headers, reconstructs flow statistics in memory and executes the previously loaded \texttt{scikit-learn} models. In order to avoid blocking the capture thread, the creation of the \texttt{CaptureRequest} and inference result further process occurs in another ThreadpoolExecutor.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{figures/architecture-diagram}}
+\caption{The USOD 4-Layer Architecture. Raw packets flow from the Detection Layer to the Persistence Layer, with the Aggregation Layer serving as the orchestrator. Note the unidirectional SSE stream to clients.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{Scalability Analysis}
+We calculate how computationally complex the elements of the critical path are. Assume that there are active flows numbering $n$ and blockchain peers numbering $m$.
+\begin{itemize}
+    \item \textbf{Detection}: The Random Forest inference operates in $O(T \cdot d)$, where $T$ is the number of trees (100) and $d$ is the max depth. Since $T, d$ are constant, detection is effectively $O(1)$ per packet, allowing linear scaling with $n$.    
+    \item \textbf{Consensus}: Raft leader election and log replication scale with $O(m)$ messages. For our configuration ($m=3$), the communication overhead is negligible.
+    \item \textbf{Throughput Cap}: The theoretical transaction cap $\tau_{max}$ is governed by the ordering service bandwidth $B_{bw}$ and transaction size $S_{tx}$: $\tau_{max} \approx \frac{B_{bw}}{S_{tx}}$. With $S_{tx} \approx 600$ bytes, minimal network IO is the limiting factor.
+\end{itemize}
+
+
+\subsection{Aggregation: The Event Orchestrator}
+It is a middleware between the Python-based environment and the user-facing clients that is based on Node.js (Express 5.1.0). This layer is a control plane, it does not process real traffic. It authenticates JWT signatures, implements the policies of CORS, and establishes the stream of the ServerSentEvents (SSE). Problem statement: we discarded WebSockets and adopted \texttt{SSE} to minimize the unidirectional data flow between Server $\rightarrow$ Client due to a smaller attack surface represented by the first application metric \cite{c32}.
+
+\subsection{Persistence: Hybrid Storage Topology}
+The storage responsibilities are divided according to the data acuity:
+\begin{itemize}
+    \item \textbf{Ephemeral/User Data}: MongoDB (Mongoose v8) holds user profiles and UI preferences.
+    \item \textbf{Immutable Evidence}: The Threat Logs are stored in Hyperledger Fabric v2.5. The ledger is based on a Raft ordering service with a separate channel called \texttt{usod-channel}. The peers execute the \texttt{threat-logger} chaincode to ensure the legitimacy of the transaction proposals and only when it is ultimately committed to the world state.\cite{c23}.
+\end{itemize}
+
+\subsection{Presentation Layer (Clients)}
+Presentation subsystem provides operational view at all three run time modes synchronized:
+\begin{itemize}
+    \item \textbf{Web (Next.js 15)}: Is based on server-side rendering (SSR) to provide the best initial load speed and optimal search engine optimization, and communicates with the backend members through REST and SSE.
+    \item \textbf{Desktop (Electron 38)}: Create a wrap around the web package as a Chromium shell \cite{c12}, filling the native OS interfaces of system tray code and focus control and evading sandboxing safeguards by browser.
+    \item \textbf{Mobile (React Native 0.74)}: This client is compiled with the help of Expo SDK 54 and requires a bespoke adaptive polling engine (Section V-B) to avoid iOS background WebSocket termination policies.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{figures/cross-platform-sync}}
+\caption{Cross-Platform Synchronization Architecture. As shown in the diagram, real-time threat alerts are delivered by flowing in the backend to Web (using SSE), Desktop (using SSE), and Mobile (using adaptive polling) clients.}
+\label{fig:crossplatform}
+\end{figure}
+
+\subsection{Cloud Infrastructure \& Containerization}
+The microservices are scalable, fault-tolerant and are containerized with Docker and configured in an AWS Virtual Private Cloud (VPC) as it is shown in the deployment topology:
+\begin{itemize}
+    \item \textbf{Ingress}: An Application Load Balancer (ALB) terminates SQL/TLS and redirects the traffic according to path prefixes (e.g. \texttt{/api/ai/} $\rightarrow$ Python Service).
+    \item \textbf{Compute}: AI inference Rear-end and AI services are executed on different EC2 instances or tasks in ECS, which enables them to scale independently, depending on their increase or decrease in CPU load. I/O wait (API handling).    
+    \item \textbf{Data}: Stateful document store of MongoDB Atlas is managed coupled with automated sharding, with the Blockchain peers being housed in independent containers with voluminous persistent block stores.
+\end{itemize}
+

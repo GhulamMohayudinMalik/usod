@@ -1,0 +1,169 @@
+\section{Methodology}
+
+This section formalizes the detection and logging pipeline. We first describe the feature engineering process, then present the hybrid inference architecture, and conclude with the blockchain anchoring protocol.
+
+\subsection{Feature Engineering}
+
+Raw network traffic captured via \texttt{libpcap} is reconstructed into bidirectional flows using a 5-tuple key $\langle \text{srcIP}, \text{dstIP}, \text{srcPort}, \text{dstPort}, \text{protocol} \rangle$. For each flow $F$, we extract a feature vector $\mathbf{x} \in \mathbb{R}^{78}$ compatible with the CICIDS2017 schema \cite{c13}. The full feature set includes:
+
+\begin{itemize}
+    \item \textbf{Temporal Features}: Flow duration, inter-arrival times (IAT) for forward/backward packets, active/idle time distributions.
+    \item \textbf{Volumetric Features}: Total bytes, packet counts, header lengths, payload sizes per direction.
+    \item \textbf{Statistical Aggregates}: Mean, standard deviation, min, max for packet lengths and IATs.
+    \item \textbf{Flag Counts}: TCP flags (SYN, FIN, RST, PSH, ACK, URG, CWE, ECE) tallied per direction.
+\end{itemize}
+
+To ensure numerical stability and prevent feature dominance, we apply Z-score standardization:
+\begin{equation}
+z_i = \frac{x_i - \mu_i}{\sigma_i + \epsilon}
+\end{equation}
+where $\mu_i$ and $\sigma_i$ are computed from the training partition and $\epsilon = 10^{-8}$ prevents division by zero for constant features.
+
+\subsection{Hybrid Inference Architecture}
+
+The detection function $D: \mathbb{R}^{78} \rightarrow \{0, 1, ..., K\} \times [0, 1]$ produces both a class label and a confidence score. It combines a supervised classifier $f_{\text{sup}}$ for known attack signatures with an unsupervised detector $f_{\text{unsup}}$ for novel anomalies.
+
+\subsubsection{Gradient Boosted Trees (XGBoost)}
+
+We employ XGBoost \cite{c26} as the primary classifier due to its superior performance on tabular data. The model consists of $M = 100$ additive trees:
+\begin{equation}
+\hat{y} = \sum_{m=1}^{M} f_m(\mathbf{x}), \quad f_m \in \mathcal{F}
+\end{equation}
+where $\mathcal{F}$ is the space of regression trees. Each tree is trained to minimize the regularized objective:
+\begin{equation}
+\mathcal{L}^{(m)} = \sum_{i=1}^{n} l(y_i, \hat{y}_i^{(m-1)} + f_m(\mathbf{x}_i)) + \Omega(f_m)
+\end{equation}
+with $\Omega(f) = \gamma T + \frac{1}{2}\lambda \|w\|^2$ penalizing tree complexity ($T$ = number of leaves, $w$ = leaf weights).
+
+For multiclass classification over $K = 12$ attack types, we use the softmax objective:
+\begin{equation}
+P(y = k | \mathbf{x}) = \frac{\exp(F_k(\mathbf{x}))}{\sum_{j=1}^{K} \exp(F_j(\mathbf{x}))}
+\end{equation}
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{figures/data-flow-pipeline}}
+\caption{End-to-end data flow from packet capture through feature extraction, ML inference, and blockchain commitment. Parallel paths enable asynchronous alerting.}
+\label{fig:pipeline}
+\end{figure}
+
+\subsubsection{Hyperparameter Configuration}
+
+Table~\ref{tab:hyperparams} details the hyperparameters selected via 5-fold cross-validation on a 20\% held-out validation set.
+
+\begin{table}[htbp]
+\caption{XGBoost Hyperparameter Configuration}
+\label{tab:hyperparams}
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Parameter} & \textbf{Value} & \textbf{Rationale} \\
+\midrule
+\texttt{n\_estimators} & 100 & Diminishing returns beyond 100 \\
+\texttt{max\_depth} & 10 & Prevents overfitting on noise \\
+\texttt{learning\_rate} & 0.1 & Standard boosting rate \\
+\texttt{subsample} & 0.7 & Row sampling for variance \\
+\texttt{colsample\_bytree} & 0.7 & Feature sampling per tree \\
+\texttt{reg\_lambda} & 1.0 & L2 regularization \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Five-fold cross-validation yielded consistent results across folds: accuracy $99.88\% \pm 0.12\%$, F1 score $99.87\% \pm 0.14\%$.
+
+\subsubsection{Isolation Forest for Zero-Day Detection}
+
+Supervised models cannot detect attack patterns absent from training data. We augment the pipeline with an Isolation Forest \cite{c4} trained exclusively on benign traffic. The anomaly score $s(\mathbf{x})$ is derived from the expected path length $E[h(\mathbf{x})]$ required to isolate the sample:
+\begin{equation}
+s(\mathbf{x}) = 2^{-\frac{E[h(\mathbf{x})]}{c(n)}}
+\end{equation}
+where $c(n) = 2H(n-1) - \frac{2(n-1)}{n}$ is the average path length in a random binary tree of $n$ samples, and $H(k)$ is the harmonic number. Samples with $s(\mathbf{x}) > \tau$ (we use $\tau = 0.65$) are flagged as potential zero-day threats.
+
+\subsection{Adaptive Threat Priority Score (ATPS)}
+
+Alert fatigue is endemic to SOC operations \cite{c28}. To prioritize analyst attention, we derive a priority score $S: \mathcal{E} \rightarrow [0, 100]$ that amplifies critical threats while dampening repetitive noise:
+
+\begin{equation}
+S(e) = \min\left(100, \max\left(S_{\min}, W \cdot \Omega_{\text{port}} \cdot \delta(N)\right)\right)
+\end{equation}
+where $W = \alpha \cdot P(y|\mathbf{x}) + \beta \cdot s(\mathbf{x})$ is the weighted confidence.
+
+The components are:
+\begin{itemize}
+    \item $P(y|\mathbf{x})$: Classifier confidence (softmax probability).
+    \item $s(\mathbf{x})$: Isolation Forest anomaly score.
+    \item $\alpha, \beta$: Blending weights ($\alpha = 0.7$, $\beta = 0.3$).
+    \item $\Omega_{\text{port}}$: Port criticality multiplier (1.5$\times$ for ports 22, 3389, 445).
+    \item $\delta(N) = e^{-\lambda N}$: Exponential decay ($\lambda = 0.1$), where $N$ is the alert count from the same source IP in the past hour.
+\end{itemize}
+
+\subsection{Blockchain Anchoring Protocol}
+
+Detected threats are anchored to Hyperledger Fabric 2.5 \cite{c5} for immutable provenance. The transaction lifecycle follows the Execute-Order-Validate (EOV) model:
+
+\begin{enumerate}
+    \item \textbf{Proposal Construction}: The backend generates a transaction proposal:
+    \begin{equation}
+    tx_p = \langle \texttt{ChaincodeID}, \texttt{CreateThreatLog}, \mathcal{P}, \sigma_{\text{client}} \rangle
+    \end{equation}
+    where $\mathcal{P} = \{id, hash, severity, timestamp\}$ is the payload and $\sigma_{\text{client}}$ is an ECDSA signature.
+    
+    \item \textbf{Endorsement}: Endorsing peers simulate $tx_p$ against world state $W$, returning signed read-write sets $\langle RW, \sigma_{\text{peer}} \rangle$.
+    
+    \item \textbf{Ordering}: The Raft-based ordering service batches endorsed transactions into blocks:
+    \begin{equation}
+    B_i = \langle B_{i-1}.\text{hash}, \{tx_1, ..., tx_k\}, \text{timestamp} \rangle
+    \end{equation}
+    Blocks are produced every \texttt{BatchTimeout} = 2s or upon reaching \texttt{MaxMessageCount} = 10 transactions.
+    
+    \item \textbf{Validation \& Commit}: Peers validate endorsement policies (AND of all org MSPs) and MVCC version checks before appending $B_i$ to the ledger.
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\columnwidth]{figures/blockchain-eov-flow}}
+\caption{Hyperledger Fabric EOV transaction lifecycle. Solid arrows indicate synchronous calls; dashed arrows indicate asynchronous event propagation.}
+\label{fig:eov}
+\end{figure}
+
+\subsubsection{Smart Contract Specification}
+
+The \texttt{threat-logger} chaincode exposes three core functions:
+
+\begin{algorithm}[htbp]
+\caption{Threat Logger Chaincode Functions}
+\label{alg:chaincode}
+\begin{algorithmic}[1]
+\Require $ctx$: transaction context, $id$: unique identifier
+\Statex
+\Function{CreateThreatLog}{$ctx, id, data, hash$}
+    \If{GetState$(ctx, id) \neq \emptyset$}
+        \State \Return Error: DuplicateKey
+    \EndIf
+    \State $rec \gets \{id, data, hash, timestamp\}$
+    \State PutState$(ctx, id, rec)$
+    \State \Return $rec$
+\EndFunction
+\Statex
+\Function{QueryThreatLog}{$ctx, id$}
+    \State \Return GetState$(ctx, id)$
+\EndFunction
+\Statex
+\Function{VerifyIntegrity}{$ctx, id, hash_{off}$}
+    \State $rec \gets$ QueryThreatLog$(ctx, id)$
+    \State \Return $rec.hash = hash_{off}$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Tamper Detection Protocol}
+
+Off-chain MongoDB stores full threat details $D_i$ for efficient querying. On-chain, only the SHA-256 digest $H(D_i)$ is recorded. The verification function operates as:
+
+\begin{equation}
+V(id) = 
+\begin{cases} 
+\text{Valid} & \text{if } H(D_{mongo}) = H_{chain} \\
+\text{Tampered} & \text{if } H(D_{mongo}) \neq H_{chain} \\
+\text{Missing} & \text{if } D_{mongo} = \emptyset
+\end{cases}
+\end{equation}
+where $H(\cdot)$ denotes SHA-256. This design provides $O(1)$ integrity verification with 32 bytes storage per entry.
