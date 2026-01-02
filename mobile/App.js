@@ -19,6 +19,7 @@ import SettingsScreen from './screens/SettingsScreen';
 import NetworkMonitoringScreen from './screens/NetworkMonitoringScreen';
 import PcapAnalyzerScreen from './screens/PcapAnalyzerScreen';
 import BlockchainScreen from './screens/BlockchainScreen';
+import IPTracerScreen from './screens/IPTracerScreen';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import apiService from './services/api';
@@ -105,6 +106,8 @@ function MainNavigator() {
         return <PcapAnalyzerScreen />;
       case 'BlockchainLedger':
         return <BlockchainScreen />;
+      case 'IPTracer':
+        return <IPTracerScreen />;
       case 'Backup':
         return <BackupScreen />;
       case 'ChangePassword':

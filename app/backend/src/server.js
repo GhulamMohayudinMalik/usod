@@ -13,6 +13,7 @@ import backupRoutes from './routes/backupRoutes.js';
 import networkRoutes from './routes/networkRoutes.js';
 import blockchainRoutes from './routes/blockchainRoutes.js';
 import apiDocsRoutes from './routes/apiDocsRoutes.js';
+import ipTracerRoutes from './routes/ipTracerRoutes.js';
 import { startSessionCleanup } from './services/sessionService.js';
 import { initBlockedIPsCache } from './services/securityDetectionService.js';
 
@@ -28,12 +29,12 @@ const shouldSuppressFabricLog = (message) => {
   if (typeof message !== 'string') {
     message = String(message);
   }
-  
+
   // NEVER suppress BlockchainService errors - we need to see them!
   if (message.includes('[BlockchainService]') || message.includes('Error in logThreat')) {
     return false;
   }
-  
+
   return (
     message.includes('[ServiceEndpoint]') ||
     message.includes('[NetworkConfig]') ||
@@ -49,7 +50,7 @@ const shouldSuppressFabricLog = (message) => {
 
 // Intercept stderr
 const originalStderr = process.stderr.write;
-process.stderr.write = function(chunk, encoding, callback) {
+process.stderr.write = function (chunk, encoding, callback) {
   const message = chunk.toString();
   if (shouldSuppressFabricLog(message)) {
     if (typeof callback === 'function') callback();
@@ -60,7 +61,7 @@ process.stderr.write = function(chunk, encoding, callback) {
 
 // Intercept stdout (some Fabric logs go here too)
 const originalStdout = process.stdout.write;
-process.stdout.write = function(chunk, encoding, callback) {
+process.stdout.write = function (chunk, encoding, callback) {
   const message = chunk.toString();
   if (shouldSuppressFabricLog(message)) {
     if (typeof callback === 'function') callback();
@@ -75,28 +76,28 @@ const originalConsoleWarn = console.warn;
 const originalConsoleLog = console.log;
 const originalConsoleInfo = console.info;
 
-console.error = function(...args) {
+console.error = function (...args) {
   const message = args.join(' ');
   if (!shouldSuppressFabricLog(message)) {
     originalConsoleError.apply(console, args);
   }
 };
 
-console.warn = function(...args) {
+console.warn = function (...args) {
   const message = args.join(' ');
   if (!shouldSuppressFabricLog(message)) {
     originalConsoleWarn.apply(console, args);
   }
 };
 
-console.log = function(...args) {
+console.log = function (...args) {
   const message = args.join(' ');
   if (!shouldSuppressFabricLog(message)) {
     originalConsoleLog.apply(console, args);
   }
 };
 
-console.info = function(...args) {
+console.info = function (...args) {
   const message = args.join(' ');
   if (!shouldSuppressFabricLog(message)) {
     originalConsoleInfo.apply(console, args);
@@ -143,6 +144,7 @@ app.use('/api/users', userManagementRoutes);
 app.use('/api/backup', backupRoutes);
 app.use('/api/network', networkRoutes);
 app.use('/api/blockchain', blockchainRoutes);
+app.use('/api/trace-ip', ipTracerRoutes);
 
 // API Documentation Routes - Must be registered before the old homepage route
 app.use('/', apiDocsRoutes);
@@ -217,7 +219,7 @@ app.get('/api/health', (req, res) => {
   const isMongoConnected = mongoose.connection.readyState === 1;
   const status = isMongoConnected ? 'healthy' : 'unhealthy';
   const statusCode = isMongoConnected ? 200 : 503;
-  
+
   res.status(statusCode).json({
     status,
     timestamp: new Date().toISOString(),
@@ -329,17 +331,17 @@ app.use((err, req, res, next) => {
 // Graceful shutdown handler
 const gracefulShutdown = async (signal) => {
   console.log(`\n${signal} received. Starting graceful shutdown...`);
-  
+
   // Stop accepting new connections
   if (server) {
     server.close(async () => {
       console.log('HTTP server closed');
-      
+
       try {
         // Close MongoDB connection
         await mongoose.connection.close();
         console.log('MongoDB connection closed');
-        
+
         console.log('Graceful shutdown completed');
         process.exit(0);
       } catch (error) {
@@ -347,7 +349,7 @@ const gracefulShutdown = async (signal) => {
         process.exit(1);
       }
     });
-    
+
     // Force shutdown after 30 seconds
     setTimeout(() => {
       console.error('Forced shutdown after timeout');
@@ -378,24 +380,24 @@ let server;
 const startServer = async () => {
   try {
     await connectMongoDB();
-    
+
     // Initialize blocked IPs cache from database
     await initBlockedIPsCache();
-    
+
     server = app.listen(port, '0.0.0.0', () => {
       console.log(`🚀 Server is running on port ${port}`);
       console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🌐 Server accessible at: http://localhost:${port}`);
       console.log(`✅ Health check: http://localhost:${port}/api/health`);
-      
+
       // Start session cleanup service
       startSessionCleanup();
     });
-    
+
     // Set keep-alive timeout (AWS ALB uses 60s, set higher)
     server.keepAliveTimeout = 65000;
     server.headersTimeout = 66000;
-    
+
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);

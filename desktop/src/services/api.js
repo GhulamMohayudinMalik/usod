@@ -10,7 +10,7 @@ const LOCAL_API_URL = 'http://localhost:5000';
 
 // Set to true to use local backend, false for production
 // In production builds (process.env.NODE_ENV === 'production'), always uses production URL
-const USE_LOCAL_IN_DEV = false;
+const USE_LOCAL_IN_DEV = true;
 
 // Determine which URL to use
 const getApiUrl = () => {
@@ -50,7 +50,7 @@ class ApiService {
           'X-Platform': 'desktop'
         }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         this.csrfToken = data.csrfToken;
@@ -67,7 +67,7 @@ class ApiService {
   async fetch(url, options = {}) {
     try {
       console.log('Fetching:', url, options);
-      
+
       const headers = {
         'Content-Type': 'application/json',
         'X-Platform': 'desktop',
@@ -102,7 +102,7 @@ class ApiService {
     try {
       console.log('Testing backend connection...');
       const response = await this.fetch(`${this.baseURL}/health`);
-      
+
       if (response.ok) {
         console.log('✅ Backend connection successful');
         return { success: true, message: 'Backend is reachable' };
@@ -120,7 +120,7 @@ class ApiService {
   async login(username, password) {
     try {
       console.log('Attempting login for user:', username);
-      
+
       const response = await this.fetch(`${this.baseURL}/api/auth/login`, {
         method: 'POST',
         body: JSON.stringify({ username, password })
@@ -129,12 +129,12 @@ class ApiService {
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Login successful');
-        
+
         // Store token for future requests
         if (data.token) {
           localStorage.setItem('authToken', data.token);
         }
-        
+
         return { success: true, data };
       } else {
         const errorData = await response.json().catch(() => ({ message: 'Login failed' }));
@@ -151,14 +151,14 @@ class ApiService {
   async logout() {
     try {
       console.log('Attempting logout...');
-      
+
       const token = localStorage.getItem('authToken');
       if (!token) {
         console.log('No token found, clearing local storage');
         localStorage.removeItem('authToken');
         return { success: true, message: 'Already logged out' };
       }
-      
+
       const response = await this.fetch(`${this.baseURL}/api/auth/logout`, {
         method: 'POST',
         headers: {
@@ -168,7 +168,7 @@ class ApiService {
 
       // Clear token regardless of response
       localStorage.removeItem('authToken');
-      
+
       if (response.ok) {
         console.log('✅ Logout successful');
         return { success: true, message: 'Logout successful' };
@@ -200,7 +200,7 @@ class ApiService {
     try {
       console.log('Checking session status...');
       const response = await this.fetch(`${this.baseURL}/api/auth/session-status`);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Session status checked successfully');
@@ -221,7 +221,7 @@ class ApiService {
     try {
       console.log('Fetching dashboard stats...');
       const response = await this.fetch(`${this.baseURL}/api/data/dashboard-stats`);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Dashboard stats fetched successfully');
@@ -241,7 +241,7 @@ class ApiService {
     try {
       console.log('Fetching security events...');
       const response = await this.fetch(`${this.baseURL}/api/data/security-events`);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Security events fetched successfully');
@@ -261,7 +261,7 @@ class ApiService {
     try {
       console.log('Fetching all dashboard data...');
       const response = await this.fetch(`${this.baseURL}/api/data/all`);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ All data fetched successfully');
@@ -282,7 +282,7 @@ class ApiService {
     try {
       console.log('Fetching threats...');
       const response = await this.fetch(`${this.baseURL}/api/data/security-events?count=${count}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Threats fetched successfully');
@@ -302,19 +302,19 @@ class ApiService {
     try {
       console.log('Fetching logs with params:', params);
       const queryParams = new URLSearchParams();
-      
+
       if (params.page) queryParams.append('page', params.page);
       if (params.limit) queryParams.append('limit', params.limit);
       if (params.action) queryParams.append('action', params.action);
       if (params.startDate) queryParams.append('startDate', params.startDate);
       if (params.endDate) queryParams.append('endDate', params.endDate);
       if (params.platform) queryParams.append('platform', params.platform);
-      
+
       const url = `${this.baseURL}/api/logs?${queryParams.toString()}`;
       console.log('Requesting URL:', url);
-      
+
       const response = await this.fetch(url);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Logs fetched successfully:', data.logs?.length || 0, 'logs');
@@ -335,7 +335,7 @@ class ApiService {
     try {
       console.log('Fetching login attempts...');
       const response = await this.fetch(`${this.baseURL}/api/data/login-attempts?count=${count}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Login attempts fetched successfully:', data.length, 'attempts');
@@ -358,7 +358,7 @@ class ApiService {
         method: 'PUT',
         body: JSON.stringify({ status })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Log status updated successfully');
@@ -379,7 +379,7 @@ class ApiService {
     try {
       console.log('Fetching security stats...');
       const response = await this.fetch(`${this.baseURL}/api/auth/security/stats`);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Security stats fetched successfully');
@@ -399,7 +399,7 @@ class ApiService {
     try {
       console.log('Fetching blocked IPs...');
       const response = await this.fetch(`${this.baseURL}/api/auth/security/blocked-ips`);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Blocked IPs fetched successfully');
@@ -422,7 +422,7 @@ class ApiService {
         method: 'POST',
         body: JSON.stringify({ ip, reason })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ IP blocked successfully');
@@ -445,7 +445,7 @@ class ApiService {
         method: 'POST',
         body: JSON.stringify({ ip, reason })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ IP unblocked successfully');
@@ -466,7 +466,7 @@ class ApiService {
     try {
       console.log('Fetching users...');
       const response = await this.fetch(`${this.baseURL}/api/users/users`);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Users fetched successfully');
@@ -489,7 +489,7 @@ class ApiService {
         method: 'POST',
         body: JSON.stringify(userData)
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ User created successfully');
@@ -512,7 +512,7 @@ class ApiService {
         method: 'DELETE',
         body: JSON.stringify({ reason })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ User deleted successfully');
@@ -535,7 +535,7 @@ class ApiService {
         method: 'PUT',
         body: JSON.stringify({ newRole, reason })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ User role changed successfully');
@@ -556,7 +556,7 @@ class ApiService {
     try {
       console.log('Fetching backups...');
       const response = await this.fetch(`${this.baseURL}/api/backup/list`);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Backups fetched successfully');
@@ -576,7 +576,7 @@ class ApiService {
     try {
       console.log('Fetching backup stats...');
       const response = await this.fetch(`${this.baseURL}/api/backup/stats`);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Backup stats fetched successfully');
@@ -596,7 +596,7 @@ class ApiService {
     try {
       console.log('Creating backup:', backupType);
       let endpoint = '';
-      
+
       switch (backupType) {
         case 'security_logs':
           endpoint = `${this.baseURL}/api/backup/security-logs`;
@@ -615,7 +615,7 @@ class ApiService {
         method: 'POST',
         body: JSON.stringify({ reason })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Backup created successfully');
@@ -638,7 +638,7 @@ class ApiService {
         method: 'POST',
         body: JSON.stringify({ reason, restoreScope })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Backup restored successfully');
@@ -660,7 +660,7 @@ class ApiService {
       const response = await this.fetch(`${this.baseURL}/api/backup/cleanup`, {
         method: 'POST'
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Backup cleanup completed successfully');
@@ -684,7 +684,7 @@ class ApiService {
         method: 'POST',
         body: JSON.stringify({ currentPassword, newPassword })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Password changed successfully');
@@ -707,7 +707,7 @@ class ApiService {
         method: 'PUT',
         body: JSON.stringify(profileData)
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Profile updated successfully');
@@ -731,7 +731,7 @@ class ApiService {
         method: 'POST',
         body: JSON.stringify({ interface: networkInterface, duration })
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Network monitoring started successfully');
@@ -754,7 +754,7 @@ class ApiService {
         method: 'POST',
         body: JSON.stringify({})
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Network monitoring stopped successfully');
@@ -774,7 +774,7 @@ class ApiService {
     try {
       console.log('Fetching network threats...');
       const response = await this.fetch(`${this.baseURL}/api/network/threats/history?limit=${limit}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Network threats fetched successfully:', data.threats?.length || 0, 'threats');
@@ -794,7 +794,7 @@ class ApiService {
     try {
       console.log('Fetching network status...');
       const response = await this.fetch(`${this.baseURL}/api/network/status`);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ Network status fetched successfully');
@@ -813,7 +813,7 @@ class ApiService {
   async uploadPcapFile(file) {
     try {
       console.log('Uploading PCAP file:', file.name);
-      
+
       const formData = new FormData();
       formData.append('pcap', file);
 
@@ -827,7 +827,7 @@ class ApiService {
         },
         body: formData
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ PCAP file uploaded and analyzed successfully');
@@ -888,6 +888,27 @@ class ApiService {
       return { data: await response.json() };
     } else {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+  }
+
+  // IP Tracer method
+  async traceIP(ip) {
+    try {
+      console.log('Tracing IP:', ip);
+      const response = await this.fetch(`${this.baseURL}/api/trace-ip/${ip}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ IP traced successfully');
+        return { success: true, data: data.data };
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to trace IP' }));
+        console.log('❌ IP trace failed:', response.status, errorData.message);
+        return { success: false, message: errorData.message };
+      }
+    } catch (error) {
+      console.log('❌ IP trace error:', error.message);
+      return { success: false, message: error.message };
     }
   }
 }

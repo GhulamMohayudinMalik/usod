@@ -64,6 +64,12 @@ const Sidebar = ({ currentPath, onNavigate }) => {
       description: 'Security Monitoring'
     },
     {
+      path: '/ip-tracer',
+      icon: '🌍',
+      label: 'IP Tracer',
+      description: 'Geolocation Lookup'
+    },
+    {
       path: '/users',
       icon: '👥',
       label: 'User Management',
@@ -135,7 +141,7 @@ const Sidebar = ({ currentPath, onNavigate }) => {
             }}>Security Operations Dashboard</p>
           </div>
         )}
-        
+
         {/* Toggle Button - Positioned on the right edge */}
         <button
           onClick={toggleSidebar}
@@ -176,7 +182,7 @@ const Sidebar = ({ currentPath, onNavigate }) => {
           {isCollapsed ? '▶' : '◀'}
         </button>
       </div>
-      
+
       {/* Scrollable Navigation */}
       <nav style={{
         flex: 1,
@@ -198,11 +204,11 @@ const Sidebar = ({ currentPath, onNavigate }) => {
                 borderRadius: '0.5rem',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                backgroundColor: isActive 
-                  ? 'rgba(16, 185, 129, 0.1)' 
+                backgroundColor: isActive
+                  ? 'rgba(16, 185, 129, 0.1)'
                   : 'transparent',
-                border: isActive 
-                  ? '1px solid rgba(16, 185, 129, 0.3)' 
+                border: isActive
+                  ? '1px solid rgba(16, 185, 129, 0.3)'
                   : '1px solid transparent',
                 justifyContent: isCollapsed ? 'center' : 'flex-start'
               }}
@@ -249,16 +255,16 @@ const Sidebar = ({ currentPath, onNavigate }) => {
           );
         })}
       </nav>
-      
+
       {/* Footer */}
       <div style={{
         padding: isCollapsed ? '1rem 0.5rem' : '1rem',
         borderTop: '1px solid rgba(55, 65, 81, 0.3)',
         marginTop: 'auto'
       }}>
-        <div style={{ 
-          fontSize: '0.75rem', 
-          color: '#6b7280', 
+        <div style={{
+          fontSize: '0.75rem',
+          color: '#6b7280',
           textAlign: 'center',
           lineHeight: '1.4'
         }}>

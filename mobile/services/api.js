@@ -64,7 +64,7 @@ class ApiService {
       }
       throw new Error(errorData.message || `HTTP ${response.status}`);
     }
-    
+
     try {
       return await response.json();
     } catch (parseError) {
@@ -77,7 +77,7 @@ class ApiService {
   async login(username, password) {
     try {
       const headers = this.getHeaders();
-      
+
       const response = await fetch(`${this.baseURL}/api/auth/login`, {
         method: 'POST',
         headers,
@@ -85,7 +85,7 @@ class ApiService {
       });
 
       const data = await this.handleResponse(response);
-      
+
       if (data.token) {
         this.token = data.token;
         await AsyncStorage.setItem('token', data.token);
@@ -145,7 +145,7 @@ class ApiService {
       });
 
       const data = await this.handleResponse(response);
-      
+
       if (data.token) {
         this.token = data.token;
         await AsyncStorage.setItem('token', data.token);
@@ -456,10 +456,10 @@ class ApiService {
 
   async createBackup(type = 'full', reason = 'manual') {
     try {
-      const endpoint = type === 'full' ? '/api/backup/full' : 
-                      type === 'security_logs' ? '/api/backup/security-logs' :
-                      type === 'users' ? '/api/backup/users' : '/api/backup/full';
-      
+      const endpoint = type === 'full' ? '/api/backup/full' :
+        type === 'security_logs' ? '/api/backup/security-logs' :
+          type === 'users' ? '/api/backup/users' : '/api/backup/full';
+
       const response = await fetch(`${this.baseURL}${endpoint}`, {
         method: 'POST',
         headers: this.getHeaders(),
@@ -799,6 +799,22 @@ class ApiService {
       return await this.handleResponse(response);
     } catch (error) {
       console.error(`Error in DELETE ${endpoint}:`, error);
+      throw error;
+    }
+  }
+
+  // IP Tracer method
+  async traceIP(ip) {
+    try {
+      await this.ensureTokenLoaded();
+      const response = await fetch(`${this.baseURL}/api/trace-ip/${ip}`, {
+        method: 'GET',
+        headers: this.getHeaders()
+      });
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('Error tracing IP:', error);
       throw error;
     }
   }

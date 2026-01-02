@@ -14,6 +14,7 @@ import SecurityLabPage from './pages/SecurityLabPage';
 import NetworkMonitoringPage from './pages/NetworkMonitoringPage';
 import PcapAnalyzerPage from './pages/PcapAnalyzerPage';
 import BlockchainPage from './pages/BlockchainPage';
+import IPTracerPage from './pages/IPTracerPage';
 import LoginPage from './pages/LoginPage';
 import Layout from './components/Layout';
 import apiService from './services/api';
@@ -103,18 +104,18 @@ function AppContent() {
   return (
     <div className="App">
       <Routes>
-        <Route 
-          path="/login" 
+        <Route
+          path="/login"
           element={
             isAuthenticated ? (
               <Navigate to="/dashboard" replace />
             ) : (
               <LoginPage onLogin={handleLogin} />
             )
-          } 
+          }
         />
-        <Route 
-          path="/" 
+        <Route
+          path="/"
           element={
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
@@ -123,10 +124,10 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
-        <Route 
-          path="/dashboard" 
+        <Route
+          path="/dashboard"
           element={
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
@@ -135,10 +136,10 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
-        <Route 
-          path="/logs" 
+        <Route
+          path="/logs"
           element={
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
@@ -147,10 +148,10 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
-        <Route 
-          path="/threats" 
+        <Route
+          path="/threats"
           element={
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
@@ -159,10 +160,10 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
-        <Route 
-          path="/users" 
+        <Route
+          path="/users"
           element={
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
@@ -171,10 +172,10 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
-        <Route 
-          path="/settings" 
+        <Route
+          path="/settings"
           element={
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
@@ -183,10 +184,10 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
-        <Route 
-          path="/ai-insights" 
+        <Route
+          path="/ai-insights"
           element={
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
@@ -195,10 +196,10 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
-        <Route 
-          path="/analytics" 
+        <Route
+          path="/analytics"
           element={
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
@@ -207,10 +208,10 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
-        <Route 
-          path="/backup" 
+        <Route
+          path="/backup"
           element={
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
@@ -219,10 +220,10 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
-        <Route 
-          path="/change-password" 
+        <Route
+          path="/change-password"
           element={
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
@@ -231,10 +232,10 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
-        <Route 
-          path="/security" 
+        <Route
+          path="/security"
           element={
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
@@ -243,10 +244,10 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
-        <Route 
-          path="/security-lab" 
+        <Route
+          path="/security-lab"
           element={
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
@@ -255,10 +256,10 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
-        <Route 
-          path="/network-monitoring" 
+        <Route
+          path="/network-monitoring"
           element={
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
@@ -267,10 +268,10 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
-        <Route 
-          path="/pcap-analyzer" 
+        <Route
+          path="/pcap-analyzer"
           element={
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
@@ -279,10 +280,10 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
         />
-        <Route 
-          path="/blockchain" 
+        <Route
+          path="/blockchain"
           element={
             isAuthenticated ? (
               <Layout user={user} onLogout={handleLogout}>
@@ -291,7 +292,19 @@ function AppContent() {
             ) : (
               <Navigate to="/login" replace />
             )
-          } 
+          }
+        />
+        <Route
+          path="/ip-tracer"
+          element={
+            isAuthenticated ? (
+              <Layout user={user} onLogout={handleLogout}>
+                <IPTracerPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
         />
       </Routes>
     </div>

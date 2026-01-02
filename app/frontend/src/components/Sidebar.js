@@ -122,6 +122,13 @@ const BlockchainIcon = () => (
   </svg>
 );
 
+const IPTracerIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+    <circle cx="12" cy="10" r="3" />
+    <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z" />
+  </svg>
+);
+
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
   { name: 'AI Network Monitoring', href: '/dashboard/network-monitoring', icon: NetworkMonitoringIcon },
@@ -133,6 +140,7 @@ const navigation = [
   { name: 'AI Insights', href: '/dashboard/ai-insights', icon: AiInsightsIcon },
   { name: 'Security Lab', href: '/dashboard/security-lab', icon: SecurityLabIcon },
   { name: 'Security Management', href: '/dashboard/security', icon: SecurityIcon },
+  { name: 'IP Tracer', href: '/dashboard/ip-tracer', icon: IPTracerIcon },
   { name: 'User Management', href: '/dashboard/users', icon: UsersIcon },
   { name: 'Backup Management', href: '/dashboard/backup', icon: BackupIcon },
   { name: 'Change Password', href: '/dashboard/change-password', icon: KeyIcon },
@@ -151,7 +159,7 @@ function Sidebar({ className = '' }) {
     if (userData) {
       setUser(JSON.parse(userData));
     }
-    
+
     // Check if mobile and handle resize
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
@@ -160,7 +168,7 @@ function Sidebar({ className = '' }) {
         setIsCollapsed(true); // Always collapsed on mobile
       }
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -168,56 +176,56 @@ function Sidebar({ className = '' }) {
 
   return (
     <div className="relative h-screen flex-shrink-0">
-      <nav className={`flex flex-col ${isCollapsed ? 'w-16' : 'w-64'} p-4 bg-gray-800/80 backdrop-blur-xl border-r border-gray-700/50 h-full max-h-screen overflow-y-auto transition-all duration-300 ${className}`}>
-      <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-center'} p-4 mb-6`}>
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/25">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          </div>
-          {!isCollapsed && <h2 className="text-2xl font-bold text-white">USOD</h2>}
-        </div>
-      </div>
-
-      <div className="flex-1 space-y-1">
-        {navigation.map((item) => {
-          const isActive = item.href === '/dashboard' 
-            ? pathname === '/dashboard' 
-            : pathname === item.href || (pathname && pathname.startsWith(`${item.href}/`));
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-4'} py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? 'bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-white border border-emerald-500/30 shadow-lg shadow-emerald-500/10' : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'}`}
-              title={isCollapsed ? item.name : ''}
-            >
-              <span className={isCollapsed ? '' : 'mr-3'}>
-                <item.icon />
-              </span>
-              {!isCollapsed && item.name}
-            </Link>
-          );
-        })}
-      </div>
-
-      <div className="border-t border-gray-700/50 pt-4 mt-6">
-        <div className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-4'} py-3 text-sm`}>
-          <div className="flex items-center">
-            <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-500/25">
-              <span>{user ? user.username.charAt(0).toUpperCase() : 'U'}</span>
+      <nav className={`flex flex-col ${isCollapsed ? 'w-20' : 'w-64'} p-4 bg-gray-800/80 backdrop-blur-xl border-r border-gray-700/50 h-full max-h-screen overflow-y-auto overflow-x-hidden transition-all duration-300 ${className}`}>
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-center'} p-4 mb-6`}>
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/25">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
             </div>
-            {!isCollapsed && user && (
-              <div className="ml-3">
-                <p className="font-medium text-white">{user.username}</p>
-                <p className="text-xs text-gray-400">{user.email}</p>
-              </div>
-            )}
+            {!isCollapsed && <h2 className="text-2xl font-bold text-white">USOD</h2>}
           </div>
         </div>
-      </div>
+
+        <div className="flex-1 space-y-1">
+          {navigation.map((item) => {
+            const isActive = item.href === '/dashboard'
+              ? pathname === '/dashboard'
+              : pathname === item.href || (pathname && pathname.startsWith(`${item.href}/`));
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-4'} py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive ? 'bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-white border border-emerald-500/30 shadow-lg shadow-emerald-500/10' : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'}`}
+                title={isCollapsed ? item.name : ''}
+              >
+                <span className={isCollapsed ? '' : 'mr-3'}>
+                  <item.icon />
+                </span>
+                {!isCollapsed && item.name}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="border-t border-gray-700/50 pt-4 mt-6">
+          <div className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-4'} py-3 text-sm`}>
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-500/25">
+                <span>{user ? user.username.charAt(0).toUpperCase() : 'U'}</span>
+              </div>
+              {!isCollapsed && user && (
+                <div className="ml-3">
+                  <p className="font-medium text-white">{user.username}</p>
+                  <p className="text-xs text-gray-400">{user.email}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </nav>
-      
+
       {/* Toggle Button - Hidden on mobile */}
       {!isMobile && (
         <button
@@ -225,19 +233,19 @@ function Sidebar({ className = '' }) {
           className="absolute top-1/2 -right-3 transform -translate-y-1/2 w-6 h-6 bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/90 transition-all duration-300 shadow-lg z-10"
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-        <svg 
-          className="w-3 h-3 transition-transform duration-300" 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          {isCollapsed ? (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          )}
-        </svg>
-      </button>
+          <svg
+            className="w-3 h-3 transition-transform duration-300"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            {isCollapsed ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            )}
+          </svg>
+        </button>
       )}
     </div>
   );

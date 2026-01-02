@@ -2,9 +2,9 @@ import mongoose, { Schema } from 'mongoose';
 
 const SecurityLogSchema = new Schema({
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: false },
-    platform: { 
-        type: String, 
-        required: true, 
+    platform: {
+        type: String,
+        required: true,
         enum: ['web', 'desktop', 'mobile'],
         default: 'web'
     },
@@ -46,15 +46,18 @@ const SecurityLogSchema = new Schema({
             'network_monitoring_started',
             'network_monitoring_stopped',
             'network_threat_detected',
-            'pcap_file_analyzed'
+            'pcap_file_analyzed',
+            // IP Tracer Actions
+            'ip_trace',
+            'ip_trace_batch'
         ]
     },
     status: { type: String, required: true, enum: ['success', 'failure', 'detected', 'started', 'stopped', 'analyzed', 'blocked', 'unblocked'] },
     ipAddress: { type: String, required: true },
     userAgent: { type: String, required: true },
-    deviceInfo: { 
-        type: Schema.Types.Mixed, 
-        default: {} 
+    deviceInfo: {
+        type: Schema.Types.Mixed,
+        default: {}
     },
     details: { type: Schema.Types.Mixed, default: {} },
     timestamp: { type: Date, default: Date.now }

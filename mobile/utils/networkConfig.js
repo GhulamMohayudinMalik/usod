@@ -8,14 +8,14 @@ import { Platform } from 'react-native';
 const PRODUCTION_API_URL = 'https://api.glitchmorse.tech';
 
 // Local development URLs - uncomment ONE to use local backend
-// const LOCAL_API_URL = 'http://192.168.100.113:5000'; // Your LAN IP
-const LOCAL_API_URL = 'http://192.168.100.120:5000'; // Your LAN IP
+const LOCAL_API_URL = 'http://192.168.100.113:5000'; // Your LAN IP
+// const LOCAL_API_URL = 'http://192.168.100.120:5000'; // Your LAN IP
 // const LOCAL_API_URL = 'http://192.168.43.8:5000';    // Hotspot IP
 // const LOCAL_API_URL = 'http://10.10.80.158:5000';    // Alternative IP
 // const LOCAL_API_URL = 'http://localhost:5000';       // Android emulator (use 10.0.2.2)
 
 // Set to true to use local backend in development, false to use production
-const USE_LOCAL_IN_DEV = false;
+const USE_LOCAL_IN_DEV = true;
 // =============================================================================
 
 export const getApiBaseURL = () => {

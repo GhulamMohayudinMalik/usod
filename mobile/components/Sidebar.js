@@ -7,11 +7,17 @@ import {
   ScrollView,
   Modal,
   Dimensions,
+  Platform,
+  StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
 const Sidebar = ({ visible, onClose, onNavigate, activeRoute, user }) => {
+  // Get safe area insets for proper padding on notched devices
+  const insets = useSafeAreaInsets ? useSafeAreaInsets() : { top: 0, bottom: 0 };
+
   const navigationItems = [
     { name: 'Dashboard', route: 'Dashboard', icon: '📊' },
     { name: 'AI Network Monitoring', route: 'NetworkMonitoring', icon: '📡' },
@@ -23,6 +29,7 @@ const Sidebar = ({ visible, onClose, onNavigate, activeRoute, user }) => {
     { name: 'AI Insights', route: 'AIInsights', icon: '🤖' },
     { name: 'Security Lab', route: 'SecurityLab', icon: '🧪' },
     { name: 'Security Management', route: 'Security', icon: '🔒' },
+    { name: 'IP Tracer', route: 'IPTracer', icon: '🌍' },
     { name: 'User Management', route: 'Users', icon: '👥' },
     { name: 'Backup Management', route: 'Backup', icon: '💾' },
     { name: 'Change Password', route: 'ChangePassword', icon: '🔑' },
@@ -56,8 +63,8 @@ const Sidebar = ({ visible, onClose, onNavigate, activeRoute, user }) => {
           </View>
 
           {/* Navigation Items */}
-          <ScrollView 
-            style={styles.navigationContainer} 
+          <ScrollView
+            style={styles.navigationContainer}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
@@ -122,7 +129,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1F2937',
     borderRightWidth: 1,
     borderRightColor: 'rgba(55, 65, 81, 0.5)',
-    height: '100%',
+    flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0,
   },
   backdrop: {
     flex: 1,
