@@ -17,19 +17,19 @@ export default function LogsPage() {
     totalPages: 0
   });
   const [lastUpdated, setLastUpdated] = useState(null);
-  
+
   // Modal state
   const [selectedLog, setSelectedLog] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showAdditionalDetails, setShowAdditionalDetails] = useState(false);
-  
+
   // Filters
   const [filters, setFilters] = useState({
     action: '',
     startDate: '',
     endDate: ''
   });
-  
+
   // Fetch logs
   const fetchLogs = async () => {
     setLoading(true);
@@ -39,21 +39,21 @@ export default function LogsPage() {
         page: pagination.page.toString(),
         limit: pagination.limit.toString()
       });
-      
+
       if (filters.action) {
         params.append('action', filters.action);
       }
-      
+
       if (filters.startDate) {
         params.append('startDate', filters.startDate);
       }
-      
+
       if (filters.endDate) {
         params.append('endDate', filters.endDate);
       }
-      
-  const response = await getData(`/api/logs?${params.toString()}`);
-      
+
+      const response = await getData(`/api/logs?${params.toString()}`);
+
       setLogs(response.logs);
       setPagination(response.pagination);
       setLastUpdated(new Date());
@@ -64,19 +64,19 @@ export default function LogsPage() {
       setLoading(false);
     }
   };
-  
-  
+
+
   // Initial fetch
   useEffect(() => {
     fetchLogs();
   }, [pagination.page, pagination.limit]);
-  
+
   // Apply filters
   const applyFilters = () => {
     setPagination(prev => ({ ...prev, page: 1 }));
     fetchLogs();
   };
-  
+
   // Reset filters
   const resetFilters = () => {
     setFilters({
@@ -87,30 +87,30 @@ export default function LogsPage() {
     setPagination(prev => ({ ...prev, page: 1 }));
     fetchLogs();
   };
-  
+
   // Format timestamp
   const formatTimestamp = (timestamp) => {
     return new Date(timestamp).toLocaleString();
   };
-  
+
   // Handle pagination
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > pagination.totalPages) return;
     setPagination(prev => ({ ...prev, page: newPage }));
   };
-  
+
   // Handle modal
   const handleViewDetails = (log) => {
     setSelectedLog(log);
     setIsModalOpen(true);
   };
-  
+
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedLog(null);
     setShowAdditionalDetails(false);
   };
-  
+
   if (error) {
     return (
       <div className="p-6">
@@ -120,24 +120,24 @@ export default function LogsPage() {
       </div>
     );
   }
-  
+
   return (
     <div className="p-6">
       {/* Hidden audio element for notification sound */}
       <audio id="notification-sound" preload="auto">
         <source src="/notification.mp3" type="audio/mpeg" />
       </audio>
-      
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Security Logs</h1>
-        
+
         <div className="flex items-center space-x-2">
           {lastUpdated && (
             <div className="text-sm text-gray-500 dark:text-gray-400">
               Last updated: {lastUpdated.toLocaleTimeString()}
             </div>
           )}
-          <button 
+          <button
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             onClick={fetchLogs}
           >
@@ -145,17 +145,17 @@ export default function LogsPage() {
           </button>
         </div>
       </div>
-      
+
       {/* Filter Section */}
       <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
         <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Filters</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Action</label>
-            <select 
+            <select
               className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-700 text-gray-900 dark:text-white"
               value={filters.action}
-              onChange={(e) => setFilters({...filters, action: e.target.value})}
+              onChange={(e) => setFilters({ ...filters, action: e.target.value })}
             >
               <option value="">All Actions</option>
               <option value="login">Login</option>
@@ -187,31 +187,31 @@ export default function LogsPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Start Date</label>
-            <input 
-              type="date" 
+            <input
+              type="date"
               className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-700 text-gray-900 dark:text-white"
               value={filters.startDate}
-              onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">End Date</label>
-            <input 
-              type="date" 
+            <input
+              type="date"
               className="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-md dark:bg-gray-700 text-gray-900 dark:text-white"
               value={filters.endDate}
-              onChange={(e) => setFilters({...filters, endDate: e.target.value})}
+              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
             />
           </div>
         </div>
         <div className="mt-4 flex justify-end space-x-2">
-          <button 
+          <button
             className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
             onClick={resetFilters}
           >
             Reset
           </button>
-          <button 
+          <button
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             onClick={applyFilters}
           >
@@ -219,8 +219,8 @@ export default function LogsPage() {
           </button>
         </div>
       </div>
-      
-      
+
+
       {/* Logs Table */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
@@ -265,8 +265,8 @@ export default function LogsPage() {
                 </tr>
               ) : (
                 logs.map((log, index) => (
-                  <tr 
-                    key={log.id || log._id || `log-${index}`} 
+                  <tr
+                    key={log.id || log._id || `log-${index}`}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
@@ -283,11 +283,10 @@ export default function LogsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {log.status ? (
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          log.status === 'success' || log.status === 'started'
-                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' 
+                        <span className={`px-2 py-1 rounded-full text-xs ${log.status === 'success' || log.status === 'started'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
                             : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
-                        }`}>
+                          }`}>
                           {log.status.charAt(0).toUpperCase() + log.status.slice(1)}
                         </span>
                       ) : (
@@ -295,20 +294,19 @@ export default function LogsPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        log.details?.platform === 'Mobile' || log.details?.platform === 'mobile'
+                      <span className={`px-2 py-1 rounded-full text-xs ${log.details?.platform === 'Mobile' || log.details?.platform === 'mobile'
                           ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400'
                           : log.details?.platform === 'Desktop' || log.details?.platform === 'desktop'
-                          ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400'
-                          : log.details?.platform === 'Web' || log.details?.platform === 'web'
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
-                          : 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-400'
-                      }`}>
-                        {log.details?.platform.charAt(0).toUpperCase() + log.details?.platform.slice(1) || 'Unknown'}
+                            ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400'
+                            : log.details?.platform === 'Web' || log.details?.platform === 'web'
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
+                              : 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-400'
+                        }`}>
+                        {log.details?.platform ? (log.details.platform.charAt(0).toUpperCase() + log.details.platform.slice(1)) : 'Unknown'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                      <button 
+                      <button
                         className="text-blue-600 dark:text-blue-400 hover:underline"
                         onClick={() => handleViewDetails(log)}
                       >
@@ -321,7 +319,7 @@ export default function LogsPage() {
             </tbody>
           </table>
         </div>
-        
+
         {/* Pagination */}
         {!loading && pagination.totalPages > 0 && (
           <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
@@ -351,7 +349,7 @@ export default function LogsPage() {
           </div>
         )}
       </div>
-      
+
       <style jsx global>{`
         @keyframes highlight {
           0% {
@@ -366,7 +364,7 @@ export default function LogsPage() {
           animation: highlight 3s ease-out;
         }
       `}</style>
-      
+
       {/* Log Details Modal */}
       <Modal
         isOpen={isModalOpen}
@@ -442,11 +440,11 @@ export default function LogsPage() {
                 </p>
               </div>
             </div>
-            
+
             {/* Collapsible Additional Details */}
-            {(selectedLog.details && Object.keys(selectedLog.details).length > 0) || 
-             (selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0) || 
-             (selectedLog.userAgent && Object.keys(selectedLog.userAgent).length > 0) ? (
+            {(selectedLog.details && Object.keys(selectedLog.details).length > 0) ||
+              (selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0) ||
+              (selectedLog.userAgent && Object.keys(selectedLog.userAgent).length > 0) ? (
               <div>
                 <button
                   onClick={() => setShowAdditionalDetails(!showAdditionalDetails)}
@@ -455,16 +453,16 @@ export default function LogsPage() {
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Additional Details
                   </span>
-                  <svg 
+                  <svg
                     className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${showAdditionalDetails ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    viewBox="0 0 24 24" 
+                    fill="none"
+                    viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                
+
                 {showAdditionalDetails && (
                   <div className="mt-2 space-y-3">
                     {selectedLog.details && Object.keys(selectedLog.details).length > 0 && (
@@ -479,7 +477,7 @@ export default function LogsPage() {
                         </div>
                       </div>
                     )}
-                    
+
                     {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -492,7 +490,7 @@ export default function LogsPage() {
                         </div>
                       </div>
                     )}
-                    
+
                     {selectedLog.userAgent && Object.keys(selectedLog.userAgent).length > 0 && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
