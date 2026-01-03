@@ -33,7 +33,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit
+  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB limit
   fileFilter: (req, file, cb) => {
     const allowedExtensions = ['.pcap', '.pcapng'];
     const ext = path.extname(file.originalname).toLowerCase();
@@ -318,12 +318,14 @@ router.post('/upload-pcap', auth, upload.single('pcap'), async (req, res) => {
 
     const filePath = req.file.path;
     const fileName = req.file.originalname;
+    const batchSize = parseInt(req.body.batchSize) || 5000;
 
     console.log(`📁 PCAP file uploaded: ${fileName} (${req.file.size} bytes)`);
     console.log(`📂 File saved to: ${filePath}`);
+    console.log(`📊 Batch size for breakdown: ${batchSize}`);
 
-    // Analyze PCAP file
-    const result = await networkAIService.analyzePCAPFile(filePath);
+    // Analyze PCAP file with batch size
+    const result = await networkAIService.analyzePCAPFile(filePath, batchSize);
 
     // Clean up uploaded file after analysis
     try {
@@ -336,25 +338,53 @@ router.post('/upload-pcap', auth, upload.single('pcap'), async (req, res) => {
     }
 
     if (result.success) {
-      // Log the action
+      const threats = result.data?.threats || [];
+
+      // Log the PCAP analysis action
       try {
         await logActions.pcapFileAnalyzed(req.user.id, 'analyzed', req, {
           fileName,
           fileSize: req.file.size,
-          threatsDetected: result.data?.threats?.length || 0,
+          threatsDetected: threats.length,
           flowsAnalyzed: result.data?.flowsAnalyzed || 0
         });
       } catch (logError) {
         console.error('Failed to log PCAP analysis:', logError);
       }
 
+      // IMPORTANT: Persist each detected threat to MongoDB for dashboard display
+      if (threats.length > 0) {
+        console.log(`💾 Persisting ${threats.length} threats from PCAP analysis to MongoDB...`);
+        let savedCount = 0;
+
+        for (const threat of threats) {
+          try {
+            // Log each threat to MongoDB
+            await logActions.networkThreat(threat, req, {
+              source: 'pcap_analysis',
+              fileName: fileName,
+              analyzedBy: req.user.username || 'system'
+            });
+
+            // Emit real-time event for SSE subscribers
+            emitNetworkThreat(threat);
+            savedCount++;
+          } catch (threatLogError) {
+            console.error('Failed to log individual threat:', threatLogError);
+          }
+        }
+        console.log(`✅ Persisted ${savedCount}/${threats.length} threats to MongoDB`);
+      }
+
       res.json({
         success: true,
         message: 'PCAP file analyzed successfully',
-        threats: result.data?.threats || [],
+        threats: threats,
         flowsAnalyzed: result.data?.flowsAnalyzed || 0,
         fileName: fileName,
-        analysisTimestamp: result.data?.analysis_timestamp
+        analysisTimestamp: result.data?.analysis_timestamp,
+        summary: result.data?.summary || {},
+        processingTime: result.data?.processing_time || 0
       });
     } else {
       res.status(500).json({
@@ -498,13 +528,13 @@ router.get('/threats/history', auth, async (req, res) => {
 
     // Query SecurityLog for network threat actions
     const { SecurityLog } = await import('../models/securityLog.js');
-    
+
     const threats = await SecurityLog.find({
       action: 'network_threat_detected'
     })
-    .sort({ timestamp: -1 })
-    .limit(limitNum)
-    .lean();
+      .sort({ timestamp: -1 })
+      .limit(limitNum)
+      .lean();
 
     // Extract threat data from details field
     const threatData = threats.map(log => log.details?.threatData || log.details).filter(Boolean);
@@ -534,13 +564,13 @@ router.get('/threats/history', auth, async (req, res) => {
  */
 router.post('/webhook', async (req, res) => {
   try {
-    console.log('=' .repeat(80));
+    console.log('='.repeat(80));
     console.log('🔗 WEBHOOK RECEIVED from Python AI service');
     console.log('📦 Request body:', JSON.stringify(req.body, null, 2));
-    console.log('=' .repeat(80));
-    
+    console.log('='.repeat(80));
+
     const threatData = req.body;
-    
+
     // Validate threat data structure
     if (!threatData.threat_id || !threatData.threat_type) {
       console.error('❌ WEBHOOK: Invalid threat data structure - missing threat_id or threat_type');
@@ -549,7 +579,7 @@ router.post('/webhook', async (req, res) => {
         message: 'Invalid threat data structure'
       });
     }
-    
+
     // Log threat to MongoDB for persistence
     try {
       await logActions.networkThreat(threatData, req, {
@@ -561,22 +591,22 @@ router.post('/webhook', async (req, res) => {
       console.error(`❌ WEBHOOK: Failed to save to MongoDB:`, dbError);
       // Continue anyway - don't fail the webhook
     }
-    
+
     // Emit threat event via EventBus for SSE broadcasting
     console.log(`📡 WEBHOOK: Emitting threat event via EventBus...`);
     emitNetworkThreat(threatData);
     console.log(`✅ WEBHOOK: Threat event emitted successfully`);
-    
+
     // Log the threat (optional - for audit trail)
     console.log(`🚨 WEBHOOK: Threat processed: ${threatData.threat_type} (${threatData.threat_id})`);
-    console.log('=' .repeat(80));
-    
+    console.log('='.repeat(80));
+
     res.json({
       success: true,
       message: 'Threat received and broadcasted',
       threat_id: threatData.threat_id
     });
-    
+
   } catch (error) {
     console.error('❌ WEBHOOK ERROR:', error);
     res.status(500).json({
@@ -595,7 +625,7 @@ router.post('/webhook', async (req, res) => {
 router.post('/clear-threats', auth, async (req, res) => {
   try {
     console.log('🧹 Clearing all network threats...');
-    
+
     // Clear threats from AI service
     try {
       const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
@@ -605,7 +635,7 @@ router.post('/clear-threats', auth, async (req, res) => {
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (response.ok) {
         const result = await response.json();
         console.log('✅ AI service threats cleared:', result.message);
@@ -615,26 +645,26 @@ router.post('/clear-threats', auth, async (req, res) => {
     } catch (aiError) {
       console.error('❌ Error clearing AI service threats:', aiError.message);
     }
-    
+
     // Clear threats from MongoDB
     try {
       const { SecurityLog } = await import('../models/securityLog.js');
-      
+
       const deleteResult = await SecurityLog.deleteMany({
         action: 'network_threat_detected'
       });
-      
+
       console.log(`✅ Cleared ${deleteResult.deletedCount} threats from MongoDB`);
     } catch (dbError) {
       console.error('❌ Error clearing MongoDB threats:', dbError.message);
     }
-    
+
     res.json({
       success: true,
       message: 'All network threats cleared successfully',
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
     console.error('❌ Error clearing threats:', error);
     res.status(500).json({
@@ -666,7 +696,7 @@ router.get('/stream', (req, res) => {
     return res.status(401).json({ error: 'Invalid token' });
   }
   console.log(`📡 SSE connection established for user: ${req.user.username}`);
-  
+
   // Set SSE headers
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -688,11 +718,11 @@ router.get('/stream', (req, res) => {
   const handleNetworkThreat = (eventData) => {
     console.log(`🚨 SSE: Broadcasting threat to client...`);
     console.log(`📊 SSE: Event data:`, JSON.stringify(eventData, null, 2));
-    
+
     // eventData is already wrapped by emitNetworkThreat with {type, data, timestamp}
     // Extract the actual threat data
     const actualThreatData = eventData.data || eventData;
-    
+
     res.write(`data: ${JSON.stringify({
       type: 'threat_detected',
       data: actualThreatData,
@@ -728,7 +758,7 @@ router.get('/stream', (req, res) => {
   // Handle client disconnect
   req.on('close', () => {
     console.log(`📡 SSE connection closed for user: ${req.user.username}`);
-    
+
     // Remove event listeners to prevent memory leaks
     eventBus.removeListener(NETWORK_EVENTS.THREAT_DETECTED, handleNetworkThreat);
     eventBus.removeListener(NETWORK_EVENTS.MONITORING_STARTED, handleMonitoringEvent);

@@ -17,7 +17,7 @@ class NetworkAIService {
   async startNetworkMonitoring(networkInterface = 'auto', duration = 300) {
     try {
       console.log(`🚀 Starting network monitoring on interface: ${networkInterface}, duration: ${duration}s`);
-      
+
       const response = await axios.post(`${this.pythonServiceUrl}/api/start-capture`, {
         interface: networkInterface,
         duration
@@ -46,7 +46,7 @@ class NetworkAIService {
       console.error('Error response:', error.response?.data);
       console.error('Error status:', error.response?.status);
       console.error('Full error:', error);
-      
+
       // Handle specific error cases
       if (error.response && error.response.status === 400) {
         if (error.response.data.detail === "Monitoring is already active") {
@@ -57,10 +57,10 @@ class NetworkAIService {
           };
         }
       }
-      
+
       // Return detailed error information
       const errorDetail = error.response?.data?.detail || error.response?.data?.message || error.message || 'Unknown error';
-      
+
       return {
         success: false,
         message: 'Failed to start network monitoring',
@@ -76,7 +76,7 @@ class NetworkAIService {
   async stopNetworkMonitoring() {
     try {
       console.log('🛑 Stopping network monitoring...');
-      
+
       const response = await axios.post(`${this.pythonServiceUrl}/api/stop-capture`, {}, {
         timeout: 10000,
         headers: {
@@ -98,7 +98,7 @@ class NetworkAIService {
       };
     } catch (error) {
       console.error('❌ Failed to stop network monitoring:', error.message);
-      
+
       // Handle specific error cases
       if (error.response && error.response.status === 400) {
         if (error.response.data.detail === "Monitoring is not active") {
@@ -115,7 +115,7 @@ class NetworkAIService {
           };
         }
       }
-      
+
       return {
         success: false,
         message: 'Failed to stop network monitoring',
@@ -183,14 +183,15 @@ class NetworkAIService {
    * @param {string} filePath - Path to the PCAP file
    * @returns {Promise<Object>} Analysis results
    */
-  async analyzePCAPFile(filePath) {
+  async analyzePCAPFile(filePath, batchSize = 5000) {
     try {
-      console.log(`📁 Analyzing PCAP file: ${filePath}`);
-      
+      console.log(`📁 Analyzing PCAP file: ${filePath} (batch_size: ${batchSize})`);
+
       const response = await axios.post(`${this.pythonServiceUrl}/api/analyze-pcap`, {
-        file_path: filePath
+        file_path: filePath,
+        batch_size: batchSize
       }, {
-        timeout: 30000, // 30 second timeout for file analysis
+        timeout: 300000, // 5 minute timeout for large file analysis
         headers: {
           'Content-Type': 'application/json'
         }
@@ -209,9 +210,9 @@ class NetworkAIService {
       console.error('Error message:', error.message);
       console.error('Error response:', error.response?.data);
       console.error('Error status:', error.response?.status);
-      
+
       const errorDetail = error.response?.data?.detail || error.response?.data?.message || error.message || 'Unknown error';
-      
+
       return {
         success: false,
         message: 'Failed to analyze PCAP file',
@@ -267,7 +268,7 @@ class NetworkAIService {
     try {
       const healthCheck = await this.checkServiceHealth();
       const modelStats = await this.getModelStatistics();
-      
+
       return {
         success: true,
         message: 'Connection to Python AI service successful',

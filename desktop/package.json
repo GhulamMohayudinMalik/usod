@@ -72,7 +72,13 @@
       "category": "public.app-category.productivity"
     },
     "win": {
-      "target": "nsis"
+      "target": "portable",
+      "signAndEditExecutable": false,
+      "signDlls": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
     },
     "linux": {
       "target": "AppImage"

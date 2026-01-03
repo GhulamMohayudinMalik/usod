@@ -51,3 +51,12 @@ blockchain/bin/
 
 # Docker
 docker-compose.override.yml
+
+desktop/dist/
+desktop/build/
+desktop/out/
+
+*.png
+
+
+publications/

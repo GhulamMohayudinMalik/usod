@@ -10,7 +10,7 @@ const LOCAL_API_URL = 'http://localhost:5000';
 
 // Set to true to use local backend, false for production
 // In production builds (process.env.NODE_ENV === 'production'), always uses production URL
-const USE_LOCAL_IN_DEV = true;
+const USE_LOCAL_IN_DEV = false;
 
 // Determine which URL to use
 const getApiUrl = () => {

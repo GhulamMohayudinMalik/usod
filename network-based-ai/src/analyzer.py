@@ -79,6 +79,12 @@ class NetworkThreatAnalyzer:
         pcap_path = Path(pcap_path)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
+        # Cache file size before analysis (file may be deleted during processing)
+        try:
+            pcap_size_mb = pcap_path.stat().st_size / 1024**2
+        except:
+            pcap_size_mb = 0.0
+        
         # Select model based on type
         use_robust_binary = model_type == 'robust_binary' and self.predictor.robust_binary_model is not None
         use_cicflowmeter = model_type == 'cicflowmeter' and self.predictor.cicflowmeter_model is not None
@@ -159,7 +165,7 @@ class NetworkThreatAnalyzer:
         results = {
             'status': 'success',
             'pcap_file': str(pcap_path),
-            'pcap_size_mb': pcap_path.stat().st_size / 1024**2,
+            'pcap_size_mb': pcap_size_mb,
             'timestamp': timestamp,
             'model_type': 'robust_binary' if use_robust_binary else ('cicflowmeter' if use_cicflowmeter else ('nfstream_binary' if use_nfstream_model else 'multiclass_cicids')),
 

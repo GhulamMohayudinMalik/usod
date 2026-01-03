@@ -324,13 +324,15 @@ class PCAPFeatureExtractor:
         return result
     
     def extract_nfstream_features(self, pcap_path: Union[str, Path],
-                                  max_flows: Optional[int] = None) -> pd.DataFrame:
+                                  max_flows: Optional[int] = None,
+                                  include_metadata: bool = False) -> pd.DataFrame:
         """
         Extract raw NFStream features (legacy method for backward compatibility).
         
         Args:
             pcap_path: Path to PCAP file
             max_flows: Maximum number of flows to extract
+            include_metadata: Include flow metadata (IPs, ports) for display
         
         Returns:
             DataFrame with raw NFStream features.
@@ -352,6 +354,7 @@ class PCAPFeatureExtractor:
         )
         
         flows_list = []
+        metadata_list = []
         flow_count = 0
         
         for flow in streamer:
@@ -364,16 +367,39 @@ class PCAPFeatureExtractor:
                     flow_dict[attr] = 0
             
             flows_list.append(flow_dict)
+            
+            # Extract metadata for display/threat details
+            if include_metadata:
+                meta = {
+                    'src_ip': getattr(flow, 'src_ip', ''),
+                    'dst_ip': getattr(flow, 'dst_ip', ''),
+                    'src_port': getattr(flow, 'src_port', 0),
+                    'dst_port': getattr(flow, 'dst_port', 0),
+                    'protocol': getattr(flow, 'protocol', 0),
+                }
+                metadata_list.append(meta)
+            
             flow_count += 1
+            
+            if flow_count % 25000 == 0:
+                print(f"  Processed {flow_count:,} flows...")
             
             if max_flows and flow_count >= max_flows:
                 break
         
         if not flows_list:
-            return pd.DataFrame(columns=NFSTREAM_ATTRIBUTES)
+            cols = NFSTREAM_ATTRIBUTES.copy()
+            if include_metadata:
+                cols = ['src_ip', 'dst_ip', 'src_port', 'dst_port', 'protocol'] + cols
+            return pd.DataFrame(columns=cols)
         
         df = pd.DataFrame(flows_list)
         df = df.replace([np.inf, -np.inf], np.nan).fillna(0)
+        
+        # Add metadata columns if requested
+        if include_metadata and metadata_list:
+            df_meta = pd.DataFrame(metadata_list)
+            df = pd.concat([df_meta, df], axis=1)
         
         return df
     

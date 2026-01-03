@@ -249,15 +249,18 @@ class NetworkThreatPredictor:
         if self.nfstream_model is None:
             raise RuntimeError("NFStream model not loaded")
         
-        # Preprocess for NFStream model
+        # Get required feature names (in exact training order)
         required = self.feature_names_nfstream if self.feature_names_nfstream else []
-        df = df.copy()
         
+        # Create a clean feature dataframe with only the required columns
+        X = pd.DataFrame()
         for f in required:
-            if f not in df.columns:
-                df[f] = 0
+            if f in df.columns:
+                X[f] = df[f].values
+            else:
+                X[f] = 0
         
-        X = df[required].copy()
+        # Clean up values
         X = X.replace([np.inf, -np.inf], np.nan).fillna(0)
         
         predictions = self.nfstream_model.predict(X)
