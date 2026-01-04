@@ -131,15 +131,15 @@ const IPTracerIcon = () => (
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: DashboardIcon },
-  { name: 'IP Tracer', href: '/dashboard/ip-tracer', icon: IPTracerIcon },
   { name: 'Logs Analysis', href: '/dashboard/logs', icon: LogIcon },
   { name: 'Threats Analysis', href: '/dashboard/threats', icon: ThreatIcon },
+  { name: 'IP Tracer', href: '/dashboard/ip-tracer', icon: IPTracerIcon },
   { name: 'Analytics', href: '/dashboard/analytics', icon: AnalyticsIcon },
   { name: 'AI Insights', href: '/dashboard/ai-insights', icon: AiInsightsIcon },
   { name: 'Security Lab', href: '/dashboard/security-lab', icon: SecurityLabIcon },
   { name: 'Security Management', href: '/dashboard/security', icon: SecurityIcon },
-  { name: 'AI Network Monitoring', href: '/dashboard/network-monitoring', icon: NetworkMonitoringIcon },
   { name: 'Blockchain Ledger', href: '/dashboard/blockchain', icon: BlockchainIcon },
+  { name: 'AI Network Monitoring', href: '/dashboard/network-monitoring', icon: NetworkMonitoringIcon },
   { name: 'AI Packet Analyzer', href: '/dashboard/pcap-analyzer', icon: PCAPIcon },
   { name: 'User Management', href: '/dashboard/users', icon: UsersIcon },
   { name: 'Backup Management', href: '/dashboard/backup', icon: BackupIcon },

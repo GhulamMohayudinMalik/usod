@@ -18,10 +18,10 @@ class BlockchainService {
   constructor() {
     this.channelName = 'usod-channel';
     this.chaincodeName = 'threat-logger';
-    this.walletPath = path.join(__dirname, '../../../blockchain/wallets');
+    this.walletPath = path.join(__dirname, '../../../../blockchain/wallets');
     this.connectionProfilePath = path.join(__dirname, '../config/connection-profile.json');
     this.identity = 'admin';
-    
+
     console.log('🔗 Blockchain Service initialized');
     console.log(`   Channel: ${this.channelName}`);
     console.log(`   Chaincode: ${this.chaincodeName}`);
@@ -73,7 +73,7 @@ class BlockchainService {
       const gateway = await this.connect();
       const network = await gateway.getNetwork(this.channelName);
       const contract = network.getContract(this.chaincodeName);
-      
+
       return { gateway, contract };
     } catch (error) {
       console.error('❌ Failed to get contract:', error.message);
@@ -94,7 +94,7 @@ class BlockchainService {
       destinationIP: threatData.destinationIP || threatData.details?.destinationIP || 'unknown',
       timestamp: threatData.timestamp || threatData.details?.timestamp || new Date().toISOString()
     };
-    
+
     // Create JSON string with only these 5 fields
     const dataString = JSON.stringify(coreData);
     return crypto.createHash('sha256').update(dataString).digest('hex');
@@ -108,7 +108,7 @@ class BlockchainService {
    */
   async logThreat(threat) {
     let gateway;
-    
+
     try {
       // Logging threat to blockchain: ${threat._id}
 
@@ -138,7 +138,7 @@ class BlockchainService {
       // Submit transaction to blockchain
       const logType = threat.logType || 'network_threat'; // Use provided logType or default
       const detector = threat.detector || 'network_ai_service';
-      
+
       // Submit transaction - Fabric SDK throws errors even on success
       try {
         await contract.submitTransaction(
@@ -157,14 +157,14 @@ class BlockchainService {
         }
         // Otherwise, ignore the error and continue
       }
-      
+
       // Wait 1 second for blockchain to commit
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Verify the log was actually stored
       const verifyResponse = await contract.evaluateTransaction('ReadThreatLog', threat._id.toString());
       const result_data = JSON.parse(verifyResponse.toString());
-      
+
       return {
         success: true,
         txId: result_data.logId,
@@ -177,7 +177,7 @@ class BlockchainService {
       process.stderr.write(`\n❌❌❌ [CRITICAL BlockchainService ERROR] ❌❌❌\n`);
       process.stderr.write(`   → Error type: ${error.constructor.name}\n`);
       process.stderr.write(`   → Error message: ${error.message || 'NO MESSAGE'}\n`);
-      
+
       // Fabric SDK errors have responses and errors arrays
       if (error.responses) {
         process.stderr.write(`   → Responses: ${JSON.stringify(error.responses, null, 2)}\n`);
@@ -185,11 +185,11 @@ class BlockchainService {
       if (error.errors) {
         process.stderr.write(`   → Errors array: ${JSON.stringify(error.errors, null, 2)}\n`);
       }
-      
+
       process.stderr.write(`   → Error string: ${error.toString()}\n`);
       process.stderr.write(`   → Error stack:\n${error.stack || 'NO STACK'}\n`);
       process.stderr.write(`❌❌❌ END ERROR ❌❌❌\n\n`);
-      
+
       return {
         success: false,
         error: error.message
@@ -209,7 +209,7 @@ class BlockchainService {
    */
   async getThreatLog(logId) {
     let gateway;
-    
+
     try {
       // Retrieving threat from blockchain: ${logId}
 
@@ -221,7 +221,7 @@ class BlockchainService {
       const threatLog = JSON.parse(response.toString());
 
       // Threat retrieved from blockchain: ${logId}
-      
+
       return {
         success: true,
         data: threatLog
@@ -229,7 +229,7 @@ class BlockchainService {
 
     } catch (error) {
       console.error('❌ Failed to retrieve threat from blockchain:', error.message);
-      
+
       return {
         success: false,
         error: error.message
@@ -250,7 +250,7 @@ class BlockchainService {
    */
   async verifyThreatLog(logId, currentThreatData) {
     let gateway;
-    
+
     try {
       console.log(`🔍 Verifying threat integrity: ${logId}`);
       console.log(`📊 Raw input data:`, JSON.stringify(currentThreatData, null, 2));
@@ -262,9 +262,9 @@ class BlockchainService {
       // Reconstruct the threat data structure that was originally stored on blockchain
       // This ensures we're comparing the same data structure
       const reconstructedThreatData = this.reconstructThreatDataForVerification(currentThreatData);
-      
+
       console.log(`📊 Reconstructed data:`, JSON.stringify(reconstructedThreatData, null, 2));
-      
+
       // Calculate current hash using the reconstructed data
       const currentHash = this.calculateHash(reconstructedThreatData);
 
@@ -280,12 +280,12 @@ class BlockchainService {
         logId,
         currentHash
       );
-      
+
       const verification = JSON.parse(response.toString());
 
       console.log(`🔍 Threat verification: ${logId} - ${verification.valid ? 'VALID' : 'TAMPERED'}`);
       console.log(`📊 Blockchain response:`, verification);
-      
+
       // Map chaincode response to frontend-expected format
       return {
         success: true,
@@ -299,7 +299,7 @@ class BlockchainService {
 
     } catch (error) {
       console.error('❌ Failed to verify threat:', error.message);
-      
+
       return {
         success: false,
         error: error.message
@@ -319,7 +319,7 @@ class BlockchainService {
     // Extract the threatDetails and timestamp from the full threat object
     const threatDetails = threatObject.threatDetails || threatObject;
     const timestamp = threatObject.timestamp || threatDetails.timestamp || 'unknown';
-    
+
     return {
       type: threatDetails.type || 'unknown',
       severity: threatDetails.severity || 'medium',
@@ -334,7 +334,7 @@ class BlockchainService {
    */
   async getAllThreats() {
     let gateway;
-    
+
     try {
       // Fetching all threats from blockchain
 
@@ -346,7 +346,7 @@ class BlockchainService {
       const threats = JSON.parse(response.toString());
 
       // Retrieved ${threats.length} threats from blockchain
-      
+
       return {
         success: true,
         data: threats
@@ -354,7 +354,7 @@ class BlockchainService {
 
     } catch (error) {
       console.error('❌ Failed to get threats from blockchain:', error.message);
-      
+
       return {
         success: false,
         error: error.message
@@ -371,7 +371,7 @@ class BlockchainService {
    */
   async getStats() {
     let gateway;
-    
+
     try {
       // Fetching blockchain statistics
 
@@ -383,7 +383,7 @@ class BlockchainService {
       const stats = JSON.parse(response.toString());
 
       // Retrieved blockchain stats
-      
+
       return {
         success: true,
         data: stats
@@ -391,7 +391,7 @@ class BlockchainService {
 
     } catch (error) {
       console.error('❌ Failed to get blockchain stats:', error.message);
-      
+
       return {
         success: false,
         error: error.message

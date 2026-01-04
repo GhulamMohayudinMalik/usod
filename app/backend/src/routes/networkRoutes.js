@@ -339,41 +339,38 @@ router.post('/upload-pcap', auth, upload.single('pcap'), async (req, res) => {
 
     if (result.success) {
       const threats = result.data?.threats || [];
+      const summary = result.data?.summary || {};
 
-      // Log the PCAP analysis action
+      // Log the PCAP analysis action (just once, not per-threat)
       try {
         await logActions.pcapFileAnalyzed(req.user.id, 'analyzed', req, {
           fileName,
           fileSize: req.file.size,
           threatsDetected: threats.length,
-          flowsAnalyzed: result.data?.flowsAnalyzed || 0
+          flowsAnalyzed: result.data?.flowsAnalyzed || 0,
+          attackCount: summary.attack_count || 0,
+          benignCount: summary.benign_count || 0
         });
       } catch (logError) {
         console.error('Failed to log PCAP analysis:', logError);
       }
 
-      // IMPORTANT: Persist each detected threat to MongoDB for dashboard display
+      // NOTE: We no longer persist each threat individually to MongoDB
+      // This was causing massive delays for large PCAP files with thousands of threats
+      // The summary contains all the important statistics
+      // If you need to persist threats, use a bulk insert or async background job
+
       if (threats.length > 0) {
-        console.log(`💾 Persisting ${threats.length} threats from PCAP analysis to MongoDB...`);
-        let savedCount = 0;
+        console.log(`📊 PCAP analysis complete: ${threats.length} threats detected (not persisted individually)`);
 
-        for (const threat of threats) {
-          try {
-            // Log each threat to MongoDB
-            await logActions.networkThreat(threat, req, {
-              source: 'pcap_analysis',
-              fileName: fileName,
-              analyzedBy: req.user.username || 'system'
-            });
-
-            // Emit real-time event for SSE subscribers
-            emitNetworkThreat(threat);
-            savedCount++;
-          } catch (threatLogError) {
-            console.error('Failed to log individual threat:', threatLogError);
-          }
-        }
-        console.log(`✅ Persisted ${savedCount}/${threats.length} threats to MongoDB`);
+        // Emit a single summary event instead of one per threat
+        emitMonitoringEvent(NETWORK_EVENTS.MODEL_STATS_UPDATED, {
+          type: 'pcap_analysis_complete',
+          fileName,
+          threatsDetected: threats.length,
+          flowsAnalyzed: result.data?.flowsAnalyzed || 0,
+          summary: summary
+        });
       }
 
       res.json({
@@ -383,7 +380,7 @@ router.post('/upload-pcap', auth, upload.single('pcap'), async (req, res) => {
         flowsAnalyzed: result.data?.flowsAnalyzed || 0,
         fileName: fileName,
         analysisTimestamp: result.data?.analysis_timestamp,
-        summary: result.data?.summary || {},
+        summary: summary,
         processingTime: result.data?.processing_time || 0
       });
     } else {

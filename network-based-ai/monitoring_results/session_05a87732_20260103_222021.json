@@ -1,0 +1,20 @@
+{
+  "session_id": "05a87732",
+  "start_time": "2026-01-03T22:20:14.767974",
+  "end_time": "2026-01-03T22:20:21.031535",
+  "interface": "vEthernet (WSL (Hyper-V firewall))",
+  "duration_requested": 300,
+  "statistics": {
+    "total_flows": 0,
+    "benign_flows": 0,
+    "attack_flows": 0,
+    "attack_percentage": 0.0,
+    "flows_per_second": 0.0
+  },
+  "threats": [],
+  "summary": {
+    "threat_types": {},
+    "top_source_ips": {},
+    "top_destination_ips": {}
+  }
+}

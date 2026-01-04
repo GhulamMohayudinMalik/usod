@@ -1,0 +1,22 @@
+
+# AWS Region
+aws_region = "ap-south-1"
+
+# Environment name
+environment = "production"
+
+# EC2 Instance type (t3.small recommended for production)
+instance_type = "t3.small"
+
+# Your SSH key pair name (must exist in AWS)
+key_name = "your-key-pair-name"
+
+# MongoDB Atlas connection string
+# Format: mongodb+srv://user:password@cluster.mongodb.net/dbname
+mongodb_uri = "mongodb+srv://username:password@cluster.mongodb.net/usod?retryWrites=true&w=majority"
+
+# JWT Secret (generate with: openssl rand -base64 32)
+jwt_secret = "your-super-secret-jwt-key-here"
+
+# Frontend URL for CORS (your Vercel deployment)
+frontend_url = "https://your-app.vercel.app"

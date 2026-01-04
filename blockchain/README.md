@@ -42,14 +42,18 @@ blockchain/
 │           ├── index.js             # Smart contract (10 functions)
 │           └── package.json         # Dependencies
 │
-├── wallets/                   # Admin identity for backend
-│   └── admin.id               # Admin credentials (Fabric SDK format)
+├── wallets/                   # ⚠️ IMPORTANT: Admin identity for backend (MUST be here!)
+│   ├── admin.id               # Admin credentials (Fabric SDK format)
+│   ├── admin-cert.pem         # Admin certificate
+│   └── admin-key.pem          # Admin private key
 │
 ├── README.md                  # This file
 ├── ENHANCEMENT.md             # Future improvements guide
 ├── HASHING_VERIFICATION_SYSTEM.md  # Hash verification documentation
 └── CLOUD_DEPLOYMENT.md        # Cloud deployment guide
 ```
+
+> **⚠️ IMPORTANT:** The `wallets/` directory MUST be at `blockchain/wallets/`, NOT at `app/blockchain/wallets/`. The backend service looks for the wallet at this exact location.
 
 ---
 
@@ -76,17 +80,41 @@ cd blockchain/hyperledger/network
 
 ### 3. Full Reset (Wipe Everything)
 ```powershell
-.\scripts\reset.ps1              # WARNING: Deletes all blockchain data
+.\scripts\reset.ps1              # WARNING: Deletes all blockchain data AND wallet
 .\scripts\start-persistent.ps1   # Fresh start
 .\scripts\deploy-chaincode.ps1   # Redeploy chaincode
-.\scripts\setup-wallet.ps1       # Regenerate wallet
+.\scripts\setup-wallet.ps1       # Regenerate wallet (REQUIRED!)
 ```
+
+> **⚠️ After Reset:** You MUST restart the backend server (`npm run dev` in `app/backend`) for it to reconnect to the blockchain with the new wallet.
 
 ### 4. Verify Network Status
 ```powershell
+# Check Docker containers are running
 docker ps --format "table {{.Names}}\t{{.Status}}"
+
+# Verify channel exists
 docker exec cli peer channel list  # Should show: usod-channel
+
+# Verify chaincode is deployed
+docker exec cli peer lifecycle chaincode querycommitted --channelID usod-channel
 ```
+
+### 5. Verify Backend Connection
+After the blockchain is running, the backend should show:
+```
+🔗 Blockchain Service initialized
+   Channel: usod-channel
+   Chaincode: threat-logger
+   Wallet: C:\...\usod\blockchain\wallets
+```
+
+To test connection manually:
+```powershell
+cd app/backend
+node -e "import('./src/services/blockchainService.js').then(m => m.default.isAvailable().then(r => console.log('Available:', r)))"
+```
+Should output: `Available: true`
 
 ---
 
@@ -144,15 +172,17 @@ docker ps --format "table {{.Names}}\t{{.Status}}"
 
 ## 🔗 Integration with Backend
 
-**Next Step:** Connect the Node.js backend to this blockchain using the Hyperledger Fabric SDK.
+The Node.js backend connects to this blockchain using the Hyperledger Fabric SDK.
 
-**Connection Profile:** Will be created in `backend/src/config/connection-profile.json`
+**Connection Profile:** `app/backend/src/config/connection-profile.json`
 
-**Backend Service:** `backend/src/services/blockchainService.js` will handle:
+**Backend Service:** `app/backend/src/services/blockchainService.js` handles:
 - Creating threat logs from AI detections
 - Querying historical threats
 - Verifying log integrity
 - Providing immutable audit trail
+
+**Wallet Location:** `blockchain/wallets/` (contains `admin.id`, `admin-cert.pem`, `admin-key.pem`)
 
 ---
 
@@ -170,21 +200,49 @@ To update chaincode:
 3. Increment sequence number
 4. Run `.\scripts\deploy-chaincode.ps1`
 
+### Backend Restart Requirements
+You must restart the backend server after:
+- Running `reset.ps1` (wallet is regenerated)
+- Running `setup-wallet.ps1` (wallet is updated)
+- Restarting Docker containers (connections are reset)
+
 ---
 
 ## ⚠️ Troubleshooting
 
-**Issue:** "channel does not exist" errors  
-**Fix:** Run `.\scripts\reset.ps1` then full setup again
+### Backend says "Blockchain disconnected" or "Identity not found"
+**Cause:** Wallet not found or backend hasn't loaded the new wallet  
+**Fix:**
+1. Verify wallet exists: `ls blockchain/wallets/` should show `admin.id`
+2. If missing, run: `.\scripts\setup-wallet.ps1`
+3. Restart the backend server
 
-**Issue:** Chaincode container not starting  
-**Fix:** Check `docker logs <chaincode-container-name>`
+### "Channel does not exist" errors
+**Cause:** Channel not created or peer not joined  
+**Fix:** Run `.\scripts\reset.ps1` then full setup again:
+```powershell
+.\scripts\start-persistent.ps1
+.\scripts\deploy-chaincode.ps1
+.\scripts\setup-wallet.ps1
+# Then restart backend
+```
 
-**Issue:** Permission errors  
+### Chaincode container not starting
+**Cause:** Docker or chaincode issue  
+**Fix:** Check logs: `docker logs <chaincode-container-name>`
+
+### Permission errors
+**Cause:** Docker Desktop permissions  
 **Fix:** Run Docker Desktop as Administrator
 
-**Issue:** Port conflicts  
-**Fix:** Ensure ports 7050, 7051, 7052 are available
+### Port conflicts (7050, 7051, 7052)
+**Cause:** Ports already in use  
+**Fix:** Stop other services using these ports, or modify `docker-compose.yaml`
+
+### Backend shows wrong wallet path
+**Cause:** Wallet path misconfigured in `blockchainService.js`  
+**Expected path:** `blockchain/wallets/` (relative to project root)  
+**Fix:** Verify `blockchainService.js` uses `path.join(__dirname, '../../../../blockchain/wallets')`
 
 ---
 
@@ -196,5 +254,45 @@ To update chaincode:
 
 ---
 
-**Last Updated:** December 2025  
+## 🔄 Complete Reset & Setup Checklist
+
+If blockchain isn't working, follow this complete checklist:
+
+```powershell
+# 1. Navigate to network directory
+cd blockchain/hyperledger/network
+
+# 2. Full reset (wipes everything)
+.\scripts\reset.ps1
+
+# 3. Start fresh network
+.\scripts\start-persistent.ps1
+
+# 4. Wait 10 seconds for containers to initialize
+Start-Sleep -Seconds 10
+
+# 5. Deploy chaincode
+.\scripts\deploy-chaincode.ps1
+
+# 6. Setup wallet
+.\scripts\setup-wallet.ps1
+
+# 7. Verify containers are running
+docker ps
+
+# 8. Verify wallet exists
+ls ../../wallets/
+
+# 9. IMPORTANT: Restart backend server
+# Stop the current backend (Ctrl+C) and restart:
+cd ../../../app/backend
+npm run dev
+
+# 10. Test connection
+node -e "import('./src/services/blockchainService.js').then(m => m.default.isAvailable().then(r => console.log('Available:', r)))"
+```
+
+---
+
+**Last Updated:** January 2026  
 **Status:** Production-ready with full data persistence

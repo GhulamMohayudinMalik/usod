@@ -156,21 +156,6 @@ export default function DashboardIndex() {
           <div className="text-gray-400">No recent events.</div>
         )}
       </div>
-
-      {/* AI Analysis Block */}
-      <div className="mt-4 bg-gray-800/50 border border-gray-700 rounded-lg">
-        <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-          <h3 className="text-sm font-medium text-gray-200">AI-Powered Threat Analysis</h3>
-          <button className="text-xs text-blue-400">Run Analysis</button>
-        </div>
-        <div className="p-4">
-          <p className="text-sm text-gray-400 mb-3">Analyze text or network traffic for potential security threats using advanced AI detection.</p>
-          <textarea className="w-full h-24 p-3 rounded-md bg-gray-900 text-gray-100 border border-gray-700" placeholder="Enter text to analyze for potential threats..."></textarea>
-          <div className="mt-3 flex justify-end">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded">Analyze</button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
